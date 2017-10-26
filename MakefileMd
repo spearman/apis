@@ -1,0 +1,8 @@
+PANDOC_STRING = pandoc -s --ascii --toc --toc-depth=6 --number-sections -f markdown -t html
+
+.PHONY: foo
+%: foo
+	$(PANDOC_STRING) $@ -o $@.html
+
+# dummy rule to prevent Makefile from trying to make itself
+Makefile: ;

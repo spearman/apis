@@ -1,0 +1,42 @@
+[package]
+name = "apis"
+version = "0.0.1"
+authors = ["Shane Pearman <spearman@github.com>"]
+license = "MPL-2.0"
+
+[lib]
+name = "apis"
+
+# remote dependencies
+[dependencies]
+num = "0.1.*"
+
+colored = "1.*"
+either = "1.3.*"
+escapade = "0.0.*"
+log = "0.3.*"
+simplelog = "0.4.*"
+vec_map = "0.8.*"
+
+# local dependencies
+[dependencies.unbounded-spsc]
+version = "0.1.*"
+git = "git://github.com/spearman/unbounded-spsc.git"
+
+[dependencies.rs-utils]
+version = "0.0.*"
+git = "git://github.com/spearman/rs-utils.git"
+
+[dependencies.macro-machines]
+version = "0.1.*"
+git = "git://github.com/spearman/macro-machines.git"
+
+# dev dependencies
+[dev-dependencies]
+mock = { path = "./mock/" }
+
+unwrap = "1.*"
+num = "0.1.*"
+rand = "0.3.*"
+macro-attr = "0.2.*"
+enum_derive = "0.1.*"

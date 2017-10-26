@@ -1,0 +1,18 @@
+[package]
+name = "mock"
+version = "0.1.0"
+authors = ["Shane Pearman <spearman@github.com>"]
+
+[dependencies]
+apis = { path = "../" }
+
+num = "0.1.*"
+macro-attr = "0.2.*"
+enum_derive = "0.1.*"
+
+vec_map = "0.8.*"
+escapade = "0.0.*"
+
+[dependencies.rs-utils]
+version = "0.0.*"
+git = "git://github.com/spearman/rs-utils.git"
