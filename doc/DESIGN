@@ -1,0 +1,48 @@
+# Apis v0.0.1 - initial implementation
+
+**Issues**
+
+- It is not possible to re-use process definitions. Therefore, if two sessions
+  use a process that is identical, the code must be duplicated. This can be
+  eased somewhat by giving both processes a single "inner" type that handles
+  the logic uniformly for both, so that they are essentially thin wrappers
+  around this type.
+- There are some coherence requirements for programs that are checked by debug
+  assertions or at runtime. A better solution would be along the lines of what
+  is done with sessions where a definition is built and verified at
+  initialization time. These requirements are that processes to be mapped as
+  continuations are mapped one-to-one, and that main processes can be mapped to
+  eachother but not to other processes. Other checks may be done on the graph
+  of transitions to ensure that all modes are reachable.
+- Custom initialization: processes might require special initialization to be
+  performed but currently the only place to do that is in a continuation block.
+- Session results are a uniform `Option <()>` type for all sessions. There is
+  syntax defined in the `def_session!` macro to give each process a unique
+  result type. These could probably be wrapped in a global `Result` type for
+  the entire session (so they can still be stored in a `VecMap`).
+- State machines are used at a few points in the implementation; mostly they
+  are "simple" transitions that lack actions, guards, or parameters. More could
+  be done there, but it's unlikely to be possible to capture *all* affected
+  program logic within events.
+- To allow for continuations, processes need to be able to return results to
+  the session and to receive continuations from the session. Currently this is
+  done with standard `std::sync::mpsc` channels, but it might be possible to
+  replace these with session-typed channels, adding some safety guarantees to
+  communication on these channels.
+- The case of a process which blocks on some external code awaiting a result as
+  the main form of input is supported by creating a synchronous process with a
+  tick length of `0` ms. There doesn't seem to be anything especially wrong
+  with this solution, but some modification needs to be made to prevent "late
+  tick" warnings from being generated (a tick length of `0` means that the next
+  tick deadline is seen as being instantaneous with the last). As long as the
+  user code reliably blocks and the process is defined to have one update per
+  tick, the process will not be able to "catch up" by processing very many
+  ticks.
+
+
+**Further development**
+
+The next phase of development is to implement an example of a graphical,
+interactive application in `apis`.
+
+- TODO: SDL and/or GL ???
