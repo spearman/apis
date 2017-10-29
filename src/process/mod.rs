@@ -68,6 +68,7 @@ pub enum Kind {
     tick_ms          : u32,
     ticks_per_update : u32
   },
+
   /// Block waiting on one or more endpoints.
   ///
   /// Asynchronous processes can only hold multiple endpoints of compatible
@@ -77,7 +78,21 @@ pub enum Kind {
   /// kind and endpoints.
   Asynchronous {
     messages_per_update : u32
-  }
+  },
+
+  /// Poll to exhaustion and update immediately.
+  ///
+  /// This is useful for blocking update functions as in a readline loop or a
+  /// rendering loop. This could also be seen as a "synchronous" process with a
+  /// `tick_ms` of `0` and `ticks_per_update` of `1`.
+  AsynchronousPolling
+}
+
+#[derive(Clone,Debug,Eq,PartialEq)]
+pub enum KindError {
+  SynchronousZeroTickMs,
+  SynchronousZeroTicksPerUpdate,
+  AsynchronousZeroMessagesPerUpdate
 }
 
 /// Error in `Def`.
@@ -182,7 +197,8 @@ pub trait Process <CTX : session::Context> where
   {
     let result = match *self.kind() {
       Kind::Synchronous  {..} => self.run_synchronous(),
-      Kind::Asynchronous {..} => self.run_asynchronous()
+      Kind::Asynchronous {..} => self.run_asynchronous(),
+      Kind::AsynchronousPolling {..} => self.run_asynchronous_polling()
     };
     let session_handle = &self.inner_ref().as_ref().session_handle;
     session_handle.result_tx.send (result).unwrap();
@@ -226,30 +242,31 @@ pub trait Process <CTX : session::Context> where
     CTX  : 'static
   {
     use colored::Colorize;
-    let (tick_ms, ticks_per_update) = {
-      match self.kind() {
-        &Kind::Synchronous { tick_ms, ticks_per_update }
-          => (tick_ms, ticks_per_update),
-        _ => unreachable!("ERROR: run synchronous:\
-               process kind does not match run function")
-      }
-    };
-    // TODO: if we allow a tick_ms of 0 updates will always warn as "late"
-    //assert!(1 <= tick_ms);
-    assert!(1 <= ticks_per_update);
+
     let t_start  = std::time::SystemTime::now();
-    let tick_dur = std::time::Duration::from_millis (tick_ms as u64);
-    let mut t_last = t_start - tick_dur;
-    let mut t_next = t_start;
-    let mut ticks_since_update = 0;
     debug!("{}: {:?}",
       format!("process id[{:?}] start time", self.id()).cyan(),
       t_start);
 
-    let mut tick_count    = 0;
+    let (tick_ms, ticks_per_update) = {
+      match *self.kind() {
+        Kind::Synchronous { tick_ms, ticks_per_update }
+          => (tick_ms, ticks_per_update),
+        _ => unreachable!(
+          "ERROR: run synchronous: process kind does not match run function")
+      }
+    };
+    debug_assert!(1 <= tick_ms);
+    debug_assert!(1 <= ticks_per_update);
+
+    let tick_dur = std::time::Duration::from_millis (tick_ms as u64);
+    let mut t_last             = t_start - tick_dur;
+    let mut t_next             = t_start;
+    let mut ticks_since_update = 0;
+    let mut tick_count         = 0;
     #[allow(unused_variables)]
-    let mut message_count = 0;
-    let mut update_count  = 0;
+    let mut message_count      = 0;
+    let mut update_count       = 0;
     let endpoints = self.take_endpoints();
     self.inner_mut().handle_event (inner::EventId::Run.into()).unwrap();
     'run_loop: while *self.inner_ref().state().id() == inner::StateId::Running {
@@ -285,7 +302,7 @@ pub trait Process <CTX : session::Context> where
 
         tick_count += 1;
         ticks_since_update += 1;
-        assert!(ticks_since_update <= ticks_per_update);
+        debug_assert!(ticks_since_update <= ticks_per_update);
         if ticks_since_update == ticks_per_update {
           trace!("process id[{:?}] update[{}]", self.id(), update_count);
           let update_result = self.update();
@@ -320,7 +337,7 @@ pub trait Process <CTX : session::Context> where
     } // end 'run_loop
 
     Some (())
-  }
+  } // end fn run_synchronous
 
   fn run_asynchronous (&mut self) -> Option <()> where
     Self : Sized,
@@ -328,18 +345,20 @@ pub trait Process <CTX : session::Context> where
   {
     use num::FromPrimitive;
     use colored::Colorize;
+
     let t_start = std::time::SystemTime::now();
     debug!("{}: {:?}",
       format!("process id[{:?}] start time", self.id()).cyan(),
       t_start);
 
     let messages_per_update = {
-      match self.kind() {
-        &Kind::Asynchronous { messages_per_update } => messages_per_update,
-        _ => unreachable!("ERROR: run asynchronous:\
-               process kind does not match run function")
+      match *self.kind() {
+        Kind::Asynchronous { messages_per_update } => messages_per_update,
+        _ => unreachable!(
+          "ERROR: run asynchronous: process kind does not match run function")
       }
     };
+    debug_assert!(1 <= messages_per_update);
 
     #[allow(unused_variables)]
     let mut message_count         = 0;
@@ -380,7 +399,65 @@ pub trait Process <CTX : session::Context> where
       }
     } // end 'run_loop
     Some (())
-  }
+  } // end fn run_asynchronous
+
+  /// An asynchronous run loop that polls for messages.
+  fn run_asynchronous_polling (&mut self) -> Option <()> where
+    Self : Sized,
+    CTX  : 'static
+  {
+    use colored::Colorize;
+
+    let t_start  = std::time::SystemTime::now();
+    debug!("{}: {:?}",
+      format!("process id[{:?}] start time", self.id()).cyan(),
+      t_start);
+
+    debug_assert_eq!(Kind::AsynchronousPolling, *self.kind());
+
+    #[allow(unused_variables)]
+    let mut message_count = 0;
+    #[allow(unused_variables)]
+    let mut update_count  = 0;
+    let endpoints = self.take_endpoints();
+    self.inner_mut().handle_event (inner::EventId::Run.into()).unwrap();
+    'run_loop: while *self.inner_ref().state().id() == inner::StateId::Running {
+      // poll messages
+      for (cid, endpoint) in endpoints.iter() {
+        use num::FromPrimitive;
+        let channel_id = CTX::CID::from_usize (cid).unwrap();
+        while let Some (message) = endpoint.try_recv() {
+          debug!("{}: {:#?}",
+            format!("{:?} receive message on {:?}", self.id(), channel_id)
+              .green().bold(),
+            message);
+          let handle_message_result = self.handle_message (message);
+          match handle_message_result {
+            Some (()) => (),
+            // TODO: the following is a hazard if further messages are pending
+            None => self.inner_mut().handle_event (
+              inner::EventId::End.into()).unwrap()
+          }
+          message_count += 1;
+        }
+      }
+
+      // update
+      trace!("process id[{:?}] update[{}]", self.id(), update_count);
+      let update_result = self.update();
+      match update_result {
+        Some (()) => (),
+        // TODO: the following is a hazard if the process was already finished
+        // above
+        None => self.inner_mut().handle_event (
+          inner::EventId::End.into()).unwrap()
+      }
+      update_count += 1;
+
+    } // end 'run_loop
+
+    Some (())
+  } // end fn run_asycnhronous_polling
 }
 
 /// Unique identifier with a total mapping to process defs.
@@ -590,15 +667,54 @@ impl <CTX : session::Context> Def <CTX> {
 
 impl Kind {
   pub fn default_synchronous() -> Self {
-    Kind::Synchronous {
-      tick_ms:          1000,
-      ticks_per_update: 1
+    const TICK_MS          : u32 = 1000;
+    const TICKS_PER_UPDATE : u32 = 1;
+    Kind::new_synchronous (TICK_MS, TICKS_PER_UPDATE).unwrap()
+  }
+
+  pub fn default_asynchronous() -> Self {
+    const MESSAGES_PER_UPDATE : u32 = 1;
+    Kind::new_asynchronous (MESSAGES_PER_UPDATE).unwrap()
+  }
+
+  pub fn default_asynchronous_polling() -> Self {
+    Kind::new_asynchronous_polling()
+  }
+
+  pub fn new_synchronous (tick_ms : u32, ticks_per_update : u32)
+    -> Result <Self, Vec <KindError>>
+  {
+    let mut errors = Vec::new();
+    if tick_ms == 0 {
+      errors.push (KindError::SynchronousZeroTickMs)
+    }
+    if ticks_per_update == 0 {
+      errors.push (KindError::SynchronousZeroTicksPerUpdate)
+    }
+    if !errors.is_empty() {
+      Err (errors)
+    } else {
+      Ok (Kind::Synchronous { tick_ms, ticks_per_update })
     }
   }
-  pub fn default_asynchronous() -> Self {
-    Kind::Asynchronous {
-      messages_per_update: 1
+
+  pub fn new_asynchronous (messages_per_update : u32)
+    -> Result <Self, Vec <KindError>>
+  {
+    let mut errors = Vec::new();
+    if messages_per_update == 0 {
+      errors.push (KindError::AsynchronousZeroMessagesPerUpdate)
     }
+    if !errors.is_empty() {
+      Err (errors)
+    } else {
+      Ok (Kind::Asynchronous { messages_per_update })
+    }
+  }
+
+  #[inline]
+  pub fn new_asynchronous_polling() -> Self {
+    Kind::AsynchronousPolling
   }
 
   fn validate_role <CTX : session::Context> (&self,
@@ -617,6 +733,7 @@ impl Kind {
           errors.push (DefineError::AsynchronousMultipleEndpoints)
         }
       }
+      Kind::AsynchronousPolling {..} => { /* no restrictions */ }
     }
 
     if !errors.is_empty() {

@@ -110,6 +110,7 @@ macro_rules! def_program {
                 assert_eq!(self.state.id, StateId::$source_context,
                   "current state does not match transition source");
 
+                #[allow(unreachable_patterns)]
                 match self.state.data {
                   StateData::$source_context { ref mut session } => {
                     // TODO: session definition is redundantly verified and

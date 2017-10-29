@@ -235,10 +235,10 @@ impl <CTX : session::Context> Def <CTX> {
   /// ```
 
   pub fn define (
-    id              : CTX::CID,
-    kind            : Kind,
-    producers       : Vec <CTX::PID>,
-    consumers       : Vec <CTX::PID>
+    id        : CTX::CID,
+    kind      : Kind,
+    producers : Vec <CTX::PID>,
+    consumers : Vec <CTX::PID>
   ) -> Result <Self, Vec <DefineError>> {
     let message_type_id = id.message_type_id();
     let def = Def {

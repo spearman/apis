@@ -101,9 +101,7 @@ pub mod readline_echoup {
         process Readline (
           dropthing : Option <::Dropthing> = Some (Default::default())
         ) -> Option <()> {
-          kind { apis::process::Kind::Synchronous {
-            tick_ms: 0,
-            ticks_per_update: 1 } }
+          kind { apis::process::Kind::AsynchronousPolling }
           sourcepoints [Toecho]
           endpoints    [Fromecho]
           handle_message { _proc.readline_handle_message (_message_in) }
@@ -177,10 +175,12 @@ pub mod readline_echoup {
           _ => {
             let command = {
               let mut words = s.as_str().split_whitespace();
-              let first = words.next().unwrap();
+              let mut first = words.next().unwrap().to_string();
               if first.chars().next().unwrap() == ':' {
                 use std::str::pattern::Pattern;
-                if first.is_prefix_of (":quit") {
+                debug_assert!(0 < first.len());
+                let _ = first.remove (0);
+                if 0 < first.len() && first.is_prefix_of ("quit") {
                   self.send (ChannelId::Toecho, ToechoMsg::Quit);
                   result = None;
                 } else {
@@ -267,9 +267,7 @@ pub mod readline_echorev {
         process Readline (
           dropthing : Option <::Dropthing> = None
         ) -> Option <()> {
-          kind { apis::process::Kind::Synchronous {
-            tick_ms: 0,
-            ticks_per_update: 1 } }
+          kind { apis::process::Kind::AsynchronousPolling }
           sourcepoints [Toecho]
           endpoints    [Fromecho]
           handle_message { _proc.readline_handle_message (_message_in) }
@@ -336,10 +334,12 @@ pub mod readline_echorev {
           _ => {
             let command = {
               let mut words = s.as_str().split_whitespace();
-              let first = words.next().unwrap();
+              let mut first = words.next().unwrap().to_string();
               if first.chars().next().unwrap() == ':' {
                 use std::str::pattern::Pattern;
-                if first.is_prefix_of (":quit") {
+                debug_assert!(0 < first.len());
+                let _ = first.remove (0);
+                if 0 < first.len() && first.is_prefix_of ("quit") {
                   self.send (ChannelId::Toecho, ToechoMsg::Quit);
                   result = None;
                 } else {

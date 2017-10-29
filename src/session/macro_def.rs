@@ -106,10 +106,10 @@ macro_rules! def_session {
         $(channel $channel:ident <$local_type:ident> ($kind:ident) {
           producers [ $($producer:ident),+ ]
           consumers [ $($consumer:ident),+ ]
-        })+
+        })*
       ]
       MESSAGES [
-        $(message $message_type:ident $message_variants:tt)+
+        $(message $message_type:ident $message_variants:tt)*
       ]
       $(main: $main_process:ident)*
     }
@@ -145,7 +145,7 @@ macro_rules! def_session {
     $(
     #[derive(Debug)]
     pub enum $message_type $message_variants
-    )+
+    )*
 
     ///////////////////////////////////////////////////////////////////////////
     //  enums
@@ -161,12 +161,12 @@ macro_rules! def_session {
     }
     enum_unitary! {
       pub enum ChannelId (ChannelIdVariants) {
-        $($channel),+
+        $($channel),*
       }
     }
     enum_unitary! {
       pub enum MessageId (MessageIdVariants) {
-        $($message_type),+
+        $($message_type),*
       }
     }
 
@@ -187,7 +187,7 @@ macro_rules! def_session {
     pub enum GlobalMessage {
       $(
       $message_type ($message_type)
-      ),+
+      ),*
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -211,7 +211,7 @@ macro_rules! def_session {
             $(channel $channel <$local_type> ($kind) {
               producers [$($producer),+]
               consumers [$($consumer),+]
-            })+
+            })*
           ]
         }
       }
@@ -260,8 +260,8 @@ macro_rules! def_session {
     }
     impl std::convert::TryFrom <GlobalProcess> for $process {
       type Error = String;
-      #[allow(unreachable_patterns)]
       fn try_from (global_process : GlobalProcess) -> Result <Self, Self::Error> {
+        #[allow(unreachable_patterns)]
         match global_process {
           GlobalProcess::$process (process) => Ok (process),
           _ => Err (format!("not a {} process", stringify!($process)))
@@ -290,14 +290,6 @@ macro_rules! def_session {
           $(GlobalProcess::$process (ref mut process) => process.run()),+
         }
       }
-      /*
-      fn run_continue (mut self) -> Option <()> {
-        debug_assert_eq!("main", std::thread::current().name().unwrap());
-        match *self {
-          $(GlobalProcess::$process (process) => process.run_continue()),+
-        }
-      }
-      */
     }
 
     //
@@ -348,6 +340,7 @@ macro_rules! def_session {
     //
     impl $crate::channel::Id <$context> for ChannelId where {
       fn def (&self) -> $crate::channel::Def <$context> {
+        #[allow(unreachable_patterns)]
         match *self {
           $(
           ChannelId::$channel => {
@@ -358,21 +351,26 @@ macro_rules! def_session {
               vec![$(ProcessId::$consumer),+]
             ).unwrap()
           }
-          )+
+          )*
+          _ => unreachable!("no defs for nullary channel ids")
         }
       }
 
       fn message_type_id (&self) -> MessageId {
+        #[allow(unreachable_patterns)]
         match *self {
-          $(ChannelId::$channel => MessageId::$local_type),+
+          $(ChannelId::$channel => MessageId::$local_type,)*
+          _ => unreachable!("no message type for nullary channel ids")
         }
       }
 
       fn create (def : $crate::channel::Def <$context>)
         -> $crate::Channel <$context>
       {
+        #[allow(unreachable_patterns)]
         match *def.id() {
-          $(ChannelId::$channel => def.to_channel::<$local_type>()),+
+          $(ChannelId::$channel => def.to_channel::<$local_type>(),)*
+          _ => unreachable!("can't create channel for nullary channel id")
         }
       }
     }
@@ -383,9 +381,10 @@ macro_rules! def_session {
     impl $crate::message::Id for MessageId {}
     impl $crate::message::Global <$context> for GlobalMessage {
       fn id (&self) -> MessageId {
+        #[allow(unreachable_patterns)]
         match *self {
-          $(GlobalMessage::$message_type (..)
-            => MessageId::$message_type),+
+          $(GlobalMessage::$message_type (..) => MessageId::$message_type,)*
+          _ => unreachable!("no global message for nullary message ids")
         }
       }
     }
@@ -397,8 +396,8 @@ macro_rules! def_session {
     impl $crate::Message <$context> for $message_type {}
     impl std::convert::TryFrom <GlobalMessage> for $message_type {
       type Error = String;
-      #[allow(unreachable_patterns)]
       fn try_from (global_message : GlobalMessage) -> Result <Self, Self::Error> {
+        #[allow(unreachable_patterns)]
         match global_message {
           GlobalMessage::$message_type (local_message) => Ok (local_message),
           _ => Err (format!("not a {} message", stringify!($message_type)))
@@ -410,7 +409,7 @@ macro_rules! def_session {
         GlobalMessage::$message_type (local_message)
       }
     }
-    )+
+    )*
 
   };
 
@@ -448,7 +447,7 @@ macro_rules! def_session {
         $(channel $channel:ident <$local_type:ident> ($kind:ident) {
           producers [$($producer:ident),+]
           consumers [$($consumer:ident),+]
-        })+
+        })*
       ]
     }
 
@@ -522,7 +521,7 @@ macro_rules! def_session {
           consumers [$($consumer),+]
         }
       ).as_str());
-      )+
+      )*
 
       //  end graph
       s.push_str (def_session!(@fn_dotfile_end).as_str());
@@ -952,7 +951,7 @@ macro_rules! def_session {
       }
     }
     s
-  }};  // end @fn_dotfile_transition: external
+  }};  // end @fn_dotfile_channel
 
   //
   //  @fn_dotfile_end

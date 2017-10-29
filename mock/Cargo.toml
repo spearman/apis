@@ -16,3 +16,4 @@ escapade = "0.0.*"
 [dependencies.rs-utils]
 version = "0.0.*"
 git = "git://github.com/spearman/rs-utils.git"
+#path = "/home/spearman/rs/local/rs-utils"

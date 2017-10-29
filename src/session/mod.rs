@@ -229,11 +229,14 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
     use rs_utils::EnumUnitary;
 
     let mut channel_def = vec_map::VecMap::new();
-    for cid in Self::CID::iter_variants() {
-      assert!{
-        channel_def.insert (
-          cid.to_usize().unwrap(), channel::Id::def (&cid)
-        ).is_none()
+    // no channel defs for nullary channel ids
+    if 0 < Self::CID::count_variants() {
+      for cid in Self::CID::iter_variants() {
+        assert!{
+          channel_def.insert (
+            cid.to_usize().unwrap(), channel::Id::def (&cid)
+          ).is_none()
+        }
       }
     }
     let mut process_def = vec_map::VecMap::new();
