@@ -87,6 +87,7 @@ def_program! {
 pub mod chargen_upcase {
   use ::std;
   use ::num;
+  use ::vec_map;
   use ::rs_utils;
 
   use ::apis;
@@ -191,6 +192,7 @@ pub mod rand_source {
   use ::std;
   use ::num;
   use ::rand;
+  use ::vec_map;
   use ::rs_utils;
 
   use ::apis;

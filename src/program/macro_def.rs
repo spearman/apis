@@ -84,7 +84,7 @@ macro_rules! def_program {
               if $mode_mod.channels.is_none() {
                 $mode_mod.channels = Some (session.as_ref().def.create_channels());
               }
-              let $result = session.run_with (
+              let mut $result = session.run_with (
                 $mode_mod.channels.take().unwrap(),
                 $mode_mod.process_handles.take().unwrap_or_else (
                   || vec_map::VecMap::new()),

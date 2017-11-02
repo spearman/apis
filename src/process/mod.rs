@@ -120,12 +120,14 @@ pub trait Process <CTX, RES> where
   //
   //  required
   //
-  fn init (inner : Inner <CTX>) -> Self;
+  fn init           (inner : Inner <CTX>)            -> Self;
   fn inner_ref      (&self)                          -> &Inner <CTX>;
   fn inner_mut      (&mut self)                      -> &mut Inner <CTX>;
   fn result_ref     (&self)                          -> &RES;
   fn result_mut     (&mut self)                      -> &mut RES;
   fn global_result  (&mut self)                      -> CTX::GPRES;
+  fn extract_result
+    (session_results : &mut vec_map::VecMap <CTX::GPRES>) -> Result <RES, String>;
   fn handle_message (&mut self, message : CTX::GMSG) -> Option <()>;
   fn update         (&mut self)                      -> Option <()>;
 

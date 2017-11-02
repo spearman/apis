@@ -35,6 +35,13 @@ pub const LOG_LEVEL_FILTER
   : simplelog::LogLevelFilter = simplelog::LogLevelFilter::Info;
 
 ///////////////////////////////////////////////////////////////////////////////
+//  statics                                                                  //
+///////////////////////////////////////////////////////////////////////////////
+
+pub static CONTEXT_ALIVE
+  : std::sync::atomic::AtomicBool = std::sync::atomic::ATOMIC_BOOL_INIT;
+
+///////////////////////////////////////////////////////////////////////////////
 //  datatypes                                                                //
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -49,28 +56,72 @@ impl std::fmt::Debug for GlutinGliumContext {
   }
 }
 
+#[derive(Clone, Debug)]
+pub enum ModeControl {
+  Next,
+  Quit
+}
+
+impl Default for ModeControl {
+  fn default () -> Self {
+    ModeControl::Quit
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 //  program                                                                  //
 ///////////////////////////////////////////////////////////////////////////////
 
 def_program! {
   program Graphical where
-    let _result = session.run()
+    let _results = session.run()
   {
     MODES [
       mode bgr::Bgr {
-        println!("_result: {:?}", _result);
-        Some (EventId::ToCym)
+        use apis::Process;
+        println!("_results: {:?}", _results);
+        let mode_control
+          = bgr::InputRender::extract_result (&mut _results).unwrap();
+        match mode_control {
+          ModeControl::Next => Some (EventId::ToCym),
+          ModeControl::Quit => None
+        }
       }
       mode cym::Cym {
-        println!("_result: {:?}", _result);
-        None
+        use apis::Process;
+        println!("_results: {:?}", _results);
+        let mode_control
+          = cym::InputRender::extract_result (&mut _results).unwrap();
+        match mode_control {
+          ModeControl::Next => Some (EventId::ToWgb),
+          ModeControl::Quit => None
+        }
+      }
+      mode wgb::Wgb {
+        use apis::Process;
+        println!("_results: {:?}", _results);
+        let mode_control
+          = wgb::InputRender::extract_result (&mut _results).unwrap();
+        match mode_control {
+          ModeControl::Next => Some (EventId::ToBgr),
+          ModeControl::Quit => None
+        }
       }
     ]
     TRANSITIONS  [
       transition ToCym <bgr::Bgr> => <cym::Cym> [
         InputRender (_bgr) => InputRender (_cym) {
           _cym.glutin_glium_context = _bgr.glutin_glium_context.take();
+        }
+      ]
+      transition ToWgb <cym::Cym> => <wgb::Wgb> [
+        InputRender (_cym) => InputRender (_wgb) {
+          _wgb.glutin_glium_context = _cym.glutin_glium_context.take();
+        }
+      ]
+      transition ToBgr <wgb::Wgb> => <bgr::Bgr> [
+        InputRender (_wgb) => InputRender (_bgr) {
+          _bgr.glutin_glium_context = _wgb.glutin_glium_context.take();
         }
       ]
     ]
@@ -85,6 +136,7 @@ def_program! {
 pub mod bgr {
   use ::std;
   use ::num;
+  use ::vec_map;
   use ::rs_utils;
 
   use ::glium;
@@ -93,6 +145,9 @@ pub mod bgr {
   use ::apis;
 
   use ::GlutinGliumContext;
+  use ::ModeControl;
+
+  use ::CONTEXT_ALIVE;
 
   def_session! {
     context Bgr {
@@ -104,14 +159,18 @@ pub mod bgr {
           frame                : u64 = 0,
           clear_color          : (f32, f32, f32, f32) = (0.0, 0.0, 1.0, 1.0),
           glutin_glium_context : Option <GlutinGliumContext> = {
-            let events_loop = glutin::EventsLoop::new();
-            let glium_display = glium::Display::new (
-              glutin::WindowBuilder::new(),
-              glutin::ContextBuilder::new(),
-              &events_loop).unwrap();
-            Some (GlutinGliumContext { events_loop, glium_display })
+            if !CONTEXT_ALIVE.swap (true, std::sync::atomic::Ordering::SeqCst) {
+              let events_loop = glutin::EventsLoop::new();
+              let glium_display = glium::Display::new (
+                glutin::WindowBuilder::new(),
+                glutin::ContextBuilder::new(),
+                &events_loop).unwrap();
+              Some (GlutinGliumContext { events_loop, glium_display })
+            } else {
+              None
+            }
           }
-        ) -> (Option <()>) {
+        ) -> (ModeControl) {
           kind { apis::process::Kind::AsynchronousPolling }
           sourcepoints [ ]
           endpoints    [ ]
@@ -150,6 +209,7 @@ pub mod bgr {
 
       let mut result = Some (());
       let mut clear_color = self.clear_color;
+      let mut presult = self.result.clone();
       { // glutin_glium_context scope
         use glium::Surface;
 
@@ -165,8 +225,13 @@ pub mod bgr {
                 glutin::DeviceEvent::Key (keyboard_input) => {
                   if keyboard_input.state == glutin::ElementState::Pressed {
                     match keyboard_input.virtual_keycode {
+                      Some (glutin::VirtualKeyCode::Tab) => {
+                        result  = None;
+                        presult = ModeControl::Next;
+                      }
                       Some (glutin::VirtualKeyCode::Q) => {
-                        result = None;
+                        result  = None;
+                        presult = ModeControl::Quit;
                       }
                       Some (glutin::VirtualKeyCode::B) => {
                         clear_color = (0.0, 0.0, 1.0, 1.0);
@@ -199,6 +264,7 @@ pub mod bgr {
 
       trace!("...input_render update");
 
+      self.result = presult;
       result
     } // end fn input_render_update
   } // end impl InputRender
@@ -212,6 +278,7 @@ pub mod bgr {
 pub mod cym {
   use ::std;
   use ::num;
+  use ::vec_map;
   use ::rs_utils;
 
   //use ::glium;
@@ -220,6 +287,7 @@ pub mod cym {
   use ::apis;
 
   use ::GlutinGliumContext;
+  use ::ModeControl;
 
   def_session! {
     context Cym {
@@ -231,7 +299,7 @@ pub mod cym {
           frame                : u64 = 0,
           clear_color          : (f32, f32, f32, f32) = (0.0, 1.0, 1.0, 1.0),
           glutin_glium_context : Option <GlutinGliumContext> = None
-        ) -> (Option <()>) {
+        ) -> (ModeControl) {
           kind { apis::process::Kind::AsynchronousPolling }
           sourcepoints []
           endpoints    []
@@ -268,7 +336,8 @@ pub mod cym {
 
       trace!("input_render frame: {}", self.frame);
 
-      let mut result = Some (());
+      let mut result      = Some (());
+      let mut presult     = self.result.clone();
       let mut clear_color = self.clear_color;
       { // glutin_glium_context scope
         use glium::Surface;
@@ -285,8 +354,13 @@ pub mod cym {
                 glutin::DeviceEvent::Key (keyboard_input) => {
                   if keyboard_input.state == glutin::ElementState::Pressed {
                     match keyboard_input.virtual_keycode {
+                      Some (glutin::VirtualKeyCode::Tab) => {
+                        result  = None;
+                        presult = ModeControl::Next;
+                      }
                       Some (glutin::VirtualKeyCode::Q) => {
-                        result = None;
+                        result  = None;
+                        presult = ModeControl::Quit;
                       }
                       Some (glutin::VirtualKeyCode::C) => {
                         clear_color = (0.0, 1.0, 1.0, 1.0);
@@ -319,10 +393,139 @@ pub mod cym {
 
       trace!("...input_render update");
 
+      self.result = presult;
       result
     } // end fn input_render_update
   } // end impl InputRender
 } // end mod cym
+
+///////////////////////////////////////////////////////////////////////////////
+//  mode Wgb                                                                 //
+///////////////////////////////////////////////////////////////////////////////
+
+pub mod wgb {
+  use ::std;
+  use ::num;
+  use ::vec_map;
+  use ::rs_utils;
+
+  //use ::glium;
+  use ::glium::glutin;
+
+  use ::apis;
+
+  use ::GlutinGliumContext;
+  use ::ModeControl;
+
+  def_session! {
+    context Wgb {
+      PROCESSES where
+        let _proc       = self,
+        let _message_in = message_in
+      [
+        process InputRender (
+          frame                : u64 = 0,
+          clear_color          : (f32, f32, f32, f32) = (1.0, 1.0, 1.0, 1.0),
+          glutin_glium_context : Option <GlutinGliumContext> = None
+        ) -> (ModeControl) {
+          kind { apis::process::Kind::AsynchronousPolling }
+          sourcepoints []
+          endpoints    []
+          handle_message { unreachable!() }
+          update         { _proc.input_render_update() }
+        }
+      ]
+      CHANNELS [ ]
+      MESSAGES [ ]
+      main: InputRender
+    }
+  }
+
+  impl InputRender {
+    /*
+    fn input_render_handle_message (&mut self, _message : GlobalMessage)
+      -> Option <()>
+    {
+      //use colored::Colorize;
+      trace!("readline handle message...");
+      match _message {
+        GlobalMessage::FromechoMsg (FromechoMsg::Echo (echo)) => {
+          info!("InputRender: received echo \"{}\"", echo);
+        },
+        _ => unreachable!()
+      }
+      trace!("...readline handle message");
+      Some(())
+    }
+    */
+
+    fn input_render_update (&mut self) -> Option <()> {
+      trace!("input_render update...");
+
+      trace!("input_render frame: {}", self.frame);
+
+      let mut result      = Some (());
+      let mut presult     = self.result.clone();
+      let mut clear_color = self.clear_color;
+      { // glutin_glium_context scope
+        use glium::Surface;
+
+        let glutin_glium_context
+          = self.glutin_glium_context.as_mut().unwrap();
+
+        // poll events
+        glutin_glium_context.events_loop.poll_events (|event| {
+          //println!("frame[{}] event: {:?}", frame, event);
+          match event {
+            glutin::Event::DeviceEvent { event, .. } => {
+              match event {
+                glutin::DeviceEvent::Key (keyboard_input) => {
+                  if keyboard_input.state == glutin::ElementState::Pressed {
+                    match keyboard_input.virtual_keycode {
+                      Some (glutin::VirtualKeyCode::Tab) => {
+                        result = None;
+                        presult = ModeControl::Next;
+                      }
+                      Some (glutin::VirtualKeyCode::Q) => {
+                        result = None;
+                        presult = ModeControl::Quit;
+                      }
+                      Some (glutin::VirtualKeyCode::W) => {
+                        clear_color = (1.0, 1.0, 1.0, 1.0);
+                      }
+                      Some (glutin::VirtualKeyCode::G) => {
+                        clear_color = (0.5, 0.5, 0.5, 1.0);
+                      }
+                      Some (glutin::VirtualKeyCode::B) => {
+                        clear_color = (0.0, 0.0, 0.0, 1.0);
+                      }
+                      _ => {}
+                    }
+                  }
+                }
+                _ => {}
+              }
+            }
+            _ => {}
+          }
+        });
+
+        // draw frame
+        let mut glium_frame
+          = glutin_glium_context.glium_display.draw();
+        glium_frame.clear_all (clear_color, 0.0, 0);
+        glium_frame.finish().unwrap();
+      } // end glutin_glium_context scope
+      self.clear_color = clear_color;
+      self.frame += 1;
+
+      trace!("...input_render update");
+
+      self.result = presult;
+      result
+    } // end fn input_render_update
+  } // end impl InputRender
+} // end mod wgb
 
 ///////////////////////////////////////////////////////////////////////////////
 //  main                                                                     //

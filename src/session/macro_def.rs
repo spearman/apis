@@ -256,6 +256,22 @@ macro_rules! def_session {
           $($field_name: def_session!(@expr_default $($field_default)*)),*
         }
       }
+      fn extract_result (session_results : &mut vec_map::VecMap <GlobalPresult>)
+        -> Result <($($presult_type)*), String>
+      {
+        use num::ToPrimitive;
+
+        let pid = ProcessId::$process.to_usize().unwrap();
+        let global_presult = try!{
+          session_results.remove (pid)
+            .ok_or ("process result not present".to_string())
+        };
+        #[allow(unreachable_patterns)]
+        match global_presult {
+          GlobalPresult::$process (presult) => Ok (presult),
+          _ => Err ("global process result does not match process".to_string())
+        }
+      }
       fn inner_ref (&self) -> &$crate::process::Inner <$context> {
         &self.inner
       }
@@ -268,9 +284,7 @@ macro_rules! def_session {
       fn result_mut (&mut self) -> &mut ($($presult_type)*) {
         &mut self.result
       }
-      fn global_result (&mut self)
-        -> <$context as $crate::session::Context>::GPRES
-      {
+      fn global_result (&mut self) -> GlobalPresult {
         GlobalPresult::$process (self.result.clone())
       }
       fn handle_message (&mut self, message : GlobalMessage) -> Option <()> {

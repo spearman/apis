@@ -88,6 +88,7 @@ def_program! {
 pub mod readline_echoup {
   use ::std;
   use ::num;
+  use ::vec_map;
   use ::rs_utils;
 
   use ::apis;
@@ -247,6 +248,7 @@ pub mod readline_echoup {
 pub mod readline_echorev {
   use ::std;
   use ::num;
+  use ::vec_map;
   use ::rs_utils;
 
   use ::apis;
