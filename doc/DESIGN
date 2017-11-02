@@ -2,6 +2,11 @@
 
 **Issues**
 
+- [Process results]: Session results are a uniform `Option <()>` type for all
+  sessions. There is syntax defined in the `def_session!` macro to give each
+  process a unique result type. These could probably be wrapped in a global
+  `Result` type for the entire session (so they can still be stored in a
+  `VecMap`).
 - [Reusable processes]: It is not possible to re-use process definitions.
   Therefore, if two sessions use a process that is identical, the code must be
   duplicated. This can be eased somewhat by giving both processes a single
@@ -16,11 +21,6 @@
   of transitions to ensure that all modes are reachable.
 - Custom initialization: processes might require special initialization to be
   performed but currently the only place to do that is in a continuation block.
-- [Process results]: Session results are a uniform `Option <()>` type for all
-  sessions. There is syntax defined in the `def_session!` macro to give each
-  process a unique result type. These could probably be wrapped in a global
-  `Result` type for the entire session (so they can still be stored in a
-  `VecMap`).
 - State machines are used at a few points in the implementation; mostly they
   are "simple" transitions that lack actions, guards, or parameters. More could
   be done there, but it's unlikely to be possible to capture *all* affected

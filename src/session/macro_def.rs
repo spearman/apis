@@ -215,7 +215,8 @@ macro_rules! def_session {
           PROCESSES [
             $(
             process $process
-              ($($field_name : $field_type $(= $field_default)*),*) {}
+              ($($field_name : $field_type $(= $field_default)*),*)
+              $(-> ($presult_type $(= $presult_default)*))* {}
             )+
           ]
           CHANNELS  [
@@ -470,9 +471,10 @@ macro_rules! def_session {
   ( @impl_fn_dotfile
     context $context:ident {
       PROCESSES [
-        $(process $process:ident (
-          $($field_name:ident : $field_type:ty $(= $field_default:expr)*),*
-        ) {})+
+        $(process $process:ident
+          ($($field_name:ident : $field_type:ty $(= $field_default:expr)*),*)
+          $(-> ($presult_type:ty $(= $presult_default:expr)*))*
+        {})+
       ]
       CHANNELS [
         $(channel $channel:ident <$local_type:ident> ($kind:ident) {
@@ -521,7 +523,8 @@ macro_rules! def_session {
           s.push_str (def_session!(
             @fn_dotfile_node
             process $process
-              ($($field_name : $field_type $(= $field_default)*),*) {}
+              ($($field_name : $field_type $(= $field_default)*),*)
+              $(-> ($presult_type $(= $presult_default)*))* {}
           ).as_str());
           )+
         } else {
@@ -529,7 +532,8 @@ macro_rules! def_session {
           s.push_str (def_session!(
             @fn_dotfile_node_pretty_defaults
             process $process
-              ($($field_name : $field_type $(= $field_default)*),*) {}
+              ($($field_name : $field_type $(= $field_default)*),*)
+              $(-> ($presult_type $(= $presult_default)*))* {}
           ).as_str());
           )+
         }
@@ -538,7 +542,8 @@ macro_rules! def_session {
         s.push_str (def_session!(
           @fn_dotfile_node_hide_defaults
           process $process
-            ($($field_name : $field_type $(= $field_default)*),*) {}
+            ($($field_name : $field_type $(= $field_default)*),*)
+            $(-> ($presult_type $(= $presult_default)*))* {}
         ).as_str());
         )+
       }
@@ -598,9 +603,9 @@ macro_rules! def_session {
   //  @fn_dotfile_node
   //
   ( @fn_dotfile_node
-    process $process:ident (
-      $($field_name:ident : $field_type:ty $(= $field_default:expr)*),*
-    ) {}
+    process $process:ident
+      ($($field_name:ident : $field_type:ty $(= $field_default:expr)*),*)
+      $(-> ($presult_type:ty $(= $presult_default:expr)*))* {}
 
   ) => {{
     let mut s = String::new();
@@ -687,6 +692,19 @@ macro_rules! def_session {
       s.push_str (format!("{}", field_string).as_str());
     }
 
+    let result_type = stringify!($($presult_type)*).to_string();
+    if !result_type.is_empty() {
+      use escapade::Escapable;
+      if !_mono_font {
+        s.push_str ("<TR><TD><FONT FACE=\"Mono\"><BR/>");
+        _mono_font = true;
+      } else {
+        s.push_str ("<BR ALIGN=\"LEFT\"/></FONT></TD></TR>\
+          <TR><TD><FONT FACE=\"Mono\"><BR/>");
+      }
+      s.push_str (format!("-> {}", result_type).escape().into_inner().as_str());
+    }
+
     /*
     if s.chars().last().unwrap() == '>' {
       let len = s.len();
@@ -710,9 +728,9 @@ macro_rules! def_session {
   // TODO: this was adapted from the state machine macro which doesn't
   // use an HTML table for layout so this may need to be reworked
   ( @fn_dotfile_node_pretty_defaults
-    process $process:ident (
-      $($field_name:ident : $field_type:ty $(= $field_default:expr)*),*
-    ) {}
+    process $process:ident
+      ($($field_name:ident : $field_type:ty $(= $field_default:expr)*),*)
+      $(-> ($presult_type:ty $(= $presult_default:expr)*))* {}
 
   ) => {{
     let mut s = String::new();
@@ -812,6 +830,19 @@ macro_rules! def_session {
       s.push_str (format!("{}", field_string).as_str());
     }
 
+    let result_type = stringify!($($presult_type)*).to_string();
+    if !result_type.is_empty() {
+      use escapade::Escapable;
+      if !_mono_font {
+        s.push_str ("<TR><TD><FONT FACE=\"Mono\"><BR/>");
+        _mono_font = true;
+      } else {
+        s.push_str ("<BR ALIGN=\"LEFT\"/></FONT></TD></TR>\
+          <TR><TD><FONT FACE=\"Mono\"><BR/>");
+      }
+      s.push_str (format!("-> {}", result_type).escape().into_inner().as_str());
+    }
+
     /*
     if s.chars().last().unwrap() == '>' {
       let len = s.len();
@@ -827,15 +858,15 @@ macro_rules! def_session {
 
     s.push_str ("</TABLE>>]\n");
     s
-  }};  // end @fn_dotfile_node
+  }};  // end @fn_dotfile_node_pretty_defaults
 
   //
   //  @fn_dotfile_node_hide_defaults
   //
   ( @fn_dotfile_node_hide_defaults
-    process $process:ident (
-      $($field_name:ident : $field_type:ty $(= $field_default:expr)*),*
-    ) {}
+    process $process:ident
+      ($($field_name:ident : $field_type:ty $(= $field_default:expr)*),*)
+      $(-> ($presult_type:ty $(= $presult_default:expr)*))* {}
 
   ) => {{
     let mut s = String::new();
@@ -844,9 +875,9 @@ macro_rules! def_session {
       "    {:?} [label=<<TABLE BORDER=\"0\"><TR><TD><B>{:?}</B></TD></TR>",
       ProcessId::$process, ProcessId::$process).as_str());
 
-    let mut _mono_font      = false;
-    let mut _field_names    = std::vec::Vec::<String>::new();
-    let mut _field_types    = std::vec::Vec::<String>::new();
+    let mut _mono_font   = false;
+    let mut _field_names = std::vec::Vec::<String>::new();
+    let mut _field_types = std::vec::Vec::<String>::new();
 
     $({
       if !_mono_font {
@@ -900,6 +931,19 @@ macro_rules! def_session {
       s.push_str (format!("{}", field_string).as_str());
     }
 
+    let result_type = stringify!($($presult_type)*).to_string();
+    if !result_type.is_empty() {
+      use escapade::Escapable;
+      if !_mono_font {
+        s.push_str ("<TR><TD><FONT FACE=\"Mono\"><BR/>");
+        _mono_font = true;
+      } else {
+        s.push_str ("<BR ALIGN=\"LEFT\"/></FONT></TD></TR>\
+          <TR><TD><FONT FACE=\"Mono\"><BR/>");
+      }
+      s.push_str (format!("-> {}", result_type).escape().into_inner().as_str());
+    }
+
     /*
     if s.chars().last().unwrap() == '>' {
       let len = s.len();
@@ -915,7 +959,7 @@ macro_rules! def_session {
 
     s.push_str ("</TABLE>>]\n");
     s
-  }};  // end @fn_dotfile_node
+  }};  // end @fn_dotfile_node_hide_defaults
 
   //
   //  @fn_dotfile_channel
