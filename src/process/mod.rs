@@ -110,17 +110,19 @@ pub enum DefineError {
 ///////////////////////////////////////////////////////////////////////////////
 
 /// Main process trait.
-pub trait Process <CTX : session::Context> where
+pub trait Process <CTX, RES> where
+  CTX  : session::Context,
+  RES  : Presult <CTX, Self>,
   Self : std::convert::TryFrom <CTX::GPROC> + Into <CTX::GPROC>
 {
   //
   //  required
   //
   fn init (inner : Inner <CTX>) -> Self;
-  #[inline]
   fn inner_ref      (&self)                          -> &Inner <CTX>;
-  #[inline]
   fn inner_mut      (&mut self)                      -> &mut Inner <CTX>;
+  fn result_ref     (&self)                          -> &RES;
+  fn result_mut     (&mut self)                      -> &mut RES;
   fn handle_message (&mut self, message : CTX::GMSG) -> Option <()>;
   fn update         (&mut self)                      -> Option <()>;
 
@@ -482,6 +484,13 @@ pub trait Global <CTX> where
   fn run          (&mut self);
   //fn run_continue (mut self) -> Option <()>;
 }
+
+/// A constraint on process result types.
+pub trait Presult <CTX, P> where
+  CTX  : session::Context,
+  P    : Process <CTX, Self>,
+  Self : Default + std::fmt::Debug
+{}
 
 ///////////////////////////////////////////////////////////////////////////////
 //  impls

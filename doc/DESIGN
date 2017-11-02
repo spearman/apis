@@ -2,11 +2,11 @@
 
 **Issues**
 
-- It is not possible to re-use process definitions. Therefore, if two sessions
-  use a process that is identical, the code must be duplicated. This can be
-  eased somewhat by giving both processes a single "inner" type that handles
-  the logic uniformly for both, so that they are essentially thin wrappers
-  around this type.
+- [Reusable processes]: It is not possible to re-use process definitions.
+  Therefore, if two sessions use a process that is identical, the code must be
+  duplicated. This can be eased somewhat by giving both processes a single
+  "inner" type that handles the logic uniformly for both, so that they are
+  essentially thin wrappers around this type.
 - There are some coherence requirements for programs that are checked by debug
   assertions or at runtime. A better solution would be along the lines of what
   is done with sessions where a definition is built and verified at
@@ -16,10 +16,11 @@
   of transitions to ensure that all modes are reachable.
 - Custom initialization: processes might require special initialization to be
   performed but currently the only place to do that is in a continuation block.
-- Session results are a uniform `Option <()>` type for all sessions. There is
-  syntax defined in the `def_session!` macro to give each process a unique
-  result type. These could probably be wrapped in a global `Result` type for
-  the entire session (so they can still be stored in a `VecMap`).
+- [Process results]: Session results are a uniform `Option <()>` type for all
+  sessions. There is syntax defined in the `def_session!` macro to give each
+  process a unique result type. These could probably be wrapped in a global
+  `Result` type for the entire session (so they can still be stored in a
+  `VecMap`).
 - State machines are used at a few points in the implementation; mostly they
   are "simple" transitions that lack actions, guards, or parameters. More could
   be done there, but it's unlikely to be possible to capture *all* affected
@@ -46,3 +47,78 @@ The next phase of development is to implement an example of a graphical,
 interactive application in `apis`.
 
 `glutin`, `glium`
+
+
+# Process results
+
+Currently processes uniformly return an `Option <()>` type, and these are
+returned by the `Session::run_*` methods in a `VecMap` which is used to
+determine the next transition in a program. This is essentially equal to
+each process returning a boolean, which gives only a limited amount of
+information to choose transitions. The options for extending this are:
+
+- each process has its own result type, and these are convertible with a
+  "global" result type, which can be added to the context, so that a session
+  then produces a `VecMap` of `CTX::GRES`
+- a session defines only a single result type and all processes return this
+  type
+
+The first option seems more flexible. Often the result of a single process will
+"decide" what transition to take. In a way this breaks the strict separation
+between different session definitions, but the actual logic for choosing a
+transition is still limited to the program definition: sessions simply return
+the result and don't take any further action themselves.
+
+One issue with this is that process result types need to be unique since there
+needs to be a constraint that maps result types to global results. If two
+processes returned the same base type, such as `Option <()>`, a unique mapping
+would not exist to the global process type since it could be a result for
+either of the processes.
+
+This seems to work however the unwrapping of the value is somewhat cumbersome.
+To get the inner result from a process requires:
+
+1. Getting the global presult for the corresponding process ID
+2. Use the `try_from` method on the presult newtype to unwrap the global
+   presult to the local presult
+3. Destructure the local presult in a `match` statement to get the inner result
+
+A better solution may be to make the global presult type a simple enum where
+each variant is named after the corresponding process and contains the inner
+process result type directly.
+
+Returning the result can be made more automatic as well by adding a generic
+parameter to the process trait that can be accessed by getter/setter methods
+`result_ref`, `result_mut`. This type might define a default and possibly allow
+overloading by the process definition. Note that we don't want to add this
+result to the `Inner` type because this would not allow them to be constructed
+generically for all processes; the alternative would be to move the `Inner`
+type construction inside required `process::Id` methods `spawn` and `gproc`
+which are defined inside the macro where the result type information is
+available. The rest of the inner type fields would then become arguments to
+those functions, and the inner type itself would need to be parameterized by
+the result type, so it is easier in the end to just go the route of adding the
+above mentioned result reference functions to the process trait.
+
+
+# Reusable processes
+
+A difference between a trait with a generic parameter and a trait with an
+associated type is that the trait with the generic parameter can be implemented
+multiple times for the same type with different type parameters. Therefore a
+process could in theory implement the `Process <Context>` trait for multiple
+contexts. This is complicated somewhat by the fact that process `Id` types
+define the mapping to process definitions.
+
+A concrete process is really just a type that holds an `Inner` process state
+machine and defined behavior methods (`update` and `handle_message`), and is
+free to have additional data fields. If a process were to be made re-usable, it
+should probably be parameterized by the `Context` type as well, so that it can
+hold an `Inner <Context>` for any kind of context. However for each instance, a
+different `update` and `handle_message` method must be defined. Since channels
+and peers are referenced by channel IDs and process IDs, respectively, it
+doesn't seem like these methods could be re-used safely where sessions are
+allowed have different sets of processes. One way to get around this would be
+to give channel and process IDs as strings and have them converted to the
+appropriate ID enum type. As long as the session has a channel or process ID
+that resolves from the given string, the process could be used there.

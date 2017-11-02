@@ -37,7 +37,7 @@ def_session! {
       let _proc       = self,
       let _message_in = message_in
     [
-      process Chargen (update_count : u64) -> Option <()> {
+      process Chargen (update_count : u64) -> (Option <()>) {
         kind { apis::process::Kind::Synchronous {
           tick_ms: 20,
           ticks_per_update: 1 } }
@@ -46,7 +46,7 @@ def_session! {
         handle_message { _proc.chargen_handle_message (_message_in) }
         update         { _proc.chargen_update() }
       }
-      process Upcase (history : String) -> Option <()> {
+      process Upcase (history : String) -> (Option <()>) {
         kind { apis::process::Kind::default_asynchronous() }
         sourcepoints []
         endpoints    [Charstream]

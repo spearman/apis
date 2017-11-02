@@ -111,7 +111,7 @@ pub mod bgr {
               &events_loop).unwrap();
             Some (GlutinGliumContext { events_loop, glium_display })
           }
-        ) -> Option <()> {
+        ) -> (Option <()>) {
           kind { apis::process::Kind::AsynchronousPolling }
           sourcepoints [ ]
           endpoints    [ ]
@@ -231,7 +231,7 @@ pub mod cym {
           frame                : u64 = 0,
           clear_color          : (f32, f32, f32, f32) = (0.0, 1.0, 1.0, 1.0),
           glutin_glium_context : Option <GlutinGliumContext> = None
-        ) -> Option <()> {
+        ) -> (Option <()>) {
           kind { apis::process::Kind::AsynchronousPolling }
           sourcepoints []
           endpoints    []

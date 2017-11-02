@@ -100,14 +100,14 @@ pub mod readline_echoup {
       [
         process Readline (
           dropthing : Option <::Dropthing> = Some (Default::default())
-        ) -> Option <()> {
+        ) -> (Option <()>) {
           kind { apis::process::Kind::AsynchronousPolling }
           sourcepoints [Toecho]
           endpoints    [Fromecho]
           handle_message { _proc.readline_handle_message (_message_in) }
           update         { _proc.readline_update() }
         }
-        process Echoup () -> Option <()> {
+        process Echoup () -> (Option <()>) {
           kind { apis::process::Kind::default_asynchronous() }
           sourcepoints [Fromecho]
           endpoints    [Toecho]
@@ -257,7 +257,7 @@ pub mod readline_echorev {
         let _proc       = self,
         let _message_in = message_in
       [
-        process Echorev () -> Option <()> {
+        process Echorev () -> (Option <()>) {
           kind { apis::process::Kind::default_asynchronous() }
           sourcepoints [Fromecho]
           endpoints    [Toecho]
@@ -266,7 +266,7 @@ pub mod readline_echorev {
         }
         process Readline (
           dropthing : Option <::Dropthing> = None
-        ) -> Option <()> {
+        ) -> (Option <()>) {
           kind { apis::process::Kind::AsynchronousPolling }
           sourcepoints [Toecho]
           endpoints    [Fromecho]

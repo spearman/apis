@@ -94,7 +94,7 @@ macro_rules! def_session {
       [
         $(process $process:ident (
           $($field_name:ident : $field_type:ty $(= $field_default:expr)*),*
-        ) $(-> $result_type:ty)* {
+        ) $(-> ($presult_type:ty $(= $presult_default:expr)*))* {
           kind { $process_kind:expr }
           sourcepoints [ $($sourcepoint:ident),* ]
           endpoints    [ $($endpoint:ident),* ]
@@ -132,7 +132,8 @@ macro_rules! def_session {
     $(
     #[derive(Debug)]
     pub struct $process {
-      inner : $crate::process::Inner <$context>,
+      inner  : $crate::process::Inner <$context>,
+      result : ($($presult_type)*),
       $(
       pub $field_name : $field_type
       ),*
@@ -235,10 +236,11 @@ macro_rules! def_session {
     //  processes
     //
     $(
-    impl $crate::Process <$context> for $process {
+    impl $crate::Process <$context, ($($presult_type)*)> for $process {
       fn init (inner : $crate::process::Inner <$context>) -> Self {
         $process {
           inner,
+          result:        def_session!(@expr_default $($($presult_default)*)*),
           $($field_name: def_session!(@expr_default $($field_default)*)),*
         }
       }
@@ -247,6 +249,12 @@ macro_rules! def_session {
       }
       fn inner_mut (&mut self) -> &mut $crate::process::Inner <$context> {
         &mut self.inner
+      }
+      fn result_ref (&self) -> &($($presult_type)*) {
+        &self.result
+      }
+      fn result_mut (&mut self) -> &mut ($($presult_type)*) {
+        &mut self.result
       }
       fn handle_message (&mut self, message : GlobalMessage) -> Option <()> {
         let $process_self = self;
@@ -273,6 +281,8 @@ macro_rules! def_session {
         GlobalProcess::$process (process)
       }
     }
+
+    impl $crate::process::Presult <$context, $process> for ($($presult_type)*) { }
     )+
 
     //
