@@ -182,6 +182,16 @@ macro_rules! def_session {
     }
 
     //
+    //  global process result type
+    //
+    #[derive(Debug)]
+    pub enum GlobalPresult {
+      $(
+      $process (($($presult_type)*))
+      ),+
+    }
+
+    //
     //  global message type
     //
     #[derive(Debug)]
@@ -224,6 +234,7 @@ macro_rules! def_session {
       type PID   = ProcessId;
       type GMSG  = GlobalMessage;
       type GPROC = GlobalProcess;
+      type GPRES = GlobalPresult;
 
       #[inline]
       fn maybe_main() -> Option <Self::PID> {
@@ -255,6 +266,11 @@ macro_rules! def_session {
       }
       fn result_mut (&mut self) -> &mut ($($presult_type)*) {
         &mut self.result
+      }
+      fn global_result (&mut self)
+        -> <$context as $crate::session::Context>::GPRES
+      {
+        GlobalPresult::$process (self.result.clone())
       }
       fn handle_message (&mut self, message : GlobalMessage) -> Option <()> {
         let $process_self = self;
@@ -303,9 +319,14 @@ macro_rules! def_session {
     }
 
     //
+    //  global presult
+    //
+    impl $crate::process::presult::Global <$context> for GlobalPresult { }
+
+    //
     //  process id
     //
-    impl $crate::process::Id <$context> for ProcessId where {
+    impl $crate::process::Id <$context> for ProcessId {
       fn def (&self) -> $crate::process::Def <$context> {
         match *self {
           $(
@@ -348,7 +369,7 @@ macro_rules! def_session {
     //
     //  channel id
     //
-    impl $crate::channel::Id <$context> for ChannelId where {
+    impl $crate::channel::Id <$context> for ChannelId {
       fn def (&self) -> $crate::channel::Def <$context> {
         #[allow(unreachable_patterns)]
         match *self {

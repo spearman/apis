@@ -100,6 +100,12 @@ those functions, and the inner type itself would need to be parameterized by
 the result type, so it is easier in the end to just go the route of adding the
 above mentioned result reference functions to the process trait.
 
+To create a global process result from the local result type, another required
+method is added to the `Process` trait: `global_result`. At first an attempt
+was made to add a generic conversion method to the global presult trait itself,
+but this won't work because the inner presult type is a generic parameter and
+to construct the global presult requires a concrete type.
+
 
 # Reusable processes
 

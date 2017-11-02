@@ -14,12 +14,14 @@ use ::session;
 ///////////////////////////////////////////////////////////////////////////////
 
 pub mod inner;
+pub mod presult;
 
 ///////////////////////////////////////////////////////////////////////////////
 //  reexports
 ///////////////////////////////////////////////////////////////////////////////
 
 pub use self::inner::Inner;
+pub use self::presult::Presult;
 
 ///////////////////////////////////////////////////////////////////////////////
 //  structs
@@ -37,7 +39,7 @@ pub struct Def <CTX : session::Context> {
 /// Handle to a process held by the session.
 #[derive(Debug)]
 pub struct Handle <CTX : session::Context> {
-  pub result_rx        : std::sync::mpsc::Receiver <Option <()>>,
+  pub result_rx        : std::sync::mpsc::Receiver <CTX::GPRES>,
   pub continuation_tx  : std::sync::mpsc::Sender <Continuation <CTX>>,
   /// When the session drops, the `finish` method will either join or send
   /// a continuation depending on the contents of this field.
@@ -123,6 +125,7 @@ pub trait Process <CTX, RES> where
   fn inner_mut      (&mut self)                      -> &mut Inner <CTX>;
   fn result_ref     (&self)                          -> &RES;
   fn result_mut     (&mut self)                      -> &mut RES;
+  fn global_result  (&mut self)                      -> CTX::GPRES;
   fn handle_message (&mut self, message : CTX::GMSG) -> Option <()>;
   fn update         (&mut self)                      -> Option <()>;
 
@@ -197,13 +200,14 @@ pub trait Process <CTX, RES> where
     Self : Sized + 'static,
     CTX  : 'static
   {
-    let result = match *self.kind() {
+    match *self.kind() {
       Kind::Synchronous  {..} => self.run_synchronous(),
       Kind::Asynchronous {..} => self.run_asynchronous(),
       Kind::AsynchronousPolling {..} => self.run_asynchronous_polling()
     };
+    let gpresult       = self.global_result();
     let session_handle = &self.inner_ref().as_ref().session_handle;
-    session_handle.result_tx.send (result).unwrap();
+    session_handle.result_tx.send (gpresult).unwrap();
   }
 
   /// Run a process to completion, send the result to the session, and proceed
@@ -239,7 +243,7 @@ pub trait Process <CTX, RES> where
   /// immediately. This allows the thread to "catch up" in case of a
   /// long update by processing the "backlog" of updates as fast as
   /// possible.
-  fn run_synchronous (&mut self) -> Option <()> where
+  fn run_synchronous (&mut self) where
     Self : Sized,
     CTX  : 'static
   {
@@ -337,11 +341,9 @@ pub trait Process <CTX, RES> where
       }
 
     } // end 'run_loop
-
-    Some (())
   } // end fn run_synchronous
 
-  fn run_asynchronous (&mut self) -> Option <()> where
+  fn run_asynchronous (&mut self) where
     Self : Sized,
     CTX  : 'static
   {
@@ -400,11 +402,10 @@ pub trait Process <CTX, RES> where
         messages_since_update = 0;
       }
     } // end 'run_loop
-    Some (())
   } // end fn run_asynchronous
 
   /// An asynchronous run loop that polls for messages.
-  fn run_asynchronous_polling (&mut self) -> Option <()> where
+  fn run_asynchronous_polling (&mut self) where
     Self : Sized,
     CTX  : 'static
   {
@@ -458,7 +459,6 @@ pub trait Process <CTX, RES> where
 
     } // end 'run_loop
 
-    Some (())
   } // end fn run_asycnhronous_polling
 }
 
@@ -484,13 +484,6 @@ pub trait Global <CTX> where
   fn run          (&mut self);
   //fn run_continue (mut self) -> Option <()>;
 }
-
-/// A constraint on process result types.
-pub trait Presult <CTX, P> where
-  CTX  : session::Context,
-  P    : Process <CTX, Self>,
-  Self : Default + std::fmt::Debug
-{}
 
 ///////////////////////////////////////////////////////////////////////////////
 //  impls

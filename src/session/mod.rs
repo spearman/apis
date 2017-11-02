@@ -61,7 +61,7 @@ pub struct Def <CTX : Context> {
 /// Handle to the session held by processes.
 #[derive(Debug)]
 pub struct Handle <CTX : Context> {
-  pub result_tx       : std::sync::mpsc::Sender <Option <()>>,
+  pub result_tx       : std::sync::mpsc::Sender <CTX::GPRES>,
   pub continuation_rx : std::sync::mpsc::Receiver <process::Continuation <CTX>>
 }
 
@@ -94,6 +94,8 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
   type GMSG  : message::Global <Self>;
   /// The global process type.
   type GPROC : process::Global <Self>;
+  /// The global process result type.
+  type GPRES : process::presult::Global <Self>;
 
   //required
   fn maybe_main() -> Option <Self::PID>;
@@ -262,7 +264,7 @@ impl <CTX : Context> Session <CTX> {
   /// Transitions from `Ready` to `Running`, starts processes not already
   /// running (those present in the `process_handles` argument), waits for
   /// results and finally transitions to `Ended`.
-  pub fn run (&mut self) -> vec_map::VecMap <Option <()>> {
+  pub fn run (&mut self) -> vec_map::VecMap <CTX::GPRES> {
     let channels = self.as_ref().def.create_channels();
     self.run_with (channels, vec_map::VecMap::new(), None)
   }
@@ -273,7 +275,7 @@ impl <CTX : Context> Session <CTX> {
     channels        : vec_map::VecMap <channel::Channel <CTX>>,
     process_handles : vec_map::VecMap <process::Handle <CTX>>,
     main_process    : Option <CTX::GPROC>
-  ) -> vec_map::VecMap <Option <()>> {
+  ) -> vec_map::VecMap <CTX::GPRES> {
     use rs_utils::EnumUnitary;
     use process::Global;
 
@@ -327,7 +329,7 @@ impl <CTX : Context> Session <CTX> {
             }
           }
           // session control channels
-          let (result_tx, result_rx) = std::sync::mpsc::channel::<Option <()>>();
+          let (result_tx, result_rx) = std::sync::mpsc::channel::<CTX::GPRES>();
           let (continuation_tx, continuation_rx)
             = std::sync::mpsc::channel::<process::Continuation <CTX>>();
           // create the process

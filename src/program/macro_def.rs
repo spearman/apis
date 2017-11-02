@@ -187,7 +187,9 @@ macro_rules! def_program {
 
                       // session control channels
                       let (result_tx, result_rx)
-                        = std::sync::mpsc::channel::<Option <()>>();
+                        = std::sync::mpsc::channel::
+                          <<$target_mod::$target_context
+                            as $crate::session::Context>::GPRES>();
                       let (continuation_tx, continuation_rx)
                         = std::sync::mpsc::channel::
                           <$crate::process::Continuation

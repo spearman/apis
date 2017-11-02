@@ -1,15 +1,16 @@
 use ::std;
 
 use ::session;
+use ::Process;
 
-pub trait Global <CTX : session::Context> where
-  Self : Sized + std::fmt::Debug,
-  CTX  : session::Context <GPRES=Self>
+pub trait Global <CTX> where
+  CTX  : session::Context <GPRES=Self>,
+  Self : Sized + std::fmt::Debug
 {}
 
-pub trait Presult <CTX, RES> where
-  Self : std::convert::TryFrom <CTX::GPRES> + Into <CTX::GPRES> + Into <RES>
-    + Send + std::fmt::Debug,
+/// A constraint on process result types.
+pub trait Presult <CTX, P> where
   CTX  : session::Context,
-  RES  : std::fmt::Debug
-{ }
+  P    : Process <CTX, Self>,
+  Self : Clone + Default + std::fmt::Debug
+{}
