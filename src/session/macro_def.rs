@@ -510,6 +510,8 @@ macro_rules! def_session {
       $context::_dotfile (true, false)
     }
 
+    /// *Note*: printing pretty defaults will construct a default *value* and
+    /// pretty-print that instead of the raw expression.
     #[inline]
     pub fn dotfile_pretty_defaults() -> String {
       $context::_dotfile (false, false)
@@ -640,9 +642,17 @@ macro_rules! def_session {
       }
       _field_names.push (stringify!($field_name).to_string());
       _field_types.push (stringify!($field_type).to_string());
-      let default_val : $field_type
-        = def_session!(@expr_default $($field_default)*);
-      _field_defaults.push (format!("{:?}", default_val));
+      let default_expr = {
+        let default_expr = stringify!($($field_default)*);
+        if !default_expr.is_empty() {
+          default_expr.to_string()
+        } else {
+          stringify!(Default::default()).chars().filter (
+            |c| !c.is_whitespace()
+          ).collect()
+        }
+      };
+      _field_defaults.push (default_expr.to_string());
     })*
 
     debug_assert_eq!(_field_names.len(), _field_types.len());
@@ -716,7 +726,19 @@ macro_rules! def_session {
         s.push_str ("<BR ALIGN=\"LEFT\"/></FONT></TD></TR>\
           <TR><TD><FONT FACE=\"Mono\"><BR/>");
       }
-      s.push_str (format!("-> {}", result_type).escape().into_inner().as_str());
+      let default_expr = {
+        let default_expr = stringify!($($($presult_default)*)*);
+        if !default_expr.is_empty() {
+          default_expr.to_string()
+        } else {
+          stringify!(Default::default()).chars().filter (
+            |c| !c.is_whitespace()
+          ).collect()
+        }
+      };
+      s.push_str (
+        format!("-> {} = {}", result_type, default_expr)
+          .escape().into_inner().as_str());
     }
 
     /*
