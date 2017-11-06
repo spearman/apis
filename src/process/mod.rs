@@ -90,6 +90,12 @@ pub enum Kind {
   AsynchronousPolling
 }
 
+#[derive(Copy,Clone,Debug,Eq,PartialEq)]
+pub enum ControlFlow {
+  Continue,
+  Break
+}
+
 #[derive(Clone,Debug,Eq,PartialEq)]
 pub enum KindError {
   SynchronousZeroTickMs,
@@ -126,10 +132,10 @@ pub trait Process <CTX, RES> where
   fn result_ref     (&self)                          -> &RES;
   fn result_mut     (&mut self)                      -> &mut RES;
   fn global_result  (&mut self)                      -> CTX::GPRES;
-  fn extract_result
-    (session_results : &mut vec_map::VecMap <CTX::GPRES>) -> Result <RES, String>;
-  fn handle_message (&mut self, message : CTX::GMSG) -> Option <()>;
-  fn update         (&mut self)                      -> Option <()>;
+  fn extract_result (session_results : &mut vec_map::VecMap <CTX::GPRES>)
+    -> Result <RES, String>;
+  fn handle_message (&mut self, message : CTX::GMSG) -> ControlFlow;
+  fn update         (&mut self)                      -> ControlFlow;
 
   //
   //  provided
@@ -297,12 +303,12 @@ pub trait Process <CTX, RES> where
               format!("{:?} receive message on {:?}", self.id(), channel_id)
                 .green().bold(),
               message);
-            let handle_message_result = self.handle_message (message);
-            match handle_message_result {
-              Some (()) => (),
+            match self.handle_message (message) {
+              ControlFlow::Continue => {}
               // TODO: the following is a hazard if further messages are pending
-              None => self.inner_mut().handle_event (
-                inner::EventId::End.into()).unwrap()
+              ControlFlow::Break    =>
+                self.inner_mut().handle_event (inner::EventId::End.into())
+                  .unwrap()
             }
             message_count += 1;
           }
@@ -315,11 +321,12 @@ pub trait Process <CTX, RES> where
           trace!("process id[{:?}] update[{}]", self.id(), update_count);
           let update_result = self.update();
           match update_result {
-            Some (()) => (),
+            ControlFlow::Continue => {}
             // TODO: the following is a hazard if the process was already
             // finished above
-            None => self.inner_mut().handle_event (
-              inner::EventId::End.into()).unwrap()
+            ControlFlow::Break    =>
+              self.inner_mut().handle_event (inner::EventId::End.into())
+                .unwrap()
           }
           update_count += 1;
           ticks_since_update = 0;
@@ -384,9 +391,10 @@ pub trait Process <CTX, RES> where
         message);
       let handle_message_result = self.handle_message (message);
       match handle_message_result {
-        Some (()) => (),
-        None => self.inner_mut().handle_event (
-          inner::EventId::End.into()).unwrap()
+        ControlFlow::Continue => {}
+        ControlFlow::Break    =>
+          self.inner_mut().handle_event (inner::EventId::End.into())
+            .unwrap()
       }
       message_count         += 1;
       messages_since_update += 1;
@@ -394,11 +402,12 @@ pub trait Process <CTX, RES> where
         // update
         let update_result = self.update();
         match update_result {
-          Some (()) => (),
+          ControlFlow::Continue => {}
           // TODO: the following is a hazard if the process was already
           // finished above
-          None => self.inner_mut().handle_event (
-            inner::EventId::End.into()).unwrap()
+          ControlFlow::Break    =>
+            self.inner_mut().handle_event (inner::EventId::End.into())
+              .unwrap()
         }
         update_count += 1;
         messages_since_update = 0;
@@ -438,10 +447,11 @@ pub trait Process <CTX, RES> where
             message);
           let handle_message_result = self.handle_message (message);
           match handle_message_result {
-            Some (()) => (),
+            ControlFlow::Continue => {}
             // TODO: the following is a hazard if further messages are pending
-            None => self.inner_mut().handle_event (
-              inner::EventId::End.into()).unwrap()
+            ControlFlow::Break    =>
+              self.inner_mut().handle_event (inner::EventId::End.into())
+                .unwrap()
           }
           message_count += 1;
         }
@@ -451,11 +461,12 @@ pub trait Process <CTX, RES> where
       trace!("process id[{:?}] update[{}]", self.id(), update_count);
       let update_result = self.update();
       match update_result {
-        Some (()) => (),
+        ControlFlow::Continue => {}
         // TODO: the following is a hazard if the process was already finished
         // above
-        None => self.inner_mut().handle_event (
-          inner::EventId::End.into()).unwrap()
+        ControlFlow::Break    =>
+          self.inner_mut().handle_event (inner::EventId::End.into())
+            .unwrap()
       }
       update_count += 1;
 

@@ -22,29 +22,29 @@ def_session! {
         kind { apis::process::Kind::default_synchronous() }
         sourcepoints []
         endpoints    []
-        handle_message { None }
-        update         { None }
+        handle_message { apis::process::ControlFlow::Break }
+        update         { apis::process::ControlFlow::Break }
       }
       process B () {
         kind { apis::process::Kind::default_synchronous() }
         sourcepoints []
         endpoints    []
-        handle_message { None }
-        update         { None }
+        handle_message { apis::process::ControlFlow::Break }
+        update         { apis::process::ControlFlow::Break }
       }
       process C () {
         kind { apis::process::Kind::default_synchronous() }
         sourcepoints []
         endpoints    []
-        handle_message { None }
-        update         { None }
+        handle_message { apis::process::ControlFlow::Break }
+        update         { apis::process::ControlFlow::Break }
       }
       process D () {
         kind { apis::process::Kind::default_synchronous() }
         sourcepoints []
         endpoints    []
-        handle_message { None }
-        update         { None }
+        handle_message { apis::process::ControlFlow::Break }
+        update         { apis::process::ControlFlow::Break }
       }
     ]
     CHANNELS  [

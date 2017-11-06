@@ -10,6 +10,8 @@
 /// - `type CID = ChannelId`
 /// - `type PID = ProcessId`
 /// - `type GMSG = GlobalMessage`
+/// - `type GPROC = GlobalProcess`
+/// - `type GPRES = GlobalPresult`
 ///
 /// Process and message types with the given names and specifications are
 /// defined with implementations of relevant traits.
@@ -51,15 +53,15 @@
 ///           ticks_per_update: 1 } }
 ///         sourcepoints [Charstream]
 ///         endpoints    []
-///         handle_message { None }
-///         update         { None }
+///         handle_message { apis::process::ControlFlow::Break }
+///         update         { apis::process::ControlFlow::Break }
 ///       }
 ///       process Upcase (history : String) {
 ///         kind { process::Kind::default_asynchronous() }
 ///         sourcepoints []
 ///         endpoints    [Charstream]
-///         handle_message { None }
-///         update         { None }
+///         handle_message { apis::process::ControlFlow::Break }
+///         update         { apis::process::ControlFlow::Break }
 ///       }
 ///     ]
 ///     CHANNELS  [
@@ -287,12 +289,14 @@ macro_rules! def_session {
       fn global_result (&mut self) -> GlobalPresult {
         GlobalPresult::$process (self.result.clone())
       }
-      fn handle_message (&mut self, message : GlobalMessage) -> Option <()> {
+      fn handle_message (&mut self, message : GlobalMessage)
+        -> $crate::process::ControlFlow
+      {
         let $process_self = self;
         let $message_in   = message;
         $handle_message
       }
-      fn update (&mut self) -> Option <()> {
+      fn update (&mut self) -> $crate::process::ControlFlow {
         let $process_self = self;
         $update
       }

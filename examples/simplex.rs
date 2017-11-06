@@ -75,7 +75,7 @@ def_session! {
 
 impl Chargen {
   fn chargen_handle_message (&mut self, _message : GlobalMessage)
-    -> Option <()>
+    -> apis::process::ControlFlow
   {
     //use colored::Colorize;
     trace!("chargen handle message...");
@@ -86,10 +86,10 @@ impl Chargen {
     //Some(())
   }
 
-  fn chargen_update (&mut self) -> Option <()> {
+  fn chargen_update (&mut self) -> apis::process::ControlFlow {
     use apis::Process;
     trace!("chargen update...");
-    let mut result = Some (());
+    let mut result = apis::process::ControlFlow::Continue;
     self.update_count += 1;
     if self.update_count == 100 {
       std::thread::sleep (std::time::Duration::from_millis (100));
@@ -109,7 +109,7 @@ impl Chargen {
     assert!(self.update_count <= 300);
     if self.update_count == 300 {
       self.send (ChannelId::Charstream, Charstreammessage::Quit);
-      result = None;
+      result = apis::process::ControlFlow::Break;
     }
     trace!("...chargen update");
     result
@@ -118,14 +118,16 @@ impl Chargen {
 // end impl Chargen
 
 impl Upcase {
-  fn upcase_handle_message (&mut self, message : GlobalMessage) -> Option <()> {
+  fn upcase_handle_message (&mut self, message : GlobalMessage)
+    -> apis::process::ControlFlow
+  {
     trace!("upcase handle message...");
-    let mut result = Some (());
+    let mut result = apis::process::ControlFlow::Continue;
     match message {
       GlobalMessage::Charstreammessage (charstreammessage) => {
         match charstreammessage {
           Charstreammessage::Quit => {
-            result = None
+            result = apis::process::ControlFlow::Break
           }
           Charstreammessage::Achar (ch) => {
             self.history.push (ch.to_uppercase().next().unwrap());
@@ -137,7 +139,7 @@ impl Upcase {
     result
   }
 
-  fn upcase_update  (&mut self) -> Option <()> {
+  fn upcase_update  (&mut self) -> apis::process::ControlFlow {
     trace!("upcase update...");
     if *self.inner.state().id() == apis::process::inner::StateId::Ended {
       println!("upcase history final: {}", self.history);
@@ -145,7 +147,7 @@ impl Upcase {
       println!("upcase history: {}", self.history);
     }
     trace!("...upcase update");
-    Some (())
+    apis::process::ControlFlow::Continue
   }
 }
 // end impl Upcase

@@ -56,7 +56,7 @@ def_session! {
             ChannelId::Randints, rand_id, Randintsmessage::Anint (rand_int));
           _proc.update_count += 1;
           if _proc.update_count < 50 {
-            Some (())
+            apis::process::ControlFlow::Continue
           } else {
             _proc.send_to (
               ChannelId::Randints, ProcessId::Sum1, Randintsmessage::Quit);
@@ -66,7 +66,7 @@ def_session! {
               ChannelId::Randints, ProcessId::Sum3, Randintsmessage::Quit);
             _proc.send_to (
               ChannelId::Randints, ProcessId::Sum4, Randintsmessage::Quit);
-            None
+            apis::process::ControlFlow::Break
           }
         }
       }
@@ -77,11 +77,11 @@ def_session! {
         handle_message {
           match _message_in {
             GlobalMessage::Randintsmessage (Randintsmessage::Quit) => {
-              None
+              apis::process::ControlFlow::Break
             }
             GlobalMessage::Randintsmessage (Randintsmessage::Anint (anint)) => {
               _proc.sum += anint;
-              Some (())
+              apis::process::ControlFlow::Continue
             }
           }
         }
@@ -91,7 +91,7 @@ def_session! {
           } else {
             println!("sum 1: {}", _proc.sum);
           }
-          Some (())
+          apis::process::ControlFlow::Continue
         }
       }
       process Sum2 (sum : i64 = -100) {
@@ -101,11 +101,11 @@ def_session! {
         handle_message {
           match _message_in {
             GlobalMessage::Randintsmessage (Randintsmessage::Quit) => {
-              None
+              apis::process::ControlFlow::Break
             }
             GlobalMessage::Randintsmessage (Randintsmessage::Anint (anint)) => {
               _proc.sum += anint;
-              Some (())
+              apis::process::ControlFlow::Continue
             }
           }
         }
@@ -115,7 +115,7 @@ def_session! {
           } else {
             println!("sum 2: {}", _proc.sum);
           }
-          Some (())
+          apis::process::ControlFlow::Continue
         }
       }
       process Sum3 (sum : i64 = -100) {
@@ -125,11 +125,11 @@ def_session! {
         handle_message {
           match _message_in {
             GlobalMessage::Randintsmessage (Randintsmessage::Quit) => {
-              None
+              apis::process::ControlFlow::Break
             }
             GlobalMessage::Randintsmessage (Randintsmessage::Anint (anint)) => {
               _proc.sum += anint;
-              Some (())
+              apis::process::ControlFlow::Continue
             }
           }
         }
@@ -139,7 +139,7 @@ def_session! {
           } else {
             println!("sum 3: {}", _proc.sum);
           }
-          Some (())
+          apis::process::ControlFlow::Continue
         }
       }
       process Sum4 (sum : i64 = -100) {
@@ -149,11 +149,11 @@ def_session! {
         handle_message {
           match _message_in {
             GlobalMessage::Randintsmessage (Randintsmessage::Quit) => {
-              None
+              apis::process::ControlFlow::Break
             }
             GlobalMessage::Randintsmessage (Randintsmessage::Anint (anint)) => {
               _proc.sum += anint;
-              Some (())
+              apis::process::ControlFlow::Continue
             }
           }
         }
@@ -163,7 +163,7 @@ def_session! {
           } else {
             println!("sum 4: {}", _proc.sum);
           }
-          Some (())
+          apis::process::ControlFlow::Continue
         }
       }
     ]

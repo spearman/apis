@@ -132,15 +132,15 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
   ///         kind { apis::process::Kind::default_synchronous() }
   ///         sourcepoints [X]
   ///         endpoints    []
-  ///         handle_message { None }
-  ///         update         { None }
+  ///         handle_message { apis::process::ControlFlow::Break }
+  ///         update         { apis::process::ControlFlow::Break }
   ///       }
   ///       process B () {
   ///         kind { apis::process::Kind::default_synchronous() }
   ///         sourcepoints []
   ///         endpoints    [X, Y]
-  ///         handle_message { None }
-  ///         update         { None }
+  ///         handle_message { apis::process::ControlFlow::Break }
+  ///         update         { apis::process::ControlFlow::Break }
   ///       }
   ///     ]
   ///     CHANNELS  [
@@ -191,15 +191,15 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
   ///         kind { apis::process::Kind::default_synchronous() }
   ///         sourcepoints [X,Y]
   ///         endpoints    []
-  ///         handle_message { None }
-  ///         update         { None }
+  ///         handle_message { apis::process::ControlFlow::Break }
+  ///         update         { apis::process::ControlFlow::Break }
   ///       }
   ///       process B () {
   ///         kind { apis::process::Kind::default_synchronous() }
   ///         sourcepoints []
   ///         endpoints    [X]
-  ///         handle_message { None }
-  ///         update         { None }
+  ///         handle_message { apis::process::ControlFlow::Break }
+  ///         update         { apis::process::ControlFlow::Break }
   ///       }
   ///     ]
   ///     CHANNELS  [

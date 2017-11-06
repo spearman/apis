@@ -141,7 +141,7 @@ pub mod readline_echoup {
 
   impl Readline {
     fn readline_handle_message (&mut self, _message : GlobalMessage)
-      -> Option <()>
+      -> apis::process::ControlFlow
     {
       //use colored::Colorize;
       trace!("readline handle message...");
@@ -152,10 +152,10 @@ pub mod readline_echoup {
         _ => unreachable!()
       }
       trace!("...readline handle message");
-      Some(())
+      apis::process::ControlFlow::Continue
     }
 
-    fn readline_update (&mut self) -> Option <()> {
+    fn readline_update (&mut self) -> apis::process::ControlFlow {
       use std::io::Write;
       use apis::Process;
 
@@ -163,7 +163,7 @@ pub mod readline_echoup {
 
       assert_eq!("main", std::thread::current().name().unwrap());
 
-      let mut result = Some (());
+      let mut result = apis::process::ControlFlow::Continue;
       print!(" > ");
       let _     = std::io::stdout().flush();
       let mut s = String::new();
@@ -183,7 +183,7 @@ pub mod readline_echoup {
                 let _ = first.remove (0);
                 if 0 < first.len() && first.is_prefix_of ("quit") {
                   self.send (ChannelId::Toecho, ToechoMsg::Quit);
-                  result = None;
+                  result = apis::process::ControlFlow::Break;
                 } else {
                   println!("unrecognized command: \"{}\"", s.trim());
                 }
@@ -208,11 +208,13 @@ pub mod readline_echoup {
   // end impl Readline
 
   impl Echoup {
-    fn echoup_handle_message (&mut self, message : GlobalMessage) -> Option <()> {
+    fn echoup_handle_message (&mut self, message : GlobalMessage)
+      -> apis::process::ControlFlow
+    {
       use apis::Process;
 
       trace!("echoup handle message...");
-      let mut result = Some (());
+      let mut result = apis::process::ControlFlow::Continue;
       let msg = match message {
         GlobalMessage::ToechoMsg (msg) => msg,
         _ => unreachable!()
@@ -223,18 +225,18 @@ pub mod readline_echoup {
           self.send (ChannelId::Fromecho, FromechoMsg::Echo (echo));
         }
         ToechoMsg::Quit => {
-          result = None;
+          result = apis::process::ControlFlow::Break;
         }
       }
       trace!("...echoup handle message");
       result
     }
 
-    fn echoup_update  (&mut self) -> Option <()> {
+    fn echoup_update  (&mut self) -> apis::process::ControlFlow {
       trace!("echoup update...");
       /* do nothing */
       trace!("...echoup update");
-      Some (())
+      apis::process::ControlFlow::Continue
     }
   }
   // end impl Echoup
@@ -301,7 +303,7 @@ pub mod readline_echorev {
 
   impl Readline {
     fn readline_handle_message (&mut self, _message : GlobalMessage)
-      -> Option <()>
+      -> apis::process::ControlFlow
     {
       //use colored::Colorize;
       trace!("readline handle message...");
@@ -312,10 +314,10 @@ pub mod readline_echorev {
         _ => unreachable!()
       }
       trace!("...readline handle message");
-      Some(())
+      apis::process::ControlFlow::Continue
     }
 
-    fn readline_update (&mut self) -> Option <()> {
+    fn readline_update (&mut self) -> apis::process::ControlFlow {
       use std::io::Write;
       use apis::Process;
 
@@ -323,7 +325,7 @@ pub mod readline_echorev {
 
       assert_eq!("main", std::thread::current().name().unwrap());
 
-      let mut result = Some (());
+      let mut result = apis::process::ControlFlow::Continue;
       print!(" > ");
       let _     = std::io::stdout().flush();
       let mut s = String::new();
@@ -343,7 +345,7 @@ pub mod readline_echorev {
                 let _ = first.remove (0);
                 if 0 < first.len() && first.is_prefix_of ("quit") {
                   self.send (ChannelId::Toecho, ToechoMsg::Quit);
-                  result = None;
+                  result = apis::process::ControlFlow::Break;
                 } else {
                   println!("unrecognized command: \"{}\"", s.trim());
                 }
@@ -368,11 +370,13 @@ pub mod readline_echorev {
   // end impl Readline
 
   impl Echorev {
-    fn echorev_handle_message (&mut self, message : GlobalMessage) -> Option <()> {
+    fn echorev_handle_message (&mut self, message : GlobalMessage)
+      -> apis::process::ControlFlow
+    {
       use apis::Process;
 
       trace!("echorev handle message...");
-      let mut result = Some (());
+      let mut result = apis::process::ControlFlow::Continue;
       let msg = match message {
         GlobalMessage::ToechoMsg (msg) => msg,
         _ => unreachable!()
@@ -383,18 +387,18 @@ pub mod readline_echorev {
           self.send (ChannelId::Fromecho, FromechoMsg::Echo (echo));
         }
         ToechoMsg::Quit => {
-          result = None;
+          result = apis::process::ControlFlow::Break;
         }
       }
       trace!("...echorev handle message");
       result
     }
 
-    fn echorev_update  (&mut self) -> Option <()> {
+    fn echorev_update  (&mut self) -> apis::process::ControlFlow {
       trace!("echorev update...");
       /* do nothing */
       trace!("...echorev update");
-      Some (())
+      apis::process::ControlFlow::Continue
     }
   }
   // end impl Echorev

@@ -84,7 +84,7 @@ def_session! {
 
 impl Chargen1 {
   fn chargen1_handle_message (&mut self, _message : GlobalMessage)
-    -> Option <()>
+    -> apis::process::ControlFlow
   {
     //use colored::Colorize;
     trace!("chargen1 handle message...");
@@ -95,10 +95,10 @@ impl Chargen1 {
     //Some(())
   }
 
-  fn chargen1_update (&mut self) -> Option <()> {
+  fn chargen1_update (&mut self) -> apis::process::ControlFlow {
     use apis::Process;
     trace!("chargen1 update...");
-    let mut result = Some (());
+    let mut result = apis::process::ControlFlow::Continue;
     self.update_count += 1;
     if self.update_count == 100 {
       std::thread::sleep (std::time::Duration::from_millis (100));
@@ -118,7 +118,7 @@ impl Chargen1 {
     assert!(self.update_count <= 250);
     if self.update_count == 250 {
       self.send (ChannelId::Charstream, Charstreammessage::Quit);
-      result = None;
+      result = apis::process::ControlFlow::Break;
     }
     trace!("...chargen1 update");
     result
@@ -128,7 +128,7 @@ impl Chargen1 {
 
 impl Chargen2 {
   fn chargen2_handle_message (&mut self, _message : GlobalMessage)
-    -> Option <()>
+    -> apis::process::ControlFlow
   {
     //use colored::Colorize;
     trace!("chargen2 handle message...");
@@ -139,10 +139,10 @@ impl Chargen2 {
     //Some(())
   }
 
-  fn chargen2_update (&mut self) -> Option <()> {
+  fn chargen2_update (&mut self) -> apis::process::ControlFlow {
     use apis::Process;
     trace!("chargen2 update...");
-    let mut result = Some (());
+    let mut result = apis::process::ControlFlow::Continue;
     self.update_count += 1;
     if self.update_count == 150 {
       std::thread::sleep (std::time::Duration::from_millis (100));
@@ -162,7 +162,7 @@ impl Chargen2 {
     assert!(self.update_count <= 300);
     if self.update_count == 300 {
       self.send (ChannelId::Charstream, Charstreammessage::Quit);
-      result = None;
+      result = apis::process::ControlFlow::Break;
     }
     trace!("...chargen2 update");
     result
@@ -171,7 +171,9 @@ impl Chargen2 {
 // end impl Chargen2
 
 impl Upcase {
-  fn upcase_handle_message (&mut self, message : GlobalMessage) -> Option <()> {
+  fn upcase_handle_message (&mut self, message : GlobalMessage)
+    -> apis::process::ControlFlow
+  {
     trace!("upcase handle message...");
     match message {
       GlobalMessage::Charstreammessage (charstreammessage) => {
@@ -186,15 +188,15 @@ impl Upcase {
       }
     }
     trace!("...upcase handle message");
-    Some (())
+    apis::process::ControlFlow::Continue
   }
 
-  fn upcase_update  (&mut self) -> Option <()> {
-    let mut result = Some (());
+  fn upcase_update  (&mut self) -> apis::process::ControlFlow {
+    let mut result = apis::process::ControlFlow::Continue;
     trace!("upcase update...");
     if self.quit == 2 {
       println!("upcase history final: {}", self.history);
-      result = None;
+      result = apis::process::ControlFlow::Break;
     } else {
       println!("upcase history: {}", self.history);
     }

@@ -185,29 +185,12 @@ pub mod bgr {
   }
 
   impl InputRender {
-    /*
-    fn input_render_handle_message (&mut self, _message : GlobalMessage)
-      -> Option <()>
-    {
-      //use colored::Colorize;
-      trace!("readline handle message...");
-      match _message {
-        GlobalMessage::FromechoMsg (FromechoMsg::Echo (echo)) => {
-          info!("InputRender: received echo \"{}\"", echo);
-        },
-        _ => unreachable!()
-      }
-      trace!("...readline handle message");
-      Some(())
-    }
-    */
-
-    fn input_render_update (&mut self) -> Option <()> {
+    fn input_render_update (&mut self) -> apis::process::ControlFlow {
       trace!("input_render update...");
 
       trace!("input_render frame: {}", self.frame);
 
-      let mut result = Some (());
+      let mut result      = apis::process::ControlFlow::Continue;
       let mut clear_color = self.clear_color;
       let mut presult = self.result.clone();
       { // glutin_glium_context scope
@@ -226,11 +209,11 @@ pub mod bgr {
                   if keyboard_input.state == glutin::ElementState::Pressed {
                     match keyboard_input.virtual_keycode {
                       Some (glutin::VirtualKeyCode::Tab) => {
-                        result  = None;
+                        result  = apis::process::ControlFlow::Break;
                         presult = ModeControl::Next;
                       }
                       Some (glutin::VirtualKeyCode::Q) => {
-                        result  = None;
+                        result  = apis::process::ControlFlow::Break;
                         presult = ModeControl::Quit;
                       }
                       Some (glutin::VirtualKeyCode::B) => {
@@ -314,29 +297,12 @@ pub mod cym {
   }
 
   impl InputRender {
-    /*
-    fn input_render_handle_message (&mut self, _message : GlobalMessage)
-      -> Option <()>
-    {
-      //use colored::Colorize;
-      trace!("readline handle message...");
-      match _message {
-        GlobalMessage::FromechoMsg (FromechoMsg::Echo (echo)) => {
-          info!("InputRender: received echo \"{}\"", echo);
-        },
-        _ => unreachable!()
-      }
-      trace!("...readline handle message");
-      Some(())
-    }
-    */
-
-    fn input_render_update (&mut self) -> Option <()> {
+    fn input_render_update (&mut self) -> apis::process::ControlFlow {
       trace!("input_render update...");
 
       trace!("input_render frame: {}", self.frame);
 
-      let mut result      = Some (());
+      let mut result      = apis::process::ControlFlow::Continue;
       let mut presult     = self.result.clone();
       let mut clear_color = self.clear_color;
       { // glutin_glium_context scope
@@ -355,11 +321,11 @@ pub mod cym {
                   if keyboard_input.state == glutin::ElementState::Pressed {
                     match keyboard_input.virtual_keycode {
                       Some (glutin::VirtualKeyCode::Tab) => {
-                        result  = None;
+                        result  = apis::process::ControlFlow::Break;
                         presult = ModeControl::Next;
                       }
                       Some (glutin::VirtualKeyCode::Q) => {
-                        result  = None;
+                        result  = apis::process::ControlFlow::Break;
                         presult = ModeControl::Quit;
                       }
                       Some (glutin::VirtualKeyCode::C) => {
@@ -442,29 +408,12 @@ pub mod wgb {
   }
 
   impl InputRender {
-    /*
-    fn input_render_handle_message (&mut self, _message : GlobalMessage)
-      -> Option <()>
-    {
-      //use colored::Colorize;
-      trace!("readline handle message...");
-      match _message {
-        GlobalMessage::FromechoMsg (FromechoMsg::Echo (echo)) => {
-          info!("InputRender: received echo \"{}\"", echo);
-        },
-        _ => unreachable!()
-      }
-      trace!("...readline handle message");
-      Some(())
-    }
-    */
-
-    fn input_render_update (&mut self) -> Option <()> {
+    fn input_render_update (&mut self) -> apis::process::ControlFlow {
       trace!("input_render update...");
 
       trace!("input_render frame: {}", self.frame);
 
-      let mut result      = Some (());
+      let mut result      = apis::process::ControlFlow::Continue;
       let mut presult     = self.result.clone();
       let mut clear_color = self.clear_color;
       { // glutin_glium_context scope
@@ -483,11 +432,11 @@ pub mod wgb {
                   if keyboard_input.state == glutin::ElementState::Pressed {
                     match keyboard_input.virtual_keycode {
                       Some (glutin::VirtualKeyCode::Tab) => {
-                        result = None;
+                        result  = apis::process::ControlFlow::Break;
                         presult = ModeControl::Next;
                       }
                       Some (glutin::VirtualKeyCode::Q) => {
-                        result = None;
+                        result  = apis::process::ControlFlow::Break;
                         presult = ModeControl::Quit;
                       }
                       Some (glutin::VirtualKeyCode::W) => {

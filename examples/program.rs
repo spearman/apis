@@ -126,9 +126,9 @@ pub mod chargen_upcase {
             assert!(_proc.update_count <= MAX_UPDATES);
             if _proc.update_count == MAX_UPDATES {
               _proc.send (ChannelId::Charstream, Charstreammessage::Quit);
-              None
+              apis::process::ControlFlow::Break
             } else {
-              Some (())
+              apis::process::ControlFlow::Continue
             }
           }
         }
@@ -147,11 +147,11 @@ pub mod chargen_upcase {
               GlobalMessage::Charstreammessage (charstreammessage) => {
                 match charstreammessage {
                   Charstreammessage::Quit => {
-                    None
+                    apis::process::ControlFlow::Break
                   }
                   Charstreammessage::Achar (ch) => {
                     _proc.history.push (ch.to_uppercase().next().unwrap());
-                    Some (())
+                    apis::process::ControlFlow::Continue
                   }
                 }
               }
@@ -163,7 +163,7 @@ pub mod chargen_upcase {
             } else {
               println!("upcase history: {}", _proc.history);
             }
-            Some (())
+            apis::process::ControlFlow::Continue
           }
         }
       ]
@@ -232,7 +232,7 @@ pub mod rand_source {
             const MAX_UPDATES : u64 = 5;
             if _proc.update_count <= MAX_UPDATES {
               // continue
-              Some (())
+              apis::process::ControlFlow::Continue
             } else {
               // quit
               _proc.send_to (
@@ -243,7 +243,7 @@ pub mod rand_source {
                 ChannelId::Randints, ProcessId::Sum3, Randintsmessage::Quit);
               _proc.send_to (
                 ChannelId::Randints, ProcessId::Sum4, Randintsmessage::Quit);
-              None
+              apis::process::ControlFlow::Break
             }
           }
         }
@@ -259,11 +259,11 @@ pub mod rand_source {
               GlobalMessage::Randintsmessage (Randintsmessage::Anint (anint)) => {
                 // continue
                 _proc.sum += anint;
-                Some (())
+                apis::process::ControlFlow::Continue
               }
               GlobalMessage::Randintsmessage (Randintsmessage::Quit) => {
                 // quit
-                None
+                apis::process::ControlFlow::Break
               }
             }
           }
@@ -273,7 +273,7 @@ pub mod rand_source {
             } else {
               println!("sum 1: {}", _proc.sum);
             }
-            Some (())
+            apis::process::ControlFlow::Continue
           }
         }
         //
@@ -288,11 +288,11 @@ pub mod rand_source {
               GlobalMessage::Randintsmessage (Randintsmessage::Anint (anint)) => {
                 // continue
                 _proc.sum += anint;
-                Some (())
+                apis::process::ControlFlow::Continue
               }
               GlobalMessage::Randintsmessage (Randintsmessage::Quit) => {
                 // quit
-                None
+                apis::process::ControlFlow::Break
               }
             }
           }
@@ -302,7 +302,7 @@ pub mod rand_source {
             } else {
               println!("sum 2: {}", _proc.sum);
             }
-            Some (())
+            apis::process::ControlFlow::Continue
           }
         }
         //
@@ -317,11 +317,11 @@ pub mod rand_source {
               GlobalMessage::Randintsmessage (Randintsmessage::Anint (anint)) => {
                 // continue
                 _proc.sum += anint;
-                Some (())
+                apis::process::ControlFlow::Continue
               }
               GlobalMessage::Randintsmessage (Randintsmessage::Quit) => {
                 // quit
-                None
+                apis::process::ControlFlow::Break
               }
             }
           }
@@ -331,7 +331,7 @@ pub mod rand_source {
             } else {
               println!("sum 3: {}", _proc.sum);
             }
-            Some (())
+            apis::process::ControlFlow::Continue
           }
         }
         //
@@ -346,11 +346,11 @@ pub mod rand_source {
               GlobalMessage::Randintsmessage (Randintsmessage::Anint (anint)) => {
                 // continue
                 _proc.sum += anint;
-                Some (())
+                apis::process::ControlFlow::Continue
               }
               GlobalMessage::Randintsmessage (Randintsmessage::Quit) => {
                 // quit
-                None
+                apis::process::ControlFlow::Break
               }
             }
           }
@@ -360,7 +360,7 @@ pub mod rand_source {
             } else {
               println!("sum 4: {}", _proc.sum);
             }
-            Some (())
+            apis::process::ControlFlow::Continue
           }
         }
       ]

@@ -43,9 +43,7 @@ pub use session::Session;
 //  functions
 ///////////////////////////////////////////////////////////////////////////////
 
-pub fn report <CTX : session::Context> () where
-  CTX : 'static
-{
+pub fn report <CTX : session::Context + 'static> () {
   println!("modes report...");
   session::report::<CTX>();
   process::report::<CTX>();
