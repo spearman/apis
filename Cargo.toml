@@ -25,8 +25,8 @@ git = "git://github.com/spearman/unbounded-spsc.git"
 
 [dependencies.rs-utils]
 version = "0.0.*"
-#git = "git://github.com/spearman/rs-utils.git"
-path = "/home/spearman/rs/local/rs-utils"
+git = "git://github.com/spearman/rs-utils.git"
+#path = "/home/spearman/rs/local/rs-utils"
 
 [dependencies.macro-machines]
 version = "0.1.*"
