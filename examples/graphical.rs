@@ -485,7 +485,7 @@ fn main() {
   use colored::Colorize;
   use apis::Program;
 
-  let example_name = &rs_utils::process::FILE_NAME;
+  let example_name = &rs_utils::process::EXE_FILE_NAME;
 
   println!("{}", format!("{} main...", **example_name)
     .green().bold());
