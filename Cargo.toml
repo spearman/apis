@@ -1,6 +1,6 @@
 [package]
 name = "apis"
-version = "0.0.3"
+version = "0.0.4"
 authors = ["Shane Pearman <spearman@github.com>"]
 license = "MPL-2.0"
 
@@ -25,7 +25,8 @@ git = "git://github.com/spearman/unbounded-spsc.git"
 
 [dependencies.rs-utils]
 version = "0.0.*"
-git = "git://github.com/spearman/rs-utils.git"
+#git = "git://github.com/spearman/rs-utils.git"
+path = "/home/spearman/rs/local/rs-utils"
 
 [dependencies.macro-machines]
 version = "0.1.*"

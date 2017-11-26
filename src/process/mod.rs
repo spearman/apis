@@ -189,16 +189,14 @@ pub trait Process <CTX, RES> where
   fn send <M : Message <CTX>>
     (&self, channel_id : CTX::CID, message : M)
   {
-    use num::ToPrimitive;
-    let cid = channel_id.to_usize().unwrap();
+    let cid = channel_id.into();
     self.sourcepoints()[cid].send (message.into());
   }
 
   fn send_to <M : Message <CTX>>
     (&self, channel_id : CTX::CID, recipient : CTX::PID, message : M)
   {
-    use num::ToPrimitive;
-    let cid = channel_id.to_usize().unwrap();
+    let cid = channel_id.into();
     self.sourcepoints()[cid].send_to (message.into(), recipient);
   }
 

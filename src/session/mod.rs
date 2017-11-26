@@ -227,7 +227,6 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
   /// ```
 
   fn def() -> Result <Def <Self>, Vec <DefineError>> {
-    use num::ToPrimitive;
     use rs_utils::EnumUnitary;
 
     let mut channel_def = vec_map::VecMap::new();
@@ -236,7 +235,7 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
       for cid in Self::CID::iter_variants() {
         assert!{
           channel_def.insert (
-            cid.to_usize().unwrap(), channel::Id::def (&cid)
+            cid.clone().into(), channel::Id::def (&cid)
           ).is_none()
         }
       }
@@ -245,7 +244,7 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
     for pid in Self::PID::iter_variants() {
       assert!{
         process_def.insert (
-          pid.to_usize().unwrap(), process::Id::def (&pid)
+          pid.clone().into(), process::Id::def (&pid)
         ).is_none()
       }
     }
@@ -305,9 +304,8 @@ impl <CTX : Context> Session <CTX> {
 
     if cfg!(debug_assertions) {
       if let Some (ref gproc) = main_process {
-        use num::ToPrimitive;
         use process::Global;
-        assert!(process_handles.contains_key (gproc.id().to_usize().unwrap()));
+        assert!(process_handles.contains_key (gproc.id().into()));
       }
     }
 
@@ -395,10 +393,9 @@ impl <CTX : Context> Session <CTX> {
 
 impl <CTX : Context> Def <CTX> {
   pub fn create_channels (&self) -> vec_map::VecMap <channel::Channel <CTX>> {
-    use num::ToPrimitive;
     let mut channels = vec_map::VecMap::new();
     for (cid, channel_def) in self.channel_def.iter() {
-      debug_assert_eq!(cid, channel_def.id().to_usize().unwrap());
+      debug_assert_eq!(cid, channel_def.id().clone().into());
       assert!(channels.insert (cid, channel::Id::create (channel_def.clone()))
         .is_none());
     }
@@ -423,8 +420,6 @@ impl <CTX : Context> Def <CTX> {
   }
 
   fn validate_roles (&self) -> Result <(), Vec <DefineError>> {
-    use num::ToPrimitive;
-
     let mut errors = Vec::new();
 
     // create empty vec maps representing the sourcepoints and endpoints for
@@ -433,7 +428,7 @@ impl <CTX : Context> Def <CTX> {
       use rs_utils::EnumUnitary;
       let mut v = vec_map::VecMap::new();
       for pid in CTX::PID::iter_variants() {
-        assert!(v.insert (pid.to_usize().unwrap(), Vec::new()).is_none());
+        assert!(v.insert (pid.into(), Vec::new()).is_none());
       }
       v
     };
@@ -447,12 +442,12 @@ impl <CTX : Context> Def <CTX> {
       let channel_id = CTX::CID::from_usize (cid).unwrap();
       debug_assert_eq!(channel_id, *channel_def.id());
       for producer_id in channel_def.producers().iter() {
-        let pid = producer_id.to_usize().unwrap();
+        let pid          = producer_id.clone().into();
         let sourcepoints = &mut sourcepoints_from_channels[pid];
         sourcepoints.push (channel_id);
       }
       for consumer_id in channel_def.consumers().iter() {
-        let pid = consumer_id.to_usize().unwrap();
+        let pid       = consumer_id.clone().into();
         let endpoints = &mut endpoints_from_channels[pid];
         endpoints.push (channel_id);
       }
@@ -461,7 +456,7 @@ impl <CTX : Context> Def <CTX> {
     // compare the resulting sourcepoint and endpoint vec maps against those
     // defined in the process infos
     for (pid, process_def) in self.process_def.iter() {
-      debug_assert_eq!(pid, process_def.id().to_usize().unwrap());
+      debug_assert_eq!(pid, process_def.id().clone().into());
       let sourcepoints_from_channels = &mut sourcepoints_from_channels[pid];
       sourcepoints_from_channels.as_mut_slice().sort();
       let mut sourcepoints = process_def.sourcepoints().clone();
@@ -473,7 +468,7 @@ impl <CTX : Context> Def <CTX> {
     }
 
     for (pid, process_def) in self.process_def.iter() {
-      debug_assert_eq!(pid, process_def.id().to_usize().unwrap());
+      debug_assert_eq!(pid, process_def.id().clone().into());
       let endpoints_from_channels = &mut endpoints_from_channels[pid];
       endpoints_from_channels.as_mut_slice().sort();
       let mut endpoints = process_def.endpoints().clone();

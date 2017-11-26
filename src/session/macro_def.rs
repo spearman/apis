@@ -261,9 +261,7 @@ macro_rules! def_session {
       fn extract_result (session_results : &mut vec_map::VecMap <GlobalPresult>)
         -> Result <($($presult_type)*), String>
       {
-        use num::ToPrimitive;
-
-        let pid = ProcessId::$process.to_usize().unwrap();
+        let pid = ProcessId::$process as usize;
         let global_presult = try!{
           session_results.remove (pid)
             .ok_or ("process result not present".to_string())

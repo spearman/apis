@@ -123,8 +123,6 @@ macro_rules! def_program {
 
                     // handle continuations
                     $($({
-                      use num::ToPrimitive;
-
                       // if the source process is on the main thread, the
                       // target process must also be on the main thread
                       // TODO: make this a program initialization error
@@ -153,10 +151,10 @@ macro_rules! def_program {
                         }
                       }
 
-                      let prev_pid = $source_mod::ProcessId::$source_proc
-                        .to_usize().unwrap();
+                      let prev_pid        = $source_mod::ProcessId::$source_proc
+                        as usize;
                       let next_process_id = $target_mod::ProcessId::$target_proc;
-                      let next_pid = next_process_id.to_usize().unwrap();
+                      let next_pid        = next_process_id as usize;
                       let mut prev_process_handle
                         = session.as_mut().process_handles.remove (prev_pid)
                           .unwrap();

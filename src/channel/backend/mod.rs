@@ -114,8 +114,7 @@ where
     unimplemented!()  // see TODO above
   }
   fn send_to (&self, message : CTX::GMSG, recipient : CTX::PID) {
-    use num::ToPrimitive;
-    let pid    = recipient.to_usize().unwrap();
+    let pid    = <CTX::PID as Into <usize>>::into (recipient);
     let sender = &self[pid];
     unbounded_spsc::Sender::send (sender, M::try_from(message).ok().unwrap())
       .unwrap()
@@ -132,8 +131,7 @@ where
     unimplemented!()  // see TODO above
   }
   fn send_to (&self, message : CTX::GMSG, recipient : CTX::PID) {
-    use num::ToPrimitive;
-    let pid    = recipient.to_usize().unwrap();
+    let pid    = recipient.into();
     let sender = &self[pid];
     std::sync::mpsc::Sender::send (sender, M::try_from(message).ok().unwrap())
       .unwrap()
@@ -212,19 +210,18 @@ impl <CTX, M> From <Simplex <CTX, M>> for channel::Channel <CTX> where
   M   : Message <CTX> + 'static
 {
   fn from (simplex : Simplex <CTX, M>) -> Self {
-    use num::ToPrimitive;
     let (producer_id, sourcepoint) = simplex.producer;
-    let (consumer_id, endpoint) = simplex.consumer;
+    let (consumer_id, endpoint)    = simplex.consumer;
     let mut sourcepoints : vec_map::VecMap <Box <channel::Sourcepoint <CTX>>>
       = vec_map::VecMap::new();
     assert!(
-      sourcepoints.insert (producer_id.to_usize().unwrap(), Box::new (sourcepoint))
+      sourcepoints.insert (producer_id.into(), Box::new (sourcepoint))
         .is_none()
     );
     let mut endpoints : vec_map::VecMap <Box <channel::Endpoint <CTX>>>
       = vec_map::VecMap::new();
     assert!(
-      endpoints.insert (consumer_id.to_usize().unwrap(), Box::new (endpoint))
+      endpoints.insert (consumer_id.into(), Box::new (endpoint))
         .is_none()
     );
     channel::Channel {
@@ -250,12 +247,11 @@ where
   fn try_from (def : channel::Def <CTX>) -> Result <Self, Self::Error> {
     match def.kind {
       channel::Kind::Sink => {
-        use num::ToPrimitive;
         let (sourcepoint, endpoint) = std::sync::mpsc::channel();
         let mut producers = vec_map::VecMap::new();
         for producer_id in def.producers.iter() {
           assert!(
-            producers.insert (producer_id.to_usize().unwrap(), sourcepoint.clone())
+            producers.insert (producer_id.clone().into(), sourcepoint.clone())
               .is_none());
         }
         let consumer_id = def.consumers[0];
@@ -275,7 +271,6 @@ impl <CTX, M> From <Sink <CTX, M>> for channel::Channel <CTX> where
   M   : Message <CTX> + 'static
 {
   fn from (sink : Sink <CTX, M>) -> Self {
-    use num::ToPrimitive;
     let mut sourcepoints : vec_map::VecMap <Box <channel::Sourcepoint <CTX>>>
       = vec_map::VecMap::new();
     for (producer_id, sourcepoint) in sink.producers.into_iter() {
@@ -286,7 +281,7 @@ impl <CTX, M> From <Sink <CTX, M>> for channel::Channel <CTX> where
     let mut endpoints : vec_map::VecMap <Box <channel::Endpoint <CTX>>>
       = vec_map::VecMap::new();
     assert!(
-      endpoints.insert (consumer_id.to_usize().unwrap(), Box::new (endpoint))
+      endpoints.insert (consumer_id.into(), Box::new (endpoint))
         .is_none());
     channel::Channel {
       def: sink.def,
@@ -315,12 +310,11 @@ where
         let mut sourcepoints = vec_map::VecMap::new();
         let mut consumers = vec_map::VecMap::new();
         for consumer_id in def.consumers.iter() {
-          use num::ToPrimitive;
           let (sourcepoint, endpoint) = unbounded_spsc::channel();
           assert!(
-            sourcepoints.insert (consumer_id.to_usize().unwrap(), sourcepoint)
+            sourcepoints.insert (consumer_id.clone().into(), sourcepoint)
               .is_none());
-          assert!(consumers.insert (consumer_id.to_usize().unwrap(), endpoint)
+          assert!(consumers.insert (consumer_id.clone().into(), endpoint)
             .is_none());
         }
         Ok (Source {
@@ -339,13 +333,12 @@ impl <CTX, M> From <Source <CTX, M>> for channel::Channel <CTX> where
   M   : Message <CTX> + 'static
 {
   fn from (source : Source <CTX, M>) -> Self {
-    use num::ToPrimitive;
     let mut sourcepoints : vec_map::VecMap <Box <channel::Sourcepoint <CTX>>>
       = vec_map::VecMap::new();
     let (producer_id, sourcepoint) = source.producer;
     assert!(
       sourcepoints.insert (
-        producer_id.to_usize().unwrap(), Box::new (sourcepoint)
+        producer_id.into(), Box::new (sourcepoint)
       ).is_none());
     let mut endpoints : vec_map::VecMap <Box <channel::Endpoint <CTX>>>
       = vec_map::VecMap::new();
