@@ -100,6 +100,8 @@ macro_rules! def_session {
           kind { $process_kind:expr }
           sourcepoints [ $($sourcepoint:ident),* ]
           endpoints    [ $($endpoint:ident),* ]
+          $(initialize   $initialize:block)*
+          $(terminate    $terminate:block)*
           handle_message $handle_message:block
           update         $update:block
         })+
@@ -251,7 +253,7 @@ macro_rules! def_session {
     //
     $(
     impl $crate::Process <$context, ($($presult_type)*)> for $process {
-      fn init (inner : $crate::process::Inner <$context>) -> Self {
+      fn new (inner : $crate::process::Inner <$context>) -> Self {
         $process {
           inner,
           result:        def_session!(@expr_default $($($presult_default)*)*),
@@ -287,6 +289,18 @@ macro_rules! def_session {
       fn global_result (&mut self) -> GlobalPresult {
         GlobalPresult::$process (self.result.clone())
       }
+      $(
+      fn initialize (&mut self) {
+        let $process_self = self;
+        $initialize
+      }
+      )*
+      $(
+      fn terminate (&mut self) {
+        let $process_self = self;
+        $terminate
+      }
+      )*
       fn handle_message (&mut self, message : GlobalMessage)
         -> $crate::process::ControlFlow
       {
@@ -366,7 +380,7 @@ macro_rules! def_session {
             std::thread::Builder::new()
               .name (stringify!($process).to_string())
               .spawn (||{
-                let process = $process::init (inner);
+                let process = $process::new (inner);
                 process.run_continue()
               }).unwrap()
           }),+
@@ -377,7 +391,7 @@ macro_rules! def_session {
         use $crate::Process;
         match *inner.as_ref().def.id() {
           $(ProcessId::$process =>
-            GlobalProcess::$process ($process::init (inner))
+            GlobalProcess::$process ($process::new (inner))
           ),+
         }
       }

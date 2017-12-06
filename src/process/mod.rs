@@ -126,7 +126,7 @@ pub trait Process <CTX, RES> where
   //
   //  required
   //
-  fn init           (inner : Inner <CTX>)            -> Self;
+  fn new            (inner : Inner <CTX>)            -> Self;
   fn inner_ref      (&self)                          -> &Inner <CTX>;
   fn inner_mut      (&mut self)                      -> &mut Inner <CTX>;
   fn result_ref     (&self)                          -> &RES;
@@ -136,6 +136,11 @@ pub trait Process <CTX, RES> where
     -> Result <RES, String>;
   fn handle_message (&mut self, message : CTX::GMSG) -> ControlFlow;
   fn update         (&mut self)                      -> ControlFlow;
+
+  /// Does nothing by default, may be overridden.
+  fn initialize (&mut self) { }
+  /// Does nothing by default, may be overridden.
+  fn terminate  (&mut self) { }
 
   //
   //  provided
@@ -255,11 +260,13 @@ pub trait Process <CTX, RES> where
   {
     use colored::Colorize;
 
-    let t_start  = std::time::SystemTime::now();
+    self.initialize();
+    self.inner_mut().handle_event (inner::EventId::Run.into()).unwrap();
+
+    let t_start = std::time::SystemTime::now();
     debug!("{}: {:?}",
       format!("process id[{:?}] start time", self.id()).cyan(),
       t_start);
-
     let (tick_ms, ticks_per_update) = {
       match *self.kind() {
         Kind::Synchronous { tick_ms, ticks_per_update }
@@ -270,7 +277,6 @@ pub trait Process <CTX, RES> where
     };
     debug_assert!(1 <= tick_ms);
     debug_assert!(1 <= ticks_per_update);
-
     let tick_dur = std::time::Duration::from_millis (tick_ms as u64);
     let mut t_last             = t_start - tick_dur;
     let mut t_next             = t_start;
@@ -279,8 +285,8 @@ pub trait Process <CTX, RES> where
     #[allow(unused_variables)]
     let mut message_count      = 0;
     let mut update_count       = 0;
+
     let endpoints = self.take_endpoints();
-    self.inner_mut().handle_event (inner::EventId::Run.into()).unwrap();
     'run_loop: while *self.inner_ref().state().id() == inner::StateId::Running {
       let t_now = std::time::SystemTime::now();
       if cfg!(debug_assertions) {
@@ -348,6 +354,7 @@ pub trait Process <CTX, RES> where
       }
 
     } // end 'run_loop
+    self.terminate();
   } // end fn run_synchronous
 
   fn run_asynchronous (&mut self) where
@@ -356,6 +363,9 @@ pub trait Process <CTX, RES> where
   {
     use num::FromPrimitive;
     use colored::Colorize;
+
+    self.initialize();
+    self.inner_mut().handle_event (inner::EventId::Run.into()).unwrap();
 
     let t_start = std::time::SystemTime::now();
     debug!("{}: {:?}",
@@ -370,16 +380,15 @@ pub trait Process <CTX, RES> where
       }
     };
     debug_assert!(1 <= messages_per_update);
-
     #[allow(unused_variables)]
     let mut message_count         = 0;
     #[allow(unused_variables)]
     let mut update_count          = 0;
     let mut messages_since_update = 0;
+
     let endpoints       = self.take_endpoints();
     let (cid, endpoint) = endpoints.iter().next().unwrap();
     let channel_id      = CTX::CID::from_usize (cid).unwrap();
-    self.inner_mut().handle_event (inner::EventId::Run.into()).unwrap();
     'run_loop: while *self.inner_ref().state().id() == inner::StateId::Running {
       // wait on message
       let message = endpoint.recv();
@@ -420,19 +429,19 @@ pub trait Process <CTX, RES> where
   {
     use colored::Colorize;
 
-    let t_start  = std::time::SystemTime::now();
+    self.initialize();
+    self.inner_mut().handle_event (inner::EventId::Run.into()).unwrap();
+
+    let t_start = std::time::SystemTime::now();
     debug!("{}: {:?}",
       format!("process id[{:?}] start time", self.id()).cyan(),
       t_start);
-
     debug_assert_eq!(Kind::AsynchronousPolling, *self.kind());
-
     #[allow(unused_variables)]
     let mut message_count = 0;
     #[allow(unused_variables)]
     let mut update_count  = 0;
     let endpoints = self.take_endpoints();
-    self.inner_mut().handle_event (inner::EventId::Run.into()).unwrap();
     'run_loop: while *self.inner_ref().state().id() == inner::StateId::Running {
       // poll messages
       for (cid, endpoint) in endpoints.iter() {
@@ -469,9 +478,9 @@ pub trait Process <CTX, RES> where
       update_count += 1;
 
     } // end 'run_loop
-
+    self.terminate();
   } // end fn run_asycnhronous_polling
-}
+} // end trait Process
 
 /// Unique identifier with a total mapping to process defs.
 pub trait Id <CTX> where

@@ -429,7 +429,7 @@ fn main() {
     std::fs::File::create (format!("{}.dot", **example_name))
   };
   unwrap!(f.write_all (Interactive::dotfile_hide_defaults().as_bytes()));
-  std::mem::drop (f);
+  drop (f);
 
   // show some information about the program
   Interactive::report();

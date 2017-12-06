@@ -179,13 +179,13 @@ fn main() {
     std::fs::File::create (format!("{}.dot", **example_name))
   };
   unwrap!{ f.write_all (ChargenUpcase::dotfile().as_bytes()) };
-  std::mem::drop (f);
+  drop (f);
   // create a dotfile for the process inner state machine
   let mut f = unwrap!{ std::fs::File::create ("process-inner.dot") };
   unwrap!{
     f.write_all (apis::process::Inner::<ChargenUpcase>::dotfile().as_bytes())
   };
-  std::mem::drop (f);
+  drop (f);
 
   // here is where we find out if the session definition has any errors
   let session_def = unwrap!{ ChargenUpcase::def() };

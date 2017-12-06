@@ -405,7 +405,7 @@ fn main() {
     std::fs::File::create (format!("{}.dot", **example_name))
   };
   unwrap!(f.write_all (Myprogram::dotfile_hide_defaults().as_bytes()));
-  std::mem::drop (f);
+  drop (f);
 
   // create a program in the initial mode
   let mut myprogram = Myprogram::initial();

@@ -218,14 +218,14 @@ macro_rules! def_program {
                           ).unwrap()
                         );
                         let mut $next_proc
-                          = $target_mod::$target_proc::init (inner);
+                          = $target_mod::$target_proc::new (inner);
 
                         // perform custom continuation code and drop the process
                         match prev_gproc {
                           $source_mod::GlobalProcess::$source_proc (mut $prev_proc)
                           => {
                             $closure_block
-                            std::mem::drop ($prev_proc);
+                            drop ($prev_proc);
                           }
                           _ => unreachable!("gproc should match intended recipient")
                         }

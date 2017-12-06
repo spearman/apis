@@ -174,6 +174,7 @@ pub mod bgr {
           kind { apis::process::Kind::AsynchronousPolling }
           sourcepoints [ ]
           endpoints    [ ]
+          initialize     { println!("...BGR initialize..."); }
           handle_message { unreachable!() }
           update         { _proc.input_render_update() }
         }
@@ -286,6 +287,7 @@ pub mod cym {
           kind { apis::process::Kind::AsynchronousPolling }
           sourcepoints []
           endpoints    []
+          terminate      { println!("...CYM terminate..."); }
           handle_message { unreachable!() }
           update         { _proc.input_render_update() }
         }
@@ -397,6 +399,8 @@ pub mod wgb {
           kind { apis::process::Kind::AsynchronousPolling }
           sourcepoints []
           endpoints    []
+          initialize     { println!("...WGB initialize..."); }
+          terminate      { println!("...WGB terminate..."); }
           handle_message { unreachable!() }
           update         { _proc.input_render_update() }
         }
@@ -501,7 +505,7 @@ fn main() {
     std::fs::File::create (format!("{}.dot", **example_name))
   };
   unwrap!(f.write_all (Graphical::dotfile_hide_defaults().as_bytes()));
-  std::mem::drop (f);
+  drop (f);
 
   // show some information about the program
   Graphical::report();
