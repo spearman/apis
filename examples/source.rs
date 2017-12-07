@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 #![feature(const_fn)]
+#![feature(fnbox)]
 #![feature(try_from)]
 
 #[macro_use] extern crate unwrap;

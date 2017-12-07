@@ -1,6 +1,6 @@
 [package]
 name = "apis"
-version = "0.0.5"
+version = "0.0.6"
 authors = ["Shane Pearman <spearman@github.com>"]
 license = "MPL-2.0"
 
@@ -29,7 +29,7 @@ git = "git://github.com/spearman/rs-utils.git"
 #path = "/home/spearman/rs/local/rs-utils"
 
 [dependencies.macro-machines]
-version = "0.1.*"
+version = "0.2.*"
 git = "git://github.com/spearman/macro-machines.git"
 #path = "/home/spearman/rs/local/macro-machines"
 

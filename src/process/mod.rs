@@ -37,20 +37,18 @@ pub struct Def <CTX : session::Context> {
 }
 
 /// Handle to a process held by the session.
-#[derive(Debug)]
 pub struct Handle <CTX : session::Context> {
   pub result_rx        : std::sync::mpsc::Receiver <CTX::GPRES>,
-  pub continuation_tx  : std::sync::mpsc::Sender <Continuation <CTX>>,
+  pub continuation_tx  : std::sync::mpsc::Sender <
+    Box <std::boxed::FnBox (CTX::GPROC) -> Option <()> + Send>
+  >,
   /// When the session drops, the `finish` method will either join or send
   /// a continuation depending on the contents of this field.
   pub join_or_continue :
     either::Either <
-      std::thread::JoinHandle <Option <()>>, Option <Continuation <CTX>>>
-}
-
-/// Newtype for process continuations in order to implement `Debug`.
-pub struct Continuation <CTX : session::Context> {
-  pub continuation : Box <std::boxed::FnBox (CTX::GPROC) -> Option <()> + Send>
+      std::thread::JoinHandle <Option <()>>,
+      Option <Box <std::boxed::FnBox (CTX::GPROC) -> Option <()> + Send>>
+    >
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -232,7 +230,7 @@ pub trait Process <CTX, RES> where
     let continuation : Box <std::boxed::FnBox (CTX::GPROC) -> Option <()> + Send>
     = {
       let session_handle = &self.inner_ref().as_ref().session_handle;
-      session_handle.continuation_rx.recv().unwrap().continuation
+      session_handle.continuation_rx.recv().unwrap()
     };
     continuation (self.into())
   }
@@ -303,10 +301,11 @@ pub trait Process <CTX, RES> where
           use num::FromPrimitive;
           let channel_id = CTX::CID::from_usize (cid).unwrap();
           while let Some (message) = endpoint.try_recv() {
-            debug!("{}: {:#?}",
+            use message::Global;
+            debug!("{}: {:?}",
               format!("{:?} receive message on {:?}", self.id(), channel_id)
                 .green().bold(),
-              message);
+              message.id());
             match self.handle_message (message) {
               ControlFlow::Continue => {}
               // TODO: the following is a hazard if further messages are pending
@@ -390,12 +389,13 @@ pub trait Process <CTX, RES> where
     let (cid, endpoint) = endpoints.iter().next().unwrap();
     let channel_id      = CTX::CID::from_usize (cid).unwrap();
     'run_loop: while *self.inner_ref().state().id() == inner::StateId::Running {
+      use message::Global;
       // wait on message
       let message = endpoint.recv();
       debug!("{}: {:#?}",
         format!("{:?} receive message on {:?}", self.id(), channel_id)
           .green().bold(),
-        message);
+        message.id());
       let handle_message_result = self.handle_message (message);
       match handle_message_result {
         ControlFlow::Continue => {}
@@ -448,10 +448,11 @@ pub trait Process <CTX, RES> where
         use num::FromPrimitive;
         let channel_id = CTX::CID::from_usize (cid).unwrap();
         while let Some (message) = endpoint.try_recv() {
+          use message::Global;
           debug!("{}: {:#?}",
             format!("{:?} receive message on {:?}", self.id(), channel_id)
               .green().bold(),
-            message);
+            message.id());
           let handle_message_result = self.handle_message (message);
           match handle_message_result {
             ControlFlow::Continue => {}
@@ -497,7 +498,7 @@ pub trait Id <CTX> where
 
 /// The global process type.
 pub trait Global <CTX> where
-  Self : Sized + std::fmt::Debug,
+  Self : Sized,
   CTX  : session::Context <GPROC=Self>
 {
   fn id (&self) -> CTX::PID;
@@ -765,12 +766,6 @@ impl Kind {
     }
   }
 
-}
-
-impl <CTX : session::Context> std::fmt::Debug for Continuation <CTX> {
-  fn fmt (&self, f : &mut std::fmt::Formatter) -> std::fmt::Result {
-    write!(f, "{:p}", self.continuation)
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

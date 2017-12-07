@@ -113,13 +113,13 @@ pub trait Id <CTX> where
 }
 
 /// Interface for a channel sourcepoint.
-pub trait Sourcepoint <CTX : session::Context> : Send + std::fmt::Debug {
+pub trait Sourcepoint <CTX : session::Context> : Send {
   fn send    (&self, message : CTX::GMSG);
   fn send_to (&self, message : CTX::GMSG, recipient : CTX::PID);
 }
 
 /// Interface for a channel endpoint.
-pub trait Endpoint <CTX : session::Context> : Send + std::fmt::Debug {
+pub trait Endpoint <CTX : session::Context> : Send {
   fn recv     (&self) -> CTX::GMSG;
   fn try_recv (&self) -> Option <CTX::GMSG>;
 }

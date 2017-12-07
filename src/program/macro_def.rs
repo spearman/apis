@@ -189,9 +189,15 @@ macro_rules! def_program {
                           <<$target_mod::$target_context
                             as $crate::session::Context>::GPRES>();
                       let (continuation_tx, continuation_rx)
-                        = std::sync::mpsc::channel::
-                          <$crate::process::Continuation
-                            <$target_mod::$target_context>>();
+                        = std::sync::mpsc::channel::<
+                            Box <
+                              std::boxed::FnBox
+                                (<$target_mod::$target_context
+                                  as $crate::session::Context>::GPROC
+                                ) -> Option <()>
+                              + Send
+                            >
+                          >();
 
                       // session handle
                       let session_handle
@@ -273,8 +279,7 @@ macro_rules! def_program {
                         let join_handle = prev_process_handle.join_or_continue
                           .left().unwrap();
                         prev_process_handle.join_or_continue
-                          = either::Either::Right (Some (
-                            $crate::process::Continuation { continuation }));
+                          = either::Either::Right (Some (continuation));
                         assert!{
                           session.as_mut().process_handles.insert (
                             prev_pid, prev_process_handle).is_none()

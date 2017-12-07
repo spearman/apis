@@ -45,7 +45,7 @@ def_machine_nodefault! {
         _session.finish();
       }
       terminate_failure: {
-        panic!("session dropped in state: {:?}", _session.state());
+        panic!("session dropped in state: {:?}", _session.state_id());
       }
     }
   }
@@ -54,15 +54,17 @@ def_machine_nodefault! {
 /// Session metainformation.
 #[derive(Clone,Debug,Eq,PartialEq)]
 pub struct Def <CTX : Context> {
+  name        : String,
   channel_def : vec_map::VecMap <channel::Def <CTX>>,
   process_def : vec_map::VecMap <process::Def <CTX>>
 }
 
 /// Handle to the session held by processes.
-#[derive(Debug)]
 pub struct Handle <CTX : Context> {
   pub result_tx       : std::sync::mpsc::Sender <CTX::GPRES>,
-  pub continuation_rx : std::sync::mpsc::Receiver <process::Continuation <CTX>>
+  pub continuation_rx : std::sync::mpsc::Receiver <
+    Box <std::boxed::FnBox (CTX::GPROC) -> Option <()> + Send>
+  >
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -98,7 +100,8 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
   type GPRES : process::presult::Global <Self>;
 
   //required
-  fn maybe_main() -> Option <Self::PID>;
+  fn maybe_main () -> Option <Self::PID>;
+  fn name       () -> String;
 
   // provided
   //
@@ -249,7 +252,7 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
       }
     }
 
-    Def::define (channel_def, process_def)
+    Def::define (Self::name(), channel_def, process_def)
   }
 }
 
@@ -258,6 +261,18 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
 ///////////////////////////////////////////////////////////////////////////////
 
 impl <CTX : Context> Session <CTX> {
+  pub fn def (&self) -> &Def <CTX> {
+    &self.extended_state().def
+  }
+
+  pub fn name (&self) -> &String {
+    &self.def().name
+  }
+
+  pub fn state_id (&self) -> &StateId {
+    self.state().id()
+  }
+
   /// Creates a new session and runs to completion.
   ///
   /// Transitions from `Ready` to `Running`, starts processes not already
@@ -329,7 +344,9 @@ impl <CTX : Context> Session <CTX> {
           // session control channels
           let (result_tx, result_rx) = std::sync::mpsc::channel::<CTX::GPRES>();
           let (continuation_tx, continuation_rx)
-            = std::sync::mpsc::channel::<process::Continuation <CTX>>();
+            = std::sync::mpsc::channel::<
+                Box <std::boxed::FnBox (CTX::GPROC) -> Option <()> + Send>
+              >();
           // create the process
           let session_handle = Handle::<CTX> { result_tx, continuation_rx };
           let inner = process::Inner::new (process::inner::ExtendedState::new (
@@ -377,9 +394,9 @@ impl <CTX : Context> Session <CTX> {
       match process_handle.join_or_continue {
         either::Either::Left (join_handle) => {
           // terminate
-          process_handle.continuation_tx.send (process::Continuation {
-            continuation: Box::new (|_ : CTX::GPROC| Some (()))
-          }).unwrap();
+          process_handle.continuation_tx.send (
+           Box::new (|_ : CTX::GPROC| Some (()))
+          ).unwrap();
           join_handle.join().unwrap().unwrap()
         }
         either::Either::Right (Some (continuation)) => {
@@ -389,7 +406,14 @@ impl <CTX : Context> Session <CTX> {
       }
     }
   }
+} // end impl Session
+
+impl <CTX : Context> std::fmt::Debug for Session <CTX> {
+  fn fmt (&self, f : &mut std::fmt::Formatter) -> std::fmt::Result {
+    write!(f, "{}[{:?}]", self.name(), self.state_id())
+  }
 }
+
 
 impl <CTX : Context> Def <CTX> {
   pub fn create_channels (&self) -> vec_map::VecMap <channel::Channel <CTX>> {
@@ -408,10 +432,12 @@ impl <CTX : Context> Def <CTX> {
   ///
   /// See public trait method `Context::def` for errors.
   fn define (
+    name        : String,
     channel_def : vec_map::VecMap <channel::Def <CTX>>,
     process_def : vec_map::VecMap <process::Def <CTX>>
   ) -> Result <Self, Vec <DefineError>> {
     let def = Def {
+      name,
       channel_def,
       process_def
     };

@@ -134,7 +134,6 @@ macro_rules! def_session {
     //  processes
     //
     $(
-    #[derive(Debug)]
     pub struct $process {
       inner  : $crate::process::Inner <$context>,
       result : ($($presult_type)*),
@@ -148,7 +147,6 @@ macro_rules! def_session {
     //  messages
     //
     $(
-    #[derive(Debug)]
     pub enum $message_type $message_variants
     )*
 
@@ -178,7 +176,6 @@ macro_rules! def_session {
     //
     //  global process type
     //
-    #[derive(Debug)]
     pub enum GlobalProcess {
       $(
       $process ($process)
@@ -198,7 +195,6 @@ macro_rules! def_session {
     //
     //  global message type
     //
-    #[derive(Debug)]
     pub enum GlobalMessage {
       $(
       $message_type ($message_type)
@@ -241,7 +237,10 @@ macro_rules! def_session {
       type GPROC = GlobalProcess;
       type GPRES = GlobalPresult;
 
-      #[inline]
+      fn name() -> String {
+        format!("{:?}", $context)
+      }
+
       fn maybe_main() -> Option <Self::PID> {
         $(use self::ProcessId::$main_process;)*
         def_session!(@expr_option $($main_process)*)

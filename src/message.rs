@@ -26,7 +26,7 @@ pub trait Id where
 
 /// The global message type.
 pub trait Global <CTX> where
-  Self : Sized + std::fmt::Debug,
+  Self : Sized,
   CTX  : session::Context <GMSG=Self>
 {
   fn id (&self) -> CTX::MID;
@@ -35,8 +35,7 @@ pub trait Global <CTX> where
 /// A local message type with partial mapping from global message type and
 /// total mapping into global message type.
 pub trait Message <CTX : session::Context> where
-  Self : std::convert::TryFrom <CTX::GMSG> + Into <CTX::GMSG>
-    + Send + std::fmt::Debug
+  Self : Send + std::convert::TryFrom <CTX::GMSG> + Into <CTX::GMSG>
 {}
 
 ///////////////////////////////////////////////////////////////////////////////

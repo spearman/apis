@@ -12,5 +12,5 @@ pub trait Global <CTX> where
 pub trait Presult <CTX, P> where
   CTX  : session::Context,
   P    : Process <CTX, Self>,
-  Self : Clone + Default + std::fmt::Debug
+  Self : Clone + Default
 {}

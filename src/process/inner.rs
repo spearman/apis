@@ -38,7 +38,7 @@ def_machine_nodefault! {
     initial_state:  Ready
     terminal_state: Ended {
       terminate_failure: {
-        panic!("process dropped in state: {:?}", _inner.state());
+        panic!("process dropped in state: {:?}", _inner.state().id());
       }
     }
   }

@@ -1,6 +1,7 @@
 #![feature(const_fn)]
-#![feature(try_from)]
 #![feature(core_intrinsics)]
+#![feature(fnbox)]
+#![feature(try_from)]
 
 #[macro_use] extern crate unwrap;
 #[macro_use] extern crate macro_attr;
@@ -409,7 +410,7 @@ fn main() {
 
   // create a program in the initial mode
   let mut myprogram = Myprogram::initial();
-  debug!("myprogram: {:#?}", myprogram);
+  //debug!("myprogram: {:#?}", myprogram);
   Myprogram::report();
   // run to completion
   myprogram.run();
