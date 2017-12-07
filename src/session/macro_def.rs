@@ -517,24 +517,27 @@ macro_rules! def_session {
 
     #[inline]
     pub fn dotfile() -> String {
-      $context::_dotfile (false, false)
+      $context::_dotfile (false)
     }
 
     #[inline]
     pub fn dotfile_hide_defaults() -> String {
-      $context::_dotfile (true, false)
+      $context::_dotfile (true)
     }
 
+    // TODO: this will need a different macro invocation if it is to be allowed
+    /*
     /// *Note*: printing pretty defaults will construct a default *value* and
     /// pretty-print that instead of the raw expression.
     #[inline]
     pub fn dotfile_pretty_defaults() -> String {
       $context::_dotfile (false, false)
     }
+    */
 
     fn _dotfile(
       hide_defaults   : bool,
-      pretty_defaults : bool
+      //pretty_defaults : bool  // TODO: pretty defaults
     ) -> String {
       let mut s = String::new();
 
@@ -549,7 +552,8 @@ macro_rules! def_session {
 
       // nodes
       if !hide_defaults {
-        if !pretty_defaults {
+        // TODO: pretty defaults
+        //if !pretty_defaults {
           $(
           s.push_str (def_session!(
             @fn_dotfile_node
@@ -558,6 +562,7 @@ macro_rules! def_session {
               $(-> ($presult_type $(= $presult_default)*))* {}
           ).as_str());
           )+
+        /*
         } else {
           $(
           s.push_str (def_session!(
@@ -568,6 +573,7 @@ macro_rules! def_session {
           ).as_str());
           )+
         }
+        */
       } else {
         $(
         s.push_str (def_session!(
@@ -778,6 +784,7 @@ macro_rules! def_session {
   //
   // TODO: this was adapted from the state machine macro which doesn't
   // use an HTML table for layout so this may need to be reworked
+  /*
   ( @fn_dotfile_node_pretty_defaults
     process $process:ident
       ($($field_name:ident : $field_type:ty $(= $field_default:expr)*),*)
@@ -910,6 +917,7 @@ macro_rules! def_session {
     s.push_str ("</TABLE>>]\n");
     s
   }};  // end @fn_dotfile_node_pretty_defaults
+  */
 
   //
   //  @fn_dotfile_node_hide_defaults
