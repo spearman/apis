@@ -294,7 +294,6 @@ impl <CTX : Context> Session <CTX> {
     use process::Global;
 
     self.start (process_handles, channels, main_process);
-    self.handle_event (EventId::Run.into()).unwrap();
     if let Some (ref mut main_gproc) = self.as_mut().main_process {
       main_gproc.run();
     }
@@ -384,6 +383,7 @@ impl <CTX : Context> Session <CTX> {
       // take the main process if one was created
       extended_state.main_process = main_process.take();
     } // end spawn all processes not found in input process handles
+    self.handle_event (EventId::Run.into()).unwrap();
 
     debug!("{}: {:#?}", "session started".to_string().cyan(), self);
   }
