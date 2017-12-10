@@ -385,7 +385,8 @@ impl <CTX : Context> Session <CTX> {
     } // end spawn all processes not found in input process handles
     self.handle_event (EventId::Run.into()).unwrap();
 
-    debug!("{}: {:#?}", "session started".to_string().cyan(), self);
+    debug!("{} started",
+      format!("session {:?}:", self).to_string().cyan().bold());
   }
 
   /// Send continuations and wait until terminated threads have joined.

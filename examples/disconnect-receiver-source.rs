@@ -33,12 +33,12 @@ pub const LOG_LEVEL_FILTER
 ///////////////////////////////////////////////////////////////////////////////
 
 def_session! {
-  context DisconnectSource {
+  context DisconnectReceiverSource {
     PROCESSES where
       let _proc       = self,
       let _message_in = message_in
     [
-      process Hangup () {
+      process Foosource () {
         kind {
           apis::process::Kind::Synchronous { tick_ms: 20, ticks_per_update: 1 }
         }
@@ -47,32 +47,42 @@ def_session! {
         handle_message { unreachable!() }
         update {
           std::thread::sleep (std::time::Duration::from_millis (1000));
+          assert!{
+            _proc.send_to (ChannelId::Foochan, ProcessId::Hangup1,
+              Foochanmessage::Fooint { foo: 1 }
+            ).is_err()
+          }
+          assert!{
+            _proc.send_to (ChannelId::Foochan, ProcessId::Hangup2,
+              Foochanmessage::Fooint { foo: 2 }
+            ).is_err()
+          }
           apis::process::ControlFlow::Break
         }
       }
-      process Async1 () {
-        kind           { apis::process::Kind::asynchronous_default() }
+      process Hangup1 () {
+        kind           { apis::process::Kind::AsynchronousPolling }
         sourcepoints   []
         endpoints      [Foochan]
         handle_message { unreachable!() }
-        update         { apis::process::ControlFlow::Continue }
+        update         { apis::process::ControlFlow::Break }
       }
-      process Async2 () {
-        kind           { apis::process::Kind::asynchronous_default() }
+      process Hangup2 () {
+        kind           { apis::process::Kind::AsynchronousPolling }
         sourcepoints   []
         endpoints      [Foochan]
         handle_message { unreachable!() }
-        update         { apis::process::ControlFlow::Continue }
+        update         { apis::process::ControlFlow::Break }
       }
     ]
     CHANNELS  [
-      channel Foochan <Foo> (Source) {
-        producers [Hangup]
-        consumers [Async1, Async2]
+      channel Foochan <Foochanmessage> (Source) {
+        producers [Foosource]
+        consumers [Hangup1, Hangup2]
       }
     ]
     MESSAGES [
-      message Foo {
+      message Foochanmessage {
         Fooint {
           foo : i8
         }
@@ -101,19 +111,20 @@ fn main() {
       simplelog::Config::default())
   };
 
-  apis::report::<DisconnectSource>();
+  apis::report::<DisconnectReceiverSource>();
 
   // create a dotfile for the session
   let mut f = unwrap!{
     std::fs::File::create (format!("{}.dot", **example_name))
   };
-  unwrap!{ f.write_all (DisconnectSource::dotfile().as_bytes()) };
+  unwrap!{ f.write_all (DisconnectReceiverSource::dotfile().as_bytes()) };
   drop (f);
 
   // here is where we find out if the session definition has any errors
-  let session_def = unwrap!{ DisconnectSource::def() };
+  let session_def = unwrap!{ DisconnectReceiverSource::def() };
   // create the session from the definition
-  let mut session : apis::session::Session <DisconnectSource> = session_def.into();
+  let mut session : apis::session::Session <DisconnectReceiverSource>
+    = session_def.into();
   // run to completion
   let results = session.run();
   println!("results: {:?}", results);

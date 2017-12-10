@@ -14,7 +14,7 @@ extern crate num;
 extern crate vec_map;
 extern crate escapade;
 
-/*#[macro_use]*/ extern crate log;
+//#[macro_use] extern crate log;
 extern crate colored;
 extern crate simplelog;
 
@@ -26,62 +26,56 @@ extern crate simplelog;
 
 //  Off, Error, Warn, Info, Debug, Trace
 pub const LOG_LEVEL_FILTER
-  : simplelog::LogLevelFilter = simplelog::LogLevelFilter::Debug;
+  : simplelog::LogLevelFilter = simplelog::LogLevelFilter::Info;
 
 ///////////////////////////////////////////////////////////////////////////////
 //  session                                                                  //
 ///////////////////////////////////////////////////////////////////////////////
 
 def_session! {
-  context DisconnectSink {
+  context DisconnectSenderSource {
     PROCESSES where
       let _proc       = self,
       let _message_in = message_in
     [
-      process Hangup1 () {
+      process Hangup () {
         kind {
           apis::process::Kind::Synchronous { tick_ms: 20, ticks_per_update: 1 }
         }
         sourcepoints   [Foochan]
         endpoints      []
         handle_message { unreachable!() }
-        update         {
+        update {
           std::thread::sleep (std::time::Duration::from_millis (1000));
           apis::process::ControlFlow::Break
         }
       }
-      process Hangup2 () {
-        kind {
-          apis::process::Kind::Synchronous { tick_ms: 20, ticks_per_update: 1 }
-        }
-        sourcepoints   [Foochan]
-        endpoints      []
-        handle_message { unreachable!() }
-        update         {
-          std::thread::sleep (std::time::Duration::from_millis (500));
-          apis::process::ControlFlow::Break
-        }
-      }
-      process Async () {
+      process Async1 () {
         kind           { apis::process::Kind::asynchronous_default() }
         sourcepoints   []
         endpoints      [Foochan]
         handle_message { unreachable!() }
-        update         {
-          apis::process::ControlFlow::Continue
-        }
+        update         { apis::process::ControlFlow::Continue }
+      }
+      process Async2 () {
+        kind           { apis::process::Kind::asynchronous_default() }
+        sourcepoints   []
+        endpoints      [Foochan]
+        handle_message { unreachable!() }
+        update         { apis::process::ControlFlow::Continue }
       }
     ]
     CHANNELS  [
-      channel Foochan <Foochanmessage> (Sink) {
-        producers [Hangup1, Hangup2]
-        consumers [Async]
+      channel Foochan <Foo> (Source) {
+        producers [Hangup]
+        consumers [Async1, Async2]
       }
     ]
     MESSAGES [
-      message Foochanmessage {
-        Bar,
-        Baz
+      message Foo {
+        Fooint {
+          foo : i8
+        }
       }
     ]
   }
@@ -107,19 +101,19 @@ fn main() {
       simplelog::Config::default())
   };
 
-  apis::report::<DisconnectSink>();
+  apis::report::<DisconnectSenderSource>();
 
   // create a dotfile for the session
   let mut f = unwrap!{
     std::fs::File::create (format!("{}.dot", **example_name))
   };
-  unwrap!{ f.write_all (DisconnectSink::dotfile().as_bytes()) };
+  unwrap!{ f.write_all (DisconnectSenderSource::dotfile().as_bytes()) };
   drop (f);
 
   // here is where we find out if the session definition has any errors
-  let session_def = unwrap!{ DisconnectSink::def() };
+  let session_def = unwrap!{ DisconnectSenderSource::def() };
   // create the session from the definition
-  let mut session : apis::session::Session <DisconnectSink>
+  let mut session : apis::session::Session <DisconnectSenderSource>
     = session_def.into();
   // run to completion
   let results = session.run();
