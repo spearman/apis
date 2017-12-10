@@ -397,10 +397,10 @@ pub trait Process <CTX, RES> where
           t_now);
 
         // poll messages
-        for (cid, endpoint) in endpoints.iter() {
+        'poll_outer: for (cid, endpoint) in endpoints.iter() {
           use num::FromPrimitive;
           let channel_id = CTX::CID::from_usize (cid).unwrap();
-          loop {
+          'poll_inner: loop {
             match endpoint.try_recv() {
               Ok (message) => {
                 use message::Global;
@@ -416,11 +416,12 @@ pub trait Process <CTX, RES> where
                       self.inner_mut().handle_event (inner::EventId::End.into())
                         .unwrap();
                     }
+                    break 'poll_outer
                   }
                 }
                 message_count += 1;
               }
-              Err (channel::TryRecvError::Empty) => { break }
+              Err (channel::TryRecvError::Empty) => { break 'poll_inner }
               Err (channel::TryRecvError::Disconnected) => {
                 use colored::Colorize;
                 warn!("{} sender disconnected",
@@ -432,7 +433,7 @@ pub trait Process <CTX, RES> where
                   self.inner_mut().handle_event (inner::EventId::End.into())
                     .unwrap();
                 }
-                break
+                break 'poll_outer
               }
             }
           }
@@ -596,10 +597,10 @@ pub trait Process <CTX, RES> where
     let endpoints = self.take_endpoints();
     'run_loop: while self.state_id() == inner::StateId::Running {
       // poll messages
-      for (cid, endpoint) in endpoints.iter() {
+      'poll_outer: for (cid, endpoint) in endpoints.iter() {
         use num::FromPrimitive;
         let channel_id = CTX::CID::from_usize (cid).unwrap();
-        loop {
+        'poll_inner: loop {
           match endpoint.try_recv() {
             Ok (message) => {
               use message::Global;
@@ -615,11 +616,12 @@ pub trait Process <CTX, RES> where
                     self.inner_mut().handle_event (inner::EventId::End.into())
                       .unwrap()
                   }
+                  break 'poll_outer
                 }
               }
               message_count += 1;
             }
-            Err (channel::TryRecvError::Empty) => { break }
+            Err (channel::TryRecvError::Empty) => { break 'poll_inner }
             Err (channel::TryRecvError::Disconnected) => {
               use colored::Colorize;
               warn!("{} sender disconnected",
@@ -631,7 +633,7 @@ pub trait Process <CTX, RES> where
                 self.inner_mut().handle_event (inner::EventId::End.into())
                   .unwrap();
               }
-              break
+              break 'poll_outer
             }
           }
         }
