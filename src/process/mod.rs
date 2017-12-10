@@ -411,11 +411,12 @@ pub trait Process <CTX, RES> where
                   message.id());
                 match self.handle_message (message) {
                   ControlFlow::Continue => {}
-                  // TODO: the following is a hazard if further messages are
-                  // pending
-                  ControlFlow::Break    =>
-                    self.inner_mut().handle_event (inner::EventId::End.into())
-                      .unwrap()
+                  ControlFlow::Break    => {
+                    if self.state_id() == inner::StateId::Running {
+                      self.inner_mut().handle_event (inner::EventId::End.into())
+                        .unwrap();
+                    }
+                  }
                 }
                 message_count += 1;
               }
@@ -427,8 +428,10 @@ pub trait Process <CTX, RES> where
                     "process[{:?}] try receive on channel[{:?}] failed:",
                     self.id(), channel_id
                   ).yellow().bold());
-                self.inner_mut().handle_event (inner::EventId::End.into())
-                  .unwrap();
+                if self.state_id() == inner::StateId::Running {
+                  self.inner_mut().handle_event (inner::EventId::End.into())
+                    .unwrap();
+                }
                 break
               }
             }
@@ -443,11 +446,12 @@ pub trait Process <CTX, RES> where
           let update_result = self.update();
           match update_result {
             ControlFlow::Continue => {}
-            // TODO: the following is a hazard if the process was already
-            // finished above
-            ControlFlow::Break    =>
-              self.inner_mut().handle_event (inner::EventId::End.into())
-                .unwrap()
+            ControlFlow::Break    => {
+              if self.state_id() == inner::StateId::Running {
+                self.inner_mut().handle_event (inner::EventId::End.into())
+                  .unwrap();
+              }
+            }
           }
           update_count += 1;
           ticks_since_update = 0;
@@ -526,9 +530,12 @@ pub trait Process <CTX, RES> where
           let handle_message_result = self.handle_message (message);
           match handle_message_result {
             ControlFlow::Continue => {}
-            ControlFlow::Break    =>
-              self.inner_mut().handle_event (inner::EventId::End.into())
-                .unwrap()
+            ControlFlow::Break    => {
+              if self.state_id() == inner::StateId::Running {
+                self.inner_mut().handle_event (inner::EventId::End.into())
+                  .unwrap();
+              }
+            }
           }
           message_count         += 1;
           messages_since_update += 1;
@@ -540,8 +547,10 @@ pub trait Process <CTX, RES> where
               "process[{:?}] receive on channel[{:?}] failed:",
               self.id(), channel_id
             ).yellow().bold());
-          self.inner_mut().handle_event (inner::EventId::End.into())
-            .unwrap()
+          if self.state_id() == inner::StateId::Running {
+            self.inner_mut().handle_event (inner::EventId::End.into())
+              .unwrap();
+          }
         }
       }
       if messages_per_update <= messages_since_update {
@@ -549,11 +558,12 @@ pub trait Process <CTX, RES> where
         let update_result = self.update();
         match update_result {
           ControlFlow::Continue => {}
-          // TODO: the following is a hazard if the process was already
-          // finished above
-          ControlFlow::Break    =>
-            self.inner_mut().handle_event (inner::EventId::End.into())
-              .unwrap()
+          ControlFlow::Break    => {
+            if self.state_id() == inner::StateId::Running {
+              self.inner_mut().handle_event (inner::EventId::End.into())
+                .unwrap();
+            }
+          }
         }
         update_count += 1;
         messages_since_update = 0;
@@ -600,10 +610,12 @@ pub trait Process <CTX, RES> where
               let handle_message_result = self.handle_message (message);
               match handle_message_result {
                 ControlFlow::Continue => {}
-                // TODO: the following is a hazard if further messages are pending
-                ControlFlow::Break    =>
-                  self.inner_mut().handle_event (inner::EventId::End.into())
-                    .unwrap()
+                ControlFlow::Break    => {
+                  if self.state_id() == inner::StateId::Running {
+                    self.inner_mut().handle_event (inner::EventId::End.into())
+                      .unwrap()
+                  }
+                }
               }
               message_count += 1;
             }
@@ -615,8 +627,10 @@ pub trait Process <CTX, RES> where
                   "process[{:?}] try receive on channel[{:?}] failed:",
                   self.id(), channel_id
                 ).yellow().bold());
-              self.inner_mut().handle_event (inner::EventId::End.into())
-                .unwrap();
+              if self.state_id() == inner::StateId::Running {
+                self.inner_mut().handle_event (inner::EventId::End.into())
+                  .unwrap();
+              }
               break
             }
           }
@@ -628,11 +642,12 @@ pub trait Process <CTX, RES> where
       let update_result = self.update();
       match update_result {
         ControlFlow::Continue => {}
-        // TODO: the following is a hazard if the process was already finished
-        // above
-        ControlFlow::Break    =>
-          self.inner_mut().handle_event (inner::EventId::End.into())
-            .unwrap()
+        ControlFlow::Break    => {
+          if self.state_id() == inner::StateId::Running {
+            self.inner_mut().handle_event (inner::EventId::End.into())
+              .unwrap()
+          }
+        }
       }
       update_count += 1;
 
