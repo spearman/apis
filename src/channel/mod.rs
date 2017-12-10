@@ -35,6 +35,16 @@ pub struct Def <CTX : session::Context> {
   message_type_id : CTX::MID
 }
 
+/// Sender disconnected, no further messages will ever be received.
+#[derive(Clone,Copy,Debug,Eq,PartialEq)]
+pub struct RecvError;
+
+/// Receiver disconnected, message will never be deliverable.
+// NB: this representation may need to be changed if a channel backend is used
+// that doesn't return the message on a send error
+#[derive(Clone,Copy,Eq,PartialEq)]
+pub struct SendError <M> (pub M);
+
 ///////////////////////////////////////////////////////////////////////////////
 //  enums
 ///////////////////////////////////////////////////////////////////////////////
@@ -93,6 +103,13 @@ pub enum CreateError {
   KindMismatch
 }
 
+#[derive(Clone,Copy,Debug,Eq,PartialEq)]
+pub enum TryRecvError {
+  Empty,
+  /// Sender disconnected, no further messages will be received.
+  Disconnected
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 //  traits
 ///////////////////////////////////////////////////////////////////////////////
@@ -114,14 +131,15 @@ pub trait Id <CTX> where
 
 /// Interface for a channel sourcepoint.
 pub trait Sourcepoint <CTX : session::Context> : Send {
-  fn send    (&self, message : CTX::GMSG);
-  fn send_to (&self, message : CTX::GMSG, recipient : CTX::PID);
+  fn send    (&self, message : CTX::GMSG) -> Result <(), SendError <CTX::GMSG>>;
+  fn send_to (&self, message : CTX::GMSG, recipient : CTX::PID)
+    -> Result <(), SendError <CTX::GMSG>>;
 }
 
 /// Interface for a channel endpoint.
 pub trait Endpoint <CTX : session::Context> : Send {
-  fn recv     (&self) -> CTX::GMSG;
-  fn try_recv (&self) -> Option <CTX::GMSG>;
+  fn recv     (&self) -> Result <CTX::GMSG, RecvError>;
+  fn try_recv (&self) -> Result <CTX::GMSG, TryRecvError>;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -373,6 +391,27 @@ impl Kind {
   }
 
 } // end impl Kind
+
+impl <T> std::fmt::Debug for SendError <T> {
+  fn fmt (&self, f : &mut std::fmt::Formatter) -> std::fmt::Result {
+    "SendError(..)".fmt (f)
+  }
+}
+
+impl <T> std::fmt::Display for SendError <T> {
+  fn fmt (&self, f : &mut std::fmt::Formatter) -> std::fmt::Result {
+    "sending on a closed channel".fmt (f)
+  }
+}
+
+impl <T> std::error::Error for SendError <T> {
+  fn description (&self) -> &str {
+    "sending on a closed channel"
+  }
+  fn cause (&self) -> Option <&std::error::Error> {
+    None
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 //  functions

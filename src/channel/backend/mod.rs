@@ -80,11 +80,15 @@ where
   CTX : session::Context,
   M   : Message <CTX>
 {
-  fn send (&self, message : CTX::GMSG) {
+  fn send (&self, message : CTX::GMSG)
+    -> Result <(), channel::SendError <CTX::GMSG>>
+  {
     unbounded_spsc::Sender::send (&self, M::try_from (message).ok().unwrap())
-      .unwrap()
+      .map_err (Into::into)
   }
-  fn send_to (&self, _message : CTX::GMSG, _recipient : CTX::PID) {
+  fn send_to (&self, _message : CTX::GMSG, _recipient : CTX::PID)
+    -> Result <(), channel::SendError <CTX::GMSG>>
+  {
     unimplemented!()  // see TODO above
   }
 }
@@ -95,11 +99,15 @@ where
   CTX : session::Context,
   M   : Message <CTX>
 {
-  fn send (&self, message : CTX::GMSG) {
+  fn send (&self, message : CTX::GMSG)
+    -> Result <(), channel::SendError <CTX::GMSG>>
+  {
     std::sync::mpsc::Sender::send (&self, M::try_from (message).ok().unwrap())
-      .unwrap()
+      .map_err (Into::into)
   }
-  fn send_to (&self, _message : CTX::GMSG, _recipient : CTX::PID) {
+  fn send_to (&self, _message : CTX::GMSG, _recipient : CTX::PID)
+    -> Result <(), channel::SendError <CTX::GMSG>>
+  {
     unimplemented!()  // see TODO above
   }
 }
@@ -110,14 +118,18 @@ where
   CTX : session::Context,
   M   : Message <CTX>
 {
-  fn send (&self, _message : CTX::GMSG) {
+  fn send (&self, _message : CTX::GMSG)
+    -> Result <(), channel::SendError <CTX::GMSG>>
+  {
     unimplemented!()  // see TODO above
   }
-  fn send_to (&self, message : CTX::GMSG, recipient : CTX::PID) {
+  fn send_to (&self, message : CTX::GMSG, recipient : CTX::PID)
+    -> Result <(), channel::SendError <CTX::GMSG>>
+  {
     let pid    = <CTX::PID as Into <usize>>::into (recipient);
     let sender = &self[pid];
     unbounded_spsc::Sender::send (sender, M::try_from(message).ok().unwrap())
-      .unwrap()
+      .map_err (Into::into)
   }
 }
 
@@ -127,14 +139,18 @@ where
   CTX : session::Context,
   M   : Message <CTX>
 {
-  fn send (&self, _message : CTX::GMSG) {
+  fn send (&self, _message : CTX::GMSG)
+    -> Result <(), channel::SendError <CTX::GMSG>>
+  {
     unimplemented!()  // see TODO above
   }
-  fn send_to (&self, message : CTX::GMSG, recipient : CTX::PID) {
+  fn send_to (&self, message : CTX::GMSG, recipient : CTX::PID)
+    -> Result <(), channel::SendError <CTX::GMSG>>
+  {
     let pid    = recipient.into();
     let sender = &self[pid];
     std::sync::mpsc::Sender::send (sender, M::try_from(message).ok().unwrap())
-      .unwrap()
+      .map_err (Into::into)
   }
 }
 //  end impl Sourcepoint
@@ -149,11 +165,13 @@ where
   CTX : session::Context,
   M   : Message <CTX>
 {
-  fn recv (&self) -> CTX::GMSG {
-    unbounded_spsc::Receiver::recv (&self).unwrap().into()
+  fn recv (&self) -> Result <CTX::GMSG, channel::RecvError> {
+    unbounded_spsc::Receiver::recv (&self)
+      .map (Into::into).map_err (Into::into)
   }
-  fn try_recv (&self) -> Option <CTX::GMSG> {
-    unbounded_spsc::Receiver::try_recv (&self).ok().map (Into::into)
+  fn try_recv (&self) -> Result <CTX::GMSG, channel::TryRecvError> {
+    unbounded_spsc::Receiver::try_recv (&self)
+      .map (Into::into).map_err (Into::into)
   }
 }
 
@@ -163,11 +181,13 @@ where
   CTX : session::Context,
   M   : Message <CTX>
 {
-  fn recv (&self) -> CTX::GMSG {
-    std::sync::mpsc::Receiver::recv (&self).unwrap().into()
+  fn recv (&self) -> Result <CTX::GMSG, channel::RecvError> {
+    std::sync::mpsc::Receiver::recv (&self)
+      .map (Into::into).map_err (Into::into)
   }
-  fn try_recv (&self) -> Option <CTX::GMSG> {
-    std::sync::mpsc::Receiver::try_recv (&self).ok().map (Into::into)
+  fn try_recv (&self) -> Result <CTX::GMSG, channel::TryRecvError> {
+    std::sync::mpsc::Receiver::try_recv (&self)
+      .map (Into::into).map_err (Into::into)
   }
 }
 //  end impl Endpoint
@@ -353,3 +373,55 @@ impl <CTX, M> From <Source <CTX, M>> for channel::Channel <CTX> where
   }
 }
 //  end impl Source
+
+impl <M, GMSG>
+  From <unbounded_spsc::SendError <M>> for channel::SendError <GMSG>
+where
+  M : Into <GMSG>
+{
+  fn from (send_error : unbounded_spsc::SendError <M>) -> Self {
+    channel::SendError (send_error.0.into())
+  }
+}
+
+impl <M, GMSG>
+  From <std::sync::mpsc::SendError <M>> for channel::SendError <GMSG>
+where
+  M : Into <GMSG>
+{
+  fn from (send_error : std::sync::mpsc::SendError <M>) -> Self {
+    channel::SendError (send_error.0.into())
+  }
+}
+
+impl From <unbounded_spsc::RecvError> for channel::RecvError {
+  fn from (_recv_error : unbounded_spsc::RecvError) -> Self {
+    channel::RecvError
+  }
+}
+
+impl From <std::sync::mpsc::RecvError> for channel::RecvError {
+  fn from (_recv_error : std::sync::mpsc::RecvError) -> Self {
+    channel::RecvError
+  }
+}
+
+impl From <unbounded_spsc::TryRecvError> for channel::TryRecvError {
+  fn from (try_recv_error : unbounded_spsc::TryRecvError) -> Self {
+    match try_recv_error {
+      unbounded_spsc::TryRecvError::Empty => channel::TryRecvError::Empty,
+      unbounded_spsc::TryRecvError::Disconnected
+        => channel::TryRecvError::Disconnected
+    }
+  }
+}
+
+impl From <std::sync::mpsc::TryRecvError> for channel::TryRecvError {
+  fn from (try_recv_error : std::sync::mpsc::TryRecvError) -> Self {
+    match try_recv_error {
+      std::sync::mpsc::TryRecvError::Empty => channel::TryRecvError::Empty,
+      std::sync::mpsc::TryRecvError::Disconnected
+        => channel::TryRecvError::Disconnected
+    }
+  }
+}

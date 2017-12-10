@@ -39,27 +39,27 @@ def_session! {
       let _message_in = message_in
     [
       process Chargen1 (update_count : u64) {
-        kind { apis::process::Kind::Synchronous {
-          tick_ms: 20,
-          ticks_per_update: 1 } }
-        sourcepoints [Charstream]
-        endpoints    []
+        kind {
+          apis::process::Kind::Synchronous { tick_ms: 20, ticks_per_update: 1 }
+        }
+        sourcepoints   [Charstream]
+        endpoints      []
         handle_message { _proc.chargen1_handle_message (_message_in) }
         update         { _proc.chargen1_update() }
       }
       process Chargen2 (update_count : u64) {
-        kind { apis::process::Kind::Synchronous {
-          tick_ms: 20,
-          ticks_per_update: 1 } }
-        sourcepoints [Charstream]
-        endpoints    []
+        kind {
+          apis::process::Kind::Synchronous { tick_ms: 20, ticks_per_update: 1 }
+        }
+        sourcepoints   [Charstream]
+        endpoints      []
         handle_message { _proc.chargen2_handle_message (_message_in) }
         update         { _proc.chargen2_update() }
       }
       process Upcase (history : String, quit : u8) {
-        kind { apis::process::Kind::default_asynchronous() }
-        sourcepoints []
-        endpoints    [Charstream]
+        kind           { apis::process::Kind::asynchronous_default() }
+        sourcepoints   []
+        endpoints      [Charstream]
         handle_message { _proc.upcase_handle_message (_message_in) }
         update         { _proc.upcase_update() }
       }
@@ -105,20 +105,24 @@ impl Chargen1 {
       std::thread::sleep (std::time::Duration::from_millis (100));
     }
     if self.update_count % 41 == 0 {
-      self.send (ChannelId::Charstream, Charstreammessage::Achar ('a'));
+      result = self.send (ChannelId::Charstream, Charstreammessage::Achar ('a'))
+        .into();
     }
     if self.update_count % 43 == 0 {
-      self.send (ChannelId::Charstream, Charstreammessage::Achar ('b'));
+      result = self.send (ChannelId::Charstream, Charstreammessage::Achar ('b'))
+        .into();
     }
     if self.update_count % 59 == 0 {
-      self.send (ChannelId::Charstream, Charstreammessage::Achar ('c'));
+      result = self.send (ChannelId::Charstream, Charstreammessage::Achar ('c'))
+        .into();
     }
     if self.update_count % 61 == 0 {
-      self.send (ChannelId::Charstream, Charstreammessage::Achar ('d'));
+      result = self.send (ChannelId::Charstream, Charstreammessage::Achar ('d'))
+        .into();
     }
     assert!(self.update_count <= 250);
     if self.update_count == 250 {
-      self.send (ChannelId::Charstream, Charstreammessage::Quit);
+      let _ = self.send (ChannelId::Charstream, Charstreammessage::Quit);
       result = apis::process::ControlFlow::Break;
     }
     trace!("...chargen1 update");
@@ -149,20 +153,24 @@ impl Chargen2 {
       std::thread::sleep (std::time::Duration::from_millis (100));
     }
     if self.update_count % 59 == 0 {
-      self.send (ChannelId::Charstream, Charstreammessage::Achar ('z'));
+      result = self.send (ChannelId::Charstream, Charstreammessage::Achar ('z'))
+        .into();
     }
     if self.update_count % 61 == 0 {
-      self.send (ChannelId::Charstream, Charstreammessage::Achar ('y'));
+      result = self.send (ChannelId::Charstream, Charstreammessage::Achar ('y'))
+        .into();
     }
     if self.update_count % 71 == 0 {
-      self.send (ChannelId::Charstream, Charstreammessage::Achar ('x'));
+      result = self.send (ChannelId::Charstream, Charstreammessage::Achar ('x'))
+        .into();
     }
     if self.update_count % 73 == 0 {
-      self.send (ChannelId::Charstream, Charstreammessage::Achar ('w'));
+      result = self.send (ChannelId::Charstream, Charstreammessage::Achar ('w'))
+        .into();
     }
     assert!(self.update_count <= 300);
     if self.update_count == 300 {
-      self.send (ChannelId::Charstream, Charstreammessage::Quit);
+      let _ = self.send (ChannelId::Charstream, Charstreammessage::Quit);
       result = apis::process::ControlFlow::Break;
     }
     trace!("...chargen2 update");

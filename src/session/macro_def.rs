@@ -57,7 +57,7 @@
 ///         update         { apis::process::ControlFlow::Break }
 ///       }
 ///       process Upcase (history : String) {
-///         kind { process::Kind::default_asynchronous() }
+///         kind { process::Kind::asynchronous_default() }
 ///         sourcepoints []
 ///         endpoints    [Charstream]
 ///         handle_message { apis::process::ControlFlow::Break }

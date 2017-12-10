@@ -40,11 +40,11 @@ def_session! {
       let _message_in = message_in
     [
       process RandGen (update_count : u64) {
-        kind { apis::process::Kind::Synchronous {
-          tick_ms: 20,
-          ticks_per_update: 1 } }
-        sourcepoints [Randints]
-        endpoints    []
+        kind {
+          apis::process::Kind::Synchronous { tick_ms: 20, ticks_per_update: 1 }
+        }
+        sourcepoints   [Randints]
+        endpoints      []
         handle_message { unreachable!() }
         update {
           use rand::Rng;
@@ -53,28 +53,28 @@ def_session! {
           let rand_id = ProcessId::from_u64 (rng.gen_range::<u64> (1, 5))
             .unwrap();
           let rand_int = rng.gen_range::<i64> (1,100);
-          _proc.send_to (
+          let send_result = _proc.send_to (
             ChannelId::Randints, rand_id, Randintsmessage::Anint (rand_int));
           _proc.update_count += 1;
-          if _proc.update_count < 50 {
-            apis::process::ControlFlow::Continue
-          } else {
-            _proc.send_to (
+          if send_result.is_err() || 50 <= _proc.update_count {
+            let _ = _proc.send_to (
               ChannelId::Randints, ProcessId::Sum1, Randintsmessage::Quit);
-            _proc.send_to (
+            let _ = _proc.send_to (
               ChannelId::Randints, ProcessId::Sum2, Randintsmessage::Quit);
-            _proc.send_to (
+            let _ = _proc.send_to (
               ChannelId::Randints, ProcessId::Sum3, Randintsmessage::Quit);
-            _proc.send_to (
+            let _ = _proc.send_to (
               ChannelId::Randints, ProcessId::Sum4, Randintsmessage::Quit);
             apis::process::ControlFlow::Break
+          } else {
+            apis::process::ControlFlow::Continue
           }
         }
       }
       process Sum1 (sum : i64 = -100) {
-        kind { apis::process::Kind::default_asynchronous() }
-        sourcepoints []
-        endpoints    [Randints]
+        kind           { apis::process::Kind::asynchronous_default() }
+        sourcepoints   []
+        endpoints      [Randints]
         handle_message {
           match _message_in {
             GlobalMessage::Randintsmessage (Randintsmessage::Quit) => {
@@ -96,9 +96,9 @@ def_session! {
         }
       }
       process Sum2 (sum : i64 = -100) {
-        kind { apis::process::Kind::default_asynchronous() }
-        sourcepoints []
-        endpoints    [Randints]
+        kind           { apis::process::Kind::asynchronous_default() }
+        sourcepoints   []
+        endpoints      [Randints]
         handle_message {
           match _message_in {
             GlobalMessage::Randintsmessage (Randintsmessage::Quit) => {
@@ -120,9 +120,9 @@ def_session! {
         }
       }
       process Sum3 (sum : i64 = -100) {
-        kind { apis::process::Kind::default_asynchronous() }
-        sourcepoints []
-        endpoints    [Randints]
+        kind           { apis::process::Kind::asynchronous_default() }
+        sourcepoints   []
+        endpoints      [Randints]
         handle_message {
           match _message_in {
             GlobalMessage::Randintsmessage (Randintsmessage::Quit) => {
@@ -144,9 +144,9 @@ def_session! {
         }
       }
       process Sum4 (sum : i64 = -100) {
-        kind { apis::process::Kind::default_asynchronous() }
-        sourcepoints []
-        endpoints    [Randints]
+        kind           { apis::process::Kind::asynchronous_default() }
+        sourcepoints   []
+        endpoints      [Randints]
         handle_message {
           match _message_in {
             GlobalMessage::Randintsmessage (Randintsmessage::Quit) => {

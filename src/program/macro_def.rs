@@ -262,8 +262,8 @@ macro_rules! def_program {
                           = maybe_constructor_closure.take().unwrap();
                         let continuation = Box::new (
                           | prev_gproc : <$source_mod::$source_context
-                            as $crate::session::Context>::GPROC
-                          | {
+                              as $crate::session::Context>::GPROC |
+                          {
                             use $crate::process::Process;
                             let next_proc = constructor_closure (prev_gproc);
                             // run the new process

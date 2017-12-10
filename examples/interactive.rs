@@ -103,16 +103,16 @@ pub mod readline_echoup {
         process Readline (
           dropthing : Option <::Dropthing> = Some (Default::default())
         ) -> (Option <()>) {
-          kind { apis::process::Kind::AsynchronousPolling }
-          sourcepoints [Toecho]
-          endpoints    [Fromecho]
+          kind           { apis::process::Kind::AsynchronousPolling }
+          sourcepoints   [Toecho]
+          endpoints      [Fromecho]
           handle_message { _proc.readline_handle_message (_message_in) }
           update         { _proc.readline_update() }
         }
         process Echoup () -> (Option <()>) {
-          kind { apis::process::Kind::default_asynchronous() }
-          sourcepoints [Fromecho]
-          endpoints    [Toecho]
+          kind           { apis::process::Kind::asynchronous_default() }
+          sourcepoints   [Fromecho]
+          endpoints      [Toecho]
           handle_message { _proc.echoup_handle_message (_message_in) }
           update         { _proc.echoup_update() }
         }
@@ -183,7 +183,7 @@ pub mod readline_echoup {
                 debug_assert!(0 < first.len());
                 let _ = first.remove (0);
                 if 0 < first.len() && first.is_prefix_of ("quit") {
-                  self.send (ChannelId::Toecho, ToechoMsg::Quit);
+                  let _ = self.send (ChannelId::Toecho, ToechoMsg::Quit);
                   result = apis::process::ControlFlow::Break;
                 } else {
                   println!("unrecognized command: \"{}\"", s.trim());
@@ -194,8 +194,9 @@ pub mod readline_echoup {
               }
             };
             if !command {
-              self.send (ChannelId::Toecho,
-                ToechoMsg::Astring (s.trim().to_string()));
+              result = self.send (
+                ChannelId::Toecho, ToechoMsg::Astring (s.trim().to_string())
+              ).into();
             }
           }
         } // end match word count
@@ -213,9 +214,9 @@ pub mod readline_echoup {
       -> apis::process::ControlFlow
     {
       use apis::Process;
-
       trace!("echoup handle message...");
-      let mut result = apis::process::ControlFlow::Continue;
+
+      let result : apis::process::ControlFlow;
       let msg = match message {
         GlobalMessage::ToechoMsg (msg) => msg,
         _ => unreachable!()
@@ -223,12 +224,14 @@ pub mod readline_echoup {
       match msg {
         ToechoMsg::Astring (string) => {
           let echo = string.as_str().to_uppercase();
-          self.send (ChannelId::Fromecho, FromechoMsg::Echo (echo));
+          result = self.send (ChannelId::Fromecho, FromechoMsg::Echo (echo))
+            .into();
         }
         ToechoMsg::Quit => {
           result = apis::process::ControlFlow::Break;
         }
       }
+
       trace!("...echoup handle message");
       result
     }
@@ -263,18 +266,18 @@ pub mod readline_echorev {
         let _message_in = message_in
       [
         process Echorev () -> (Option <()>) {
-          kind { apis::process::Kind::default_asynchronous() }
-          sourcepoints [Fromecho]
-          endpoints    [Toecho]
+          kind           { apis::process::Kind::asynchronous_default() }
+          sourcepoints   [Fromecho]
+          endpoints      [Toecho]
           handle_message { _proc.echorev_handle_message (_message_in) }
           update         { _proc.echorev_update() }
         }
         process Readline (
           dropthing : Option <::Dropthing> = None
         ) -> (Option <()>) {
-          kind { apis::process::Kind::AsynchronousPolling }
-          sourcepoints [Toecho]
-          endpoints    [Fromecho]
+          kind           { apis::process::Kind::AsynchronousPolling }
+          sourcepoints   [Toecho]
+          endpoints      [Fromecho]
           handle_message { _proc.readline_handle_message (_message_in) }
           update         { _proc.readline_update() }
         }
@@ -345,7 +348,7 @@ pub mod readline_echorev {
                 debug_assert!(0 < first.len());
                 let _ = first.remove (0);
                 if 0 < first.len() && first.is_prefix_of ("quit") {
-                  self.send (ChannelId::Toecho, ToechoMsg::Quit);
+                  let _ = self.send (ChannelId::Toecho, ToechoMsg::Quit);
                   result = apis::process::ControlFlow::Break;
                 } else {
                   println!("unrecognized command: \"{}\"", s.trim());
@@ -356,8 +359,9 @@ pub mod readline_echorev {
               }
             };
             if !command {
-              self.send (ChannelId::Toecho,
-                ToechoMsg::Astring (s.trim().to_string()));
+              result = self.send (
+                ChannelId::Toecho, ToechoMsg::Astring (s.trim().to_string())
+              ).into();
             }
           }
         } // end match word count
@@ -377,7 +381,7 @@ pub mod readline_echorev {
       use apis::Process;
 
       trace!("echorev handle message...");
-      let mut result = apis::process::ControlFlow::Continue;
+      let result : apis::process::ControlFlow;
       let msg = match message {
         GlobalMessage::ToechoMsg (msg) => msg,
         _ => unreachable!()
@@ -385,7 +389,8 @@ pub mod readline_echorev {
       match msg {
         ToechoMsg::Astring (string) => {
           let echo = string.chars().rev().collect();
-          self.send (ChannelId::Fromecho, FromechoMsg::Echo (echo));
+          result = self.send (ChannelId::Fromecho, FromechoMsg::Echo (echo))
+            .into();
         }
         ToechoMsg::Quit => {
           result = apis::process::ControlFlow::Break;

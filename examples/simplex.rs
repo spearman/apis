@@ -39,18 +39,18 @@ def_session! {
       let _message_in = message_in
     [
       process Chargen (update_count : u64) -> (Option <()>) {
-        kind { apis::process::Kind::Synchronous {
-          tick_ms: 20,
-          ticks_per_update: 1 } }
-        sourcepoints [Charstream]
-        endpoints    []
+        kind {
+          apis::process::Kind::Synchronous { tick_ms: 20, ticks_per_update: 1 }
+        }
+        sourcepoints   [Charstream]
+        endpoints      []
         handle_message { _proc.chargen_handle_message (_message_in) }
         update         { _proc.chargen_update() }
       }
       process Upcase (history : String) -> (Option <()>) {
-        kind { apis::process::Kind::default_asynchronous() }
-        sourcepoints []
-        endpoints    [Charstream]
+        kind           { apis::process::Kind::asynchronous_default() }
+        sourcepoints   []
+        endpoints      [Charstream]
         handle_message { _proc.upcase_handle_message (_message_in) }
         update         { _proc.upcase_update() }
       }
@@ -96,20 +96,24 @@ impl Chargen {
       std::thread::sleep (std::time::Duration::from_millis (100));
     }
     if self.update_count % 17 == 0 {
-      self.send (ChannelId::Charstream, Charstreammessage::Achar ('z'));
+      result = self.send (ChannelId::Charstream, Charstreammessage::Achar ('z'))
+        .into();
     }
     if self.update_count % 19 == 0 {
-      self.send (ChannelId::Charstream, Charstreammessage::Achar ('y'));
+      result = self.send (ChannelId::Charstream, Charstreammessage::Achar ('y'))
+        .into();
     }
     if self.update_count % 29 == 0 {
-      self.send (ChannelId::Charstream, Charstreammessage::Achar ('x'));
+      result = self.send (ChannelId::Charstream, Charstreammessage::Achar ('x'))
+        .into();
     }
     if self.update_count % 31 == 0 {
-      self.send (ChannelId::Charstream, Charstreammessage::Achar ('w'));
+      result = self.send (ChannelId::Charstream, Charstreammessage::Achar ('w'))
+        .into();
     }
     assert!(self.update_count <= 300);
     if self.update_count == 300 {
-      self.send (ChannelId::Charstream, Charstreammessage::Quit);
+      let _ = self.send (ChannelId::Charstream, Charstreammessage::Quit);
       result = apis::process::ControlFlow::Break;
     }
     trace!("...chargen update");

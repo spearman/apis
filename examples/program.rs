@@ -106,31 +106,40 @@ pub mod chargen_upcase {
         //  process Chargen
         //
         process Chargen (update_count : u64) {
-          kind { apis::process::Kind::Synchronous {
-            tick_ms: 20,
-            ticks_per_update: 1 } }
-          sourcepoints [Charstream]
-          endpoints    []
+          kind {
+            apis::process::Kind::Synchronous { tick_ms: 20, ticks_per_update: 1 }
+          }
+          sourcepoints   [Charstream]
+          endpoints      []
           handle_message { unreachable!() }
           update {
+            let mut result = apis::process::ControlFlow::Continue;
             if _proc.update_count % 5 == 0 {
-              _proc.send (ChannelId::Charstream, Charstreammessage::Achar ('z'));
+              result = _proc.send (
+                ChannelId::Charstream, Charstreammessage::Achar ('z')
+              ).into();
             }
             if _proc.update_count % 7 == 0 {
-              _proc.send (ChannelId::Charstream, Charstreammessage::Achar ('y'));
+              result = _proc.send (
+                ChannelId::Charstream, Charstreammessage::Achar ('y')
+              ).into();
             }
             if _proc.update_count % 9 == 0 {
-              _proc.send (ChannelId::Charstream, Charstreammessage::Achar ('x'));
+              result = _proc.send (
+                ChannelId::Charstream, Charstreammessage::Achar ('x')
+              ).into();
             }
             _proc.update_count += 1;
             const MAX_UPDATES : u64 = 5;
             assert!(_proc.update_count <= MAX_UPDATES);
-            if _proc.update_count == MAX_UPDATES {
-              _proc.send (ChannelId::Charstream, Charstreammessage::Quit);
-              apis::process::ControlFlow::Break
-            } else {
-              apis::process::ControlFlow::Continue
+            if result == apis::process::ControlFlow::Continue
+              && _proc.update_count == MAX_UPDATES
+            {
+              let _
+                = _proc.send (ChannelId::Charstream, Charstreammessage::Quit);
+              result = apis::process::ControlFlow::Break;
             }
+            result
           }
         }
         //
@@ -140,9 +149,9 @@ pub mod chargen_upcase {
           history   : String,
           dropthing : Option <::Dropthing> = Some (Default::default())
         ) {
-          kind { apis::process::Kind::default_asynchronous() }
-          sourcepoints []
-          endpoints    [Charstream]
+          kind           { apis::process::Kind::asynchronous_default() }
+          sourcepoints   []
+          endpoints      [Charstream]
           handle_message {
             match _message_in {
               GlobalMessage::Charstreammessage (charstreammessage) => {
@@ -214,11 +223,11 @@ pub mod rand_source {
           update_count : u64,
           dropthing    : Option <::Dropthing> = None
         ) {
-          kind { apis::process::Kind::Synchronous {
-            tick_ms: 20,
-            ticks_per_update: 1 } }
-          sourcepoints [Randints]
-          endpoints    []
+          kind {
+            apis::process::Kind::Synchronous { tick_ms: 20, ticks_per_update: 1 }
+          }
+          sourcepoints   [Randints]
+          endpoints      []
           handle_message { unreachable!() }
           update {
             use rand::Rng;
@@ -227,34 +236,35 @@ pub mod rand_source {
             let rand_id = ProcessId::from_u64 (rng.gen_range::<u64> (1, 5))
               .unwrap();
             let rand_int = rng.gen_range::<u64> (1,100);
-            _proc.send_to (
-              ChannelId::Randints, rand_id, Randintsmessage::Anint (rand_int));
+            let mut result = _proc.send_to (
+              ChannelId::Randints, rand_id, Randintsmessage::Anint (rand_int)
+            ).into();
             _proc.update_count += 1;
             const MAX_UPDATES : u64 = 5;
-            if _proc.update_count <= MAX_UPDATES {
-              // continue
-              apis::process::ControlFlow::Continue
-            } else {
+            if result == apis::process::ControlFlow::Break
+              || MAX_UPDATES < _proc.update_count
+            {
               // quit
-              _proc.send_to (
+              let _ = _proc.send_to (
                 ChannelId::Randints, ProcessId::Sum1, Randintsmessage::Quit);
-              _proc.send_to (
+              let _ = _proc.send_to (
                 ChannelId::Randints, ProcessId::Sum2, Randintsmessage::Quit);
-              _proc.send_to (
+              let _ = _proc.send_to (
                 ChannelId::Randints, ProcessId::Sum3, Randintsmessage::Quit);
-              _proc.send_to (
+              let _ = _proc.send_to (
                 ChannelId::Randints, ProcessId::Sum4, Randintsmessage::Quit);
-              apis::process::ControlFlow::Break
+              result = apis::process::ControlFlow::Break
             }
+            result
           }
         }
         //
         //  process Sum1
         //
         process Sum1 (sum : u64) {
-          kind { apis::process::Kind::default_asynchronous() }
-          sourcepoints []
-          endpoints    [Randints]
+          kind           { apis::process::Kind::asynchronous_default() }
+          sourcepoints   []
+          endpoints      [Randints]
           handle_message {
             match _message_in {
               GlobalMessage::Randintsmessage (Randintsmessage::Anint (anint)) => {
@@ -281,9 +291,9 @@ pub mod rand_source {
         //  process Sum2
         //
         process Sum2 (sum : u64) {
-          kind { apis::process::Kind::default_asynchronous() }
-          sourcepoints []
-          endpoints    [Randints]
+          kind           { apis::process::Kind::asynchronous_default() }
+          sourcepoints   []
+          endpoints      [Randints]
           handle_message {
             match _message_in {
               GlobalMessage::Randintsmessage (Randintsmessage::Anint (anint)) => {
@@ -310,9 +320,9 @@ pub mod rand_source {
         //  process Sum3
         //
         process Sum3 (sum : u64) {
-          kind { apis::process::Kind::default_asynchronous() }
-          sourcepoints []
-          endpoints    [Randints]
+          kind           { apis::process::Kind::asynchronous_default() }
+          sourcepoints   []
+          endpoints      [Randints]
           handle_message {
             match _message_in {
               GlobalMessage::Randintsmessage (Randintsmessage::Anint (anint)) => {
@@ -339,9 +349,9 @@ pub mod rand_source {
         //  process Sum4
         //
         process Sum4 (sum : u64) {
-          kind { apis::process::Kind::default_asynchronous() }
-          sourcepoints []
-          endpoints    [Randints]
+          kind           { apis::process::Kind::asynchronous_default() }
+          sourcepoints   []
+          endpoints      [Randints]
           handle_message {
             match _message_in {
               GlobalMessage::Randintsmessage (Randintsmessage::Anint (anint)) => {

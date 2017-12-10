@@ -172,9 +172,9 @@ pub mod bgr {
             }
           }
         ) -> (ModeControl) {
-          kind { apis::process::Kind::AsynchronousPolling }
-          sourcepoints [ ]
-          endpoints    [ ]
+          kind           { apis::process::Kind::AsynchronousPolling }
+          sourcepoints   [ ]
+          endpoints      [ ]
           initialize     { println!("...BGR initialize..."); }
           handle_message { unreachable!() }
           update         { _proc.input_render_update() }
@@ -285,9 +285,9 @@ pub mod cym {
           clear_color          : (f32, f32, f32, f32) = (0.0, 1.0, 1.0, 1.0),
           glutin_glium_context : Option <GlutinGliumContext> = None
         ) -> (ModeControl) {
-          kind { apis::process::Kind::AsynchronousPolling }
-          sourcepoints []
-          endpoints    []
+          kind           { apis::process::Kind::AsynchronousPolling }
+          sourcepoints   []
+          endpoints      []
           terminate      { println!("...CYM terminate..."); }
           handle_message { unreachable!() }
           update         { _proc.input_render_update() }
@@ -397,9 +397,9 @@ pub mod wgb {
           clear_color          : (f32, f32, f32, f32) = (1.0, 1.0, 1.0, 1.0),
           glutin_glium_context : Option <GlutinGliumContext> = None
         ) -> (ModeControl) {
-          kind { apis::process::Kind::AsynchronousPolling }
-          sourcepoints []
-          endpoints    []
+          kind           { apis::process::Kind::AsynchronousPolling }
+          sourcepoints   []
+          endpoints      []
           initialize     { println!("...WGB initialize..."); }
           terminate      { println!("...WGB terminate..."); }
           handle_message { unreachable!() }

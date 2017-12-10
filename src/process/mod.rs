@@ -144,11 +144,6 @@ pub trait Process <CTX, RES> where
   //  provided
   //
   #[inline]
-  fn def (&self) -> &Def <CTX> {
-    &self.inner_ref().extended_state().def
-  }
-
-  #[inline]
   fn id (&self) -> &CTX::PID where CTX : 'static {
     self.def().id()
   }
@@ -159,20 +154,51 @@ pub trait Process <CTX, RES> where
   }
 
   #[inline]
+  fn state_id (&self) -> inner::StateId {
+    self.inner_ref().state().id().clone()
+  }
+
+  #[inline]
+  fn def (&self) -> &Def <CTX> {
+    &self.inner_ref().extended_state().def
+  }
+
+  #[inline]
   fn sourcepoints (&self)
     -> &vec_map::VecMap <Box <channel::Sourcepoint <CTX>>>
   {
     &self.inner_ref().extended_state().sourcepoints
   }
 
-  /// This method returns an `Option` because during the run loop the endpoints
-  /// will be unavailable as they are being iterated over. Endpoints shouldn't
-  /// normally be received on manually.
+  #[inline]
+  fn sourcepoints_mut (&mut self)
+    -> &mut vec_map::VecMap <Box <channel::Sourcepoint <CTX>>>
+  {
+    &mut self.inner_mut().extended_state_mut().sourcepoints
+  }
+
+  /// This method returns a `Ref <Option <...>>` because during the run loop
+  /// the endpoints will be unavailable as they are being iterated over.
+  /// Endpoints are automatically waited on or polled in the appropriate
+  /// `run_*` function. Endpoints will be present for the calls to `terminate`
+  /// or `initialize`, either before or after the run loop, respectively.
   #[inline]
   fn endpoints (&self)
     -> std::cell::Ref <Option <vec_map::VecMap <Box <channel::Endpoint <CTX>>>>>
   {
     self.inner_ref().extended_state().endpoints.borrow()
+  }
+
+  /// This method returns a `Ref <Option <...>>` because during the run loop
+  /// the endpoints will be unavailable as they are being iterated over.
+  /// Endpoints are automatically waited on or polled in the appropriate
+  /// `run_*` function. Endpoints will be present for the calls to `terminate`
+  /// or `initialize`, either before or after the run loop, respectively.
+  #[inline]
+  fn endpoints_mut (&mut self) -> std::cell::RefMut
+    <Option <vec_map::VecMap <Box <channel::Endpoint <CTX>>>>>
+  {
+    self.inner_ref().extended_state().endpoints.borrow_mut()
   }
 
   /// This method is used within the process `run_*` methods to get the
@@ -183,24 +209,34 @@ pub trait Process <CTX, RES> where
   ///
   /// Taking twice is a fatal error.
   // TODO: error doctest
-  // TODO: put_endpoints method
   #[inline]
   fn take_endpoints (&self) -> vec_map::VecMap <Box <channel::Endpoint <CTX>>> {
     self.inner_ref().extended_state().endpoints.borrow_mut().take().unwrap()
   }
 
-  fn send <M : Message <CTX>>
-    (&self, channel_id : CTX::CID, message : M)
+  /// # Errors
+  ///
+  /// Error if current endpoints are not `None`.
+  #[inline]
+  fn put_endpoints (&self,
+    endpoints : vec_map::VecMap <Box <channel::Endpoint <CTX>>>)
   {
-    let cid = channel_id.into();
-    self.sourcepoints()[cid].send (message.into());
+    *self.inner_ref().extended_state().endpoints.borrow_mut()
+      = Some (endpoints);
   }
 
-  fn send_to <M : Message <CTX>>
-    (&self, channel_id : CTX::CID, recipient : CTX::PID, message : M)
+  fn send <M : Message <CTX>> (&self, channel_id : CTX::CID, message : M)
+    -> Result <(), channel::SendError <CTX::GMSG>>
   {
     let cid = channel_id.into();
-    self.sourcepoints()[cid].send_to (message.into(), recipient);
+    self.sourcepoints()[cid].send (message.into())
+  }
+
+  fn send_to <M : Message <CTX>> (
+    &self, channel_id : CTX::CID, recipient : CTX::PID, message : M
+  ) -> Result <(), channel::SendError <CTX::GMSG>> {
+    let cid = channel_id.into();
+    self.sourcepoints()[cid].send_to (message.into(), recipient)
   }
 
   /// Run a process to completion and send the result on the result channel.
@@ -210,10 +246,45 @@ pub trait Process <CTX, RES> where
     CTX  : 'static
   {
     match *self.kind() {
-      Kind::Synchronous  {..} => self.run_synchronous(),
-      Kind::Asynchronous {..} => self.run_asynchronous(),
+      Kind::Synchronous         {..} => self.run_synchronous(),
+      Kind::Asynchronous        {..} => self.run_asynchronous(),
       Kind::AsynchronousPolling {..} => self.run_asynchronous_polling()
     };
+    // at this point no further messages will be sent or processed so
+    // sourcepoints and endpoints are dropped
+    self.sourcepoints_mut().clear();
+    { // warn of unhandled messages
+      use colored::Colorize;
+      let endpoints = self.take_endpoints();
+      let mut unhandled_count = 0;
+      for (cid, endpoint) in endpoints.iter() {
+        use num::FromPrimitive;
+        let channel_id = CTX::CID::from_usize (cid).unwrap();
+        loop {
+          match endpoint.try_recv() {
+            Ok (message) => {
+              use message::Global;
+              warn!("{} {:?}",
+                format!("{:?} unhandled message on {:?}:",
+                  self.id(), channel_id).red().bold(),
+                message.id());
+              unhandled_count += 1;
+            }
+            Err (channel::TryRecvError::Empty) |
+            Err (channel::TryRecvError::Disconnected) => {
+              break
+            }
+          }
+        }
+      }
+      if unhandled_count > 0 {
+        warn!("{} {}",
+          format!("{:?} unhandled message count:", self.id()).red().bold(),
+          unhandled_count);
+      }
+    }
+    debug_assert!(self.sourcepoints().is_empty());
+    debug_assert!(self.endpoints().is_none());
     let gpresult       = self.global_result();
     let session_handle = &self.inner_ref().as_ref().session_handle;
     session_handle.result_tx.send (gpresult).unwrap();
@@ -285,7 +356,7 @@ pub trait Process <CTX, RES> where
     let mut update_count       = 0;
 
     let endpoints = self.take_endpoints();
-    'run_loop: while *self.inner_ref().state().id() == inner::StateId::Running {
+    'run_loop: while self.state_id() == inner::StateId::Running {
       let t_now = std::time::SystemTime::now();
       if cfg!(debug_assertions) {
         let t_since = t_now.duration_since (t_next);
@@ -294,26 +365,39 @@ pub trait Process <CTX, RES> where
       if t_next < t_now {
         t_last += tick_dur;
         t_next += tick_dur;
-        debug!("process id[{:?}] tick! @ {:?}", self.id(), t_now);
+        debug!("{} @ {:?}",
+          format!("process id[{:?}] tick!", self.id()).blue().bold(),
+          t_now);
 
         // poll messages
         for (cid, endpoint) in endpoints.iter() {
           use num::FromPrimitive;
           let channel_id = CTX::CID::from_usize (cid).unwrap();
-          while let Some (message) = endpoint.try_recv() {
-            use message::Global;
-            debug!("{}: {:?}",
-              format!("{:?} receive message on {:?}", self.id(), channel_id)
-                .green().bold(),
-              message.id());
-            match self.handle_message (message) {
-              ControlFlow::Continue => {}
-              // TODO: the following is a hazard if further messages are pending
-              ControlFlow::Break    =>
+          loop {
+            match endpoint.try_recv() {
+              Ok (message) => {
+                use message::Global;
+                debug!("{}: {:?}",
+                  format!("{:?} received message on {:?}",
+                    self.id(), channel_id).green().bold(),
+                  message.id());
+                match self.handle_message (message) {
+                  ControlFlow::Continue => {}
+                  // TODO: the following is a hazard if further messages are
+                  // pending
+                  ControlFlow::Break    =>
+                    self.inner_mut().handle_event (inner::EventId::End.into())
+                      .unwrap()
+                }
+                message_count += 1;
+              }
+              Err (channel::TryRecvError::Empty) => { break }
+              Err (channel::TryRecvError::Disconnected) => {
                 self.inner_mut().handle_event (inner::EventId::End.into())
-                  .unwrap()
+                  .unwrap();
+                break
+              }
             }
-            message_count += 1;
           }
         }
 
@@ -353,9 +437,13 @@ pub trait Process <CTX, RES> where
       }
 
     } // end 'run_loop
+    self.put_endpoints (endpoints);
     self.terminate();
   } // end fn run_synchronous
 
+  /// Asynchronous run loop waits for messages on the single endpoint held by
+  /// this process and calls the process update method for every $n >= 1$
+  /// messages as specified by the process kind.
   fn run_asynchronous (&mut self) where
     Self : Sized,
     CTX  : 'static
@@ -386,25 +474,33 @@ pub trait Process <CTX, RES> where
     let mut messages_since_update = 0;
 
     let endpoints       = self.take_endpoints();
+    { // create a scope here so the endpoints can be returned after this borrow
     let (cid, endpoint) = endpoints.iter().next().unwrap();
     let channel_id      = CTX::CID::from_usize (cid).unwrap();
-    'run_loop: while *self.inner_ref().state().id() == inner::StateId::Running {
+    'run_loop: while self.state_id() == inner::StateId::Running {
       use message::Global;
       // wait on message
-      let message = endpoint.recv();
-      debug!("{}: {:#?}",
-        format!("{:?} receive message on {:?}", self.id(), channel_id)
-          .green().bold(),
-        message.id());
-      let handle_message_result = self.handle_message (message);
-      match handle_message_result {
-        ControlFlow::Continue => {}
-        ControlFlow::Break    =>
+      match endpoint.recv() {
+        Ok (message) => {
+          debug!("{}: {:#?}",
+            format!("{:?} receive message on {:?}", self.id(), channel_id)
+              .green().bold(),
+            message.id());
+          let handle_message_result = self.handle_message (message);
+          match handle_message_result {
+            ControlFlow::Continue => {}
+            ControlFlow::Break    =>
+              self.inner_mut().handle_event (inner::EventId::End.into())
+                .unwrap()
+          }
+          message_count         += 1;
+          messages_since_update += 1;
+        }
+        Err (channel::RecvError) => {
           self.inner_mut().handle_event (inner::EventId::End.into())
             .unwrap()
+        }
       }
-      message_count         += 1;
-      messages_since_update += 1;
       if messages_per_update <= messages_since_update {
         // update
         let update_result = self.update();
@@ -420,6 +516,9 @@ pub trait Process <CTX, RES> where
         messages_since_update = 0;
       }
     } // end 'run_loop
+    } // end borrow endpoint
+    self.put_endpoints (endpoints);
+    self.terminate();
   } // end fn run_asynchronous
 
   /// An asynchronous run loop that polls for messages.
@@ -442,26 +541,36 @@ pub trait Process <CTX, RES> where
     #[allow(unused_variables)]
     let mut update_count  = 0;
     let endpoints = self.take_endpoints();
-    'run_loop: while *self.inner_ref().state().id() == inner::StateId::Running {
+    'run_loop: while self.state_id() == inner::StateId::Running {
       // poll messages
       for (cid, endpoint) in endpoints.iter() {
         use num::FromPrimitive;
         let channel_id = CTX::CID::from_usize (cid).unwrap();
-        while let Some (message) = endpoint.try_recv() {
-          use message::Global;
-          debug!("{}: {:#?}",
-            format!("{:?} receive message on {:?}", self.id(), channel_id)
-              .green().bold(),
-            message.id());
-          let handle_message_result = self.handle_message (message);
-          match handle_message_result {
-            ControlFlow::Continue => {}
-            // TODO: the following is a hazard if further messages are pending
-            ControlFlow::Break    =>
+        loop {
+          match endpoint.try_recv() {
+            Ok (message) => {
+              use message::Global;
+              debug!("{}: {:#?}",
+                format!("{:?} receive message on {:?}", self.id(), channel_id)
+                  .green().bold(),
+                message.id());
+              let handle_message_result = self.handle_message (message);
+              match handle_message_result {
+                ControlFlow::Continue => {}
+                // TODO: the following is a hazard if further messages are pending
+                ControlFlow::Break    =>
+                  self.inner_mut().handle_event (inner::EventId::End.into())
+                    .unwrap()
+              }
+              message_count += 1;
+            }
+            Err (channel::TryRecvError::Empty) => { break }
+            Err (channel::TryRecvError::Disconnected) => {
               self.inner_mut().handle_event (inner::EventId::End.into())
-                .unwrap()
+                .unwrap();
+              break
+            }
           }
-          message_count += 1;
         }
       }
 
@@ -479,6 +588,7 @@ pub trait Process <CTX, RES> where
       update_count += 1;
 
     } // end 'run_loop
+    self.put_endpoints (endpoints);
     self.terminate();
   } // end fn run_asycnhronous_polling
 } // end trait Process
@@ -528,7 +638,7 @@ impl <CTX : session::Context> Def <CTX> {
   /// # fn main() {
   /// let result = process::Def::<Mycontext>::define (
   ///   ProcessId::A,
-  ///   process::Kind::default_synchronous(),
+  ///   process::Kind::synchronous_default(),
   ///   vec![ChannelId::X, ChannelId::Z, ChannelId::X],
   ///   vec![ChannelId::Y]);
   /// assert_eq!(
@@ -546,7 +656,7 @@ impl <CTX : session::Context> Def <CTX> {
   /// # fn main() {
   /// let result = process::Def::<Mycontext>::define (
   ///   ProcessId::A,
-  ///   process::Kind::default_synchronous(),
+  ///   process::Kind::synchronous_default(),
   ///   vec![ChannelId::X, ChannelId::Z],
   ///   vec![ChannelId::Y, ChannelId::Y]);
   /// assert_eq!(
@@ -564,7 +674,7 @@ impl <CTX : session::Context> Def <CTX> {
   /// # fn main() {
   /// let result = process::Def::<Mycontext>::define (
   ///   ProcessId::A,
-  ///   process::Kind::default_synchronous(),
+  ///   process::Kind::synchronous_default(),
   ///   vec![ChannelId::X, ChannelId::Z],
   ///   vec![ChannelId::Y, ChannelId::Z]);
   /// assert_eq!(
@@ -583,7 +693,7 @@ impl <CTX : session::Context> Def <CTX> {
   /// # fn main() {
   /// let result = process::Def::<Mycontext>::define (
   ///   ProcessId::A,
-  ///   process::Kind::default_asynchronous(),
+  ///   process::Kind::asynchronous_default(),
   ///   vec![ChannelId::Z],
   ///   vec![]);
   /// assert_eq!(
@@ -603,7 +713,7 @@ impl <CTX : session::Context> Def <CTX> {
   /// # fn main() {
   /// let result = process::Def::<Mycontext>::define (
   ///   ProcessId::A,
-  ///   process::Kind::default_asynchronous(),
+  ///   process::Kind::asynchronous_default(),
   ///   vec![ChannelId::Z],
   ///   vec![ChannelId::X, ChannelId::Y]);
   /// assert_eq!(
@@ -689,18 +799,18 @@ impl <CTX : session::Context> Def <CTX> {
 }
 
 impl Kind {
-  pub fn default_synchronous() -> Self {
+  pub fn synchronous_default() -> Self {
     const TICK_MS          : u32 = 1000;
     const TICKS_PER_UPDATE : u32 = 1;
     Kind::new_synchronous (TICK_MS, TICKS_PER_UPDATE).unwrap()
   }
 
-  pub fn default_asynchronous() -> Self {
+  pub fn asynchronous_default() -> Self {
     const MESSAGES_PER_UPDATE : u32 = 1;
     Kind::new_asynchronous (MESSAGES_PER_UPDATE).unwrap()
   }
 
-  pub fn default_asynchronous_polling() -> Self {
+  pub fn asynchronous_default_polling() -> Self {
     Kind::new_asynchronous_polling()
   }
 
@@ -766,6 +876,15 @@ impl Kind {
     }
   }
 
+} // end impl Kind
+
+impl <M> From <Result <(), channel::SendError <M>>> for ControlFlow {
+  fn from (send_result : Result <(), channel::SendError <M>>) -> Self {
+    match send_result {
+      Ok  (_) => ControlFlow::Continue,
+      Err (_) => ControlFlow::Break
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
