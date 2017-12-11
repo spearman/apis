@@ -283,8 +283,8 @@ impl <CTX : Context> Session <CTX> {
     self.run_with (channels, vec_map::VecMap::new(), None)
   }
 
-  /// Run a session with given channels and handles to processes that
-  /// are running in a continuation from a previous session.
+  /// Run a session with given channels and handles to processes that are
+  /// running in a continuation from a previous session.
   pub fn run_with (&mut self,
     channels        : vec_map::VecMap <channel::Channel <CTX>>,
     process_handles : vec_map::VecMap <process::Handle <CTX>>,

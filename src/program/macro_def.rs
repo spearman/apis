@@ -48,7 +48,7 @@ macro_rules! def_program {
       /// Run the program to completion.
       fn run (&mut self) {
         info!("{} run...", stringify!($program));
-        // TODO: create ready/ended states and transitions
+        // TODO: create program ready/ended states and transitions
         debug_assert_eq!(self.state.id, StateId::$initial_mode);
 
         // NOTE: we re-use the mode module and mode context identifiers here to

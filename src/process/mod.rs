@@ -270,11 +270,15 @@ pub trait Process <CTX, RES> where
     Self : Sized + 'static,
     CTX  : 'static
   {
+    debug_assert_eq!(self.state_id(), inner::StateId::Ready);
+    self.initialize();
     match *self.kind() {
       Kind::Synchronous         {..} => self.run_synchronous(),
       Kind::Asynchronous        {..} => self.run_asynchronous(),
       Kind::AsynchronousPolling {..} => self.run_asynchronous_polling()
     };
+    debug_assert_eq!(self.state_id(), inner::StateId::Ended);
+    self.terminate();
     // at this point no further messages will be sent or processed so
     // sourcepoints and endpoints are dropped
     self.sourcepoints_mut().clear();
@@ -356,7 +360,6 @@ pub trait Process <CTX, RES> where
   {
     use colored::Colorize;
 
-    self.initialize();
     self.inner_mut().handle_event (inner::EventId::Run.into()).unwrap();
 
     let t_start = std::time::SystemTime::now();
@@ -480,7 +483,6 @@ pub trait Process <CTX, RES> where
 
     } // end 'run_loop
     self.put_endpoints (endpoints);
-    self.terminate();
   } // end fn run_synchronous
 
   /// Asynchronous run loop waits for messages on the single endpoint held by
@@ -493,7 +495,6 @@ pub trait Process <CTX, RES> where
     use num::FromPrimitive;
     use colored::Colorize;
 
-    self.initialize();
     self.inner_mut().handle_event (inner::EventId::Run.into()).unwrap();
 
     let t_start = std::time::SystemTime::now();
@@ -572,7 +573,6 @@ pub trait Process <CTX, RES> where
     } // end 'run_loop
     } // end borrow endpoint
     self.put_endpoints (endpoints);
-    self.terminate();
   } // end fn run_asynchronous
 
   /// An asynchronous run loop that polls for messages.
@@ -582,7 +582,6 @@ pub trait Process <CTX, RES> where
   {
     use colored::Colorize;
 
-    self.initialize();
     self.inner_mut().handle_event (inner::EventId::Run.into()).unwrap();
 
     let t_start = std::time::SystemTime::now();
@@ -655,7 +654,6 @@ pub trait Process <CTX, RES> where
 
     } // end 'run_loop
     self.put_endpoints (endpoints);
-    self.terminate();
   } // end fn run_asycnhronous_polling
 } // end trait Process
 

@@ -1,4 +1,4 @@
-# Apis v0.0.1 - initial implementation
+# Apis v0.0.1 - initial implementation {#0.0.1}
 
 **Issues**
 
@@ -49,7 +49,9 @@ interactive application in `apis`.
 `glutin`, `glium`
 
 
-# Process results
+## Process results
+
+&#x261e; This has been resolved in [Apis v0.0.10](#0.0.10)
 
 Currently processes uniformly return an `Option <()>` type, and these are
 returned by the `Session::run_*` methods in a `VecMap` which is used to
@@ -107,7 +109,7 @@ but this won't work because the inner presult type is a generic parameter and
 to construct the global presult requires a concrete type.
 
 
-# Reusable processes
+## Reusable processes
 
 A difference between a trait with a generic parameter and a trait with an
 associated type is that the trait with the generic parameter can be implemented
@@ -128,3 +130,96 @@ allowed have different sets of processes. One way to get around this would be
 to give channel and process IDs as strings and have them converted to the
 appropriate ID enum type. As long as the session has a channel or process ID
 that resolves from the given string, the process could be used there.
+
+
+# Apis v0.0.10 - prototype in use {#0.0.10}
+
+A number of example programs now exist in the `./examples/` directory and the
+library has developed to suit the needs of an interactive graphical
+application.
+
+
+**Issues**
+
+The following issues from v0.0.1 have been *resolved*:
+
+- *Process results*: Processes can optionally specify a process result or
+  "presult" type. Each session context defines a "global presult type"
+  (`Context::GPRES`) which is collected into a `VecMap` of results for each
+  individual process and returned by the session `run_with` function. Within a
+  program these results are accessible within the "transition choice" block for
+  each mode (session). The `Process` trait adds the required methods
+  (automatically implemented in the `def_session!` macro) `result_ref`,
+  `result_mut` for getting and setting the internal return value and
+  `global_result` for wrapping the internal return type as a global presult
+  type. As a convenience another required method `extract_result` is added to
+  the `Process` interface (and automatically implemented by the `def_session!`
+  macro) that attempts to unwrap a given global presult into the local result
+  type for that process.
+- *Custom initialization*: Processes can optionally provide `initialize` and
+  `terminate` actions to perform just before running (in the `Ready` state) and
+  just after running (in the `Ended` state), respectively.
+- *Asynchronous polling*: This process kind was added which has the message
+  polling behavior of synchronous processes with the ungoverned loop of
+  asynchronous processes. Process kinds are defined in terms of two aspects:
+
+    * *Synchronous* vs. *Asynchronous*: With and without loop timing; the
+      former will not poll or update more than a specified number of ticks per
+      second, and will "catch up" if a tick takes longer than the alotted time,
+      while the latter will always loop immediately.
+    * *Polling* vs. *Blocking*: The former will poll each endpoint to
+      exhaustion with `try_recv`, while the latter is only allowed a single
+      endpoint on which it blocks waiting for messages with `recv`.
+
+  `Kind::Synchronous` processes only allow polling for messages and
+  `Kind::Asynchronous` processes are always blocking, while the new process
+  kind `Kind::AsynchronousPolling` is always polling.
+
+The following issues *remain* from v0.0.1:
+
+- [Reusable processes]: It is not possible to re-use process definitions.
+  Therefore, if two sessions use a process that is identical, the code must be
+  duplicated. This can be eased somewhat by giving both processes a single
+  "inner" type that handles the logic uniformly for both, so that they are
+  essentially thin wrappers around this type.
+- There are some coherence requirements for programs that are checked by debug
+  assertions or at runtime. A better solution would be along the lines of what
+  is done with sessions where a definition is built and verified at
+  initialization time. These requirements are that processes to be mapped as
+  continuations are mapped one-to-one, and that main processes can be mapped to
+  eachother but not to other processes. Other checks may be done on the graph
+  of transitions to ensure that all modes are reachable.
+- State machines are used at a few points in the implementation; mostly they
+  are "simple" transitions that lack actions, guards, or parameters. More could
+  be done there, but it's unlikely to be possible to capture *all* affected
+  program logic within events.
+- To allow for continuations, processes need to be able to return results to
+  the session and to receive continuations from the session. Currently this is
+  done with standard `std::sync::mpsc` channels, but it might be possible to
+  replace these with session-typed channels, adding some safety guarantees to
+  communication on these channels.
+
+The following issues are *added* to v0.0.10:
+
+- [Control flow mechanisms]: Currently process control flow is controlled by
+  returning `process::ControlFlow::Break` from either `handle_message` or
+  `update` methods of the process; this can affect different results depending
+  on the kind of the process. The goal is not to enforce policy on how
+  processes are synchronized, but that the mechanisms available make it
+  possible to feasibly implement a policy that doesn't result in orphan
+  messages or send failures.
+
+
+## Control flow mechanisms
+
+The run loops for each process kind are roughly as follows:
+
+*synchronous*
+
+    while running {
+      for each endpoint {
+        for each message on endpoint.try_recv() {
+          handle_message (message)
+        }
+      }
+    }

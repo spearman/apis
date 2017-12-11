@@ -3,6 +3,8 @@ use ::std;
 use ::session;
 use ::Process;
 
+// TODO: should there be a conversion constraint between these traits ?
+
 pub trait Global <CTX> where
   CTX  : session::Context <GPRES=Self>,
   Self : Sized + std::fmt::Debug
