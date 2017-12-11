@@ -408,8 +408,7 @@ pub trait Process <CTX, RES> where
               Ok (message) => {
                 use message::Global;
                 debug!("{} {:?}",
-                  format!("process[{:?}] received message on \
-                    channel[{:?}]:",
+                  format!("process[{:?}] received message on channel[{:?}]:",
                     self.id(), channel_id).green().bold(),
                   message.id());
                 match self.handle_message (message) {
@@ -419,7 +418,7 @@ pub trait Process <CTX, RES> where
                       self.inner_mut().handle_event (inner::EventId::End.into())
                         .unwrap();
                     }
-                    break 'poll_outer
+                    break 'poll_inner
                   }
                 }
                 message_count += 1;
@@ -436,7 +435,7 @@ pub trait Process <CTX, RES> where
                   self.inner_mut().handle_event (inner::EventId::End.into())
                     .unwrap();
                 }
-                break 'poll_outer
+                break 'poll_inner
               }
             }
           }
@@ -615,7 +614,7 @@ pub trait Process <CTX, RES> where
                     self.inner_mut().handle_event (inner::EventId::End.into())
                       .unwrap()
                   }
-                  break 'poll_outer
+                  break 'poll_inner
                 }
               }
               message_count += 1;
@@ -632,7 +631,7 @@ pub trait Process <CTX, RES> where
                 self.inner_mut().handle_event (inner::EventId::End.into())
                   .unwrap();
               }
-              break 'poll_outer
+              break 'poll_inner
             }
           }
         }

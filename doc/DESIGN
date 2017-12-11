@@ -1,44 +1,53 @@
-# Apis v0.0.1 - initial implementation {#0.0.1}
+# Apis v0.0.1 - initial implementation {#v0.0.1}
 
 **Issues**
 
-- [Process results]: Session results are a uniform `Option <()>` type for all
-  sessions. There is syntax defined in the `def_session!` macro to give each
-  process a unique result type. These could probably be wrapped in a global
-  `Result` type for the entire session (so they can still be stored in a
-  `VecMap`).
-- [Reusable processes]: It is not possible to re-use process definitions.
-  Therefore, if two sessions use a process that is identical, the code must be
-  duplicated. This can be eased somewhat by giving both processes a single
-  "inner" type that handles the logic uniformly for both, so that they are
-  essentially thin wrappers around this type.
-- There are some coherence requirements for programs that are checked by debug
-  assertions or at runtime. A better solution would be along the lines of what
-  is done with sessions where a definition is built and verified at
-  initialization time. These requirements are that processes to be mapped as
-  continuations are mapped one-to-one, and that main processes can be mapped to
-  eachother but not to other processes. Other checks may be done on the graph
-  of transitions to ensure that all modes are reachable.
-- Custom initialization: processes might require special initialization to be
-  performed but currently the only place to do that is in a continuation block.
-- State machines are used at a few points in the implementation; mostly they
-  are "simple" transitions that lack actions, guards, or parameters. More could
-  be done there, but it's unlikely to be possible to capture *all* affected
-  program logic within events.
-- To allow for continuations, processes need to be able to return results to
-  the session and to receive continuations from the session. Currently this is
-  done with standard `std::sync::mpsc` channels, but it might be possible to
-  replace these with session-typed channels, adding some safety guarantees to
-  communication on these channels.
-- The case of a process which blocks on some external code awaiting a result as
-  the main form of input is supported by creating a synchronous process with a
-  tick length of `0` ms. There doesn't seem to be anything especially wrong
-  with this solution, but some modification needs to be made to prevent "late
-  tick" warnings from being generated (a tick length of `0` means that the next
-  tick deadline is seen as being instantaneous with the last). As long as the
-  user code reliably blocks and the process is defined to have one update per
-  tick, the process will not be able to "catch up" by processing very many
-  ticks.
+- [*Process results*](#process-results) (resolved in [v0.0.11](#v0.0.11)):
+  Session results are a uniform `Option<()>` type for all sessions. There is
+  syntax defined in the `def_session!` macro to give each process a unique
+  result type. These could probably be wrapped in a global `Result` type for
+  the entire session (so they can still be stored in a `VecMap`).
+- *Custom initialization* (resolved in [v0.0.11](#v0.0.11)): processes might
+  require special initialization to be performed but currently the only place
+  to do that is in a continuation block.
+- *Asynchronous polling* (resolved in [v0.0.11](#v0.0.11)): The case of a
+  process which blocks on some external code awaiting a result as the main form
+  of input is supported by creating a synchronous process with a tick length of
+  `0` ms. There doesn't seem to be anything especially wrong with this
+  solution, but some modification needs to be made to prevent "late tick"
+  warnings from being generated (a tick length of `0` means that the next tick
+  deadline is seen as being instantaneous with the last). As long as the user
+  code reliably blocks and the process is defined to have one update per tick,
+  the process will not be able to "catch up" by processing very many ticks.
+- [*Reusable processes*](#reusable-processes): It is not possible to re-use
+  process definitions. Therefore, if two sessions use a process that is
+  identical, the code must be duplicated. This can be eased somewhat by giving
+  both processes a single "inner" type that handles the logic uniformly for
+  both, so that they are essentially thin wrappers around this type.
+- *Program coherence*: There are some coherence requirements for programs that
+  are checked by debug assertions or at runtime. A better solution would be
+  along the lines of what is done with sessions where a definition is built and
+  verified at initialization time. These requirements are that processes to be
+  mapped as continuations are mapped one-to-one, and that main processes can be
+  mapped to eachother but not to other processes. Other checks may be done on
+  the graph of transitions to ensure that all modes are reachable.
+- *State machine usage*: State machines are used at a few points in the
+  implementation; mostly they are "simple" transitions that lack actions,
+  guards, or parameters. More could be done there, but it's unlikely to be
+  possible to capture *all* affected program logic within events.
+- *Session typed program control channels*: To allow for continuations,
+  processes need to be able to return results to the session and to receive
+  continuations from the session. Currently this is done with standard
+  `std::sync::mpsc` channels, but it might be possible to replace these with
+  session-typed channels, adding some safety guarantees to communication on
+  these channels.
+
+The following are *implementation issues* that don't as much affect users:
+
+- *Session dotfile functions*: The methods for producing session dotfiles rely
+  on macro expansion. It would be better for maintainability and modifiability
+  if this could be re-implemented in a purely functional manner, since session
+  definition information is already available in the form of `session::Def`.
 
 
 **Further development**
@@ -51,9 +60,9 @@ interactive application in `apis`.
 
 ## Process results
 
-&#x261e; This has been resolved in [Apis v0.0.10](#0.0.10)
+&#x261e; This has been resolved in [Apis v0.0.11](#v0.0.11)
 
-Currently processes uniformly return an `Option <()>` type, and these are
+Currently processes uniformly return an `Option<()>` type, and these are
 returned by the `Session::run_*` methods in a `VecMap` which is used to
 determine the next transition in a program. This is essentially equal to
 each process returning a boolean, which gives only a limited amount of
@@ -132,7 +141,7 @@ appropriate ID enum type. As long as the session has a channel or process ID
 that resolves from the given string, the process could be used there.
 
 
-# Apis v0.0.10 - prototype in use {#0.0.10}
+# Apis v0.0.11 - prototype in use {#v0.0.11}
 
 A number of example programs now exist in the `./examples/` directory and the
 library has developed to suit the needs of an interactive graphical
@@ -146,80 +155,334 @@ The following issues from v0.0.1 have been *resolved*:
 - *Process results*: Processes can optionally specify a process result or
   "presult" type. Each session context defines a "global presult type"
   (`Context::GPRES`) which is collected into a `VecMap` of results for each
-  individual process and returned by the session `run_with` function. Within a
-  program these results are accessible within the "transition choice" block for
-  each mode (session). The `Process` trait adds the required methods
-  (automatically implemented in the `def_session!` macro) `result_ref`,
-  `result_mut` for getting and setting the internal return value and
-  `global_result` for wrapping the internal return type as a global presult
-  type. As a convenience another required method `extract_result` is added to
-  the `Process` interface (and automatically implemented by the `def_session!`
-  macro) that attempts to unwrap a given global presult into the local result
-  type for that process.
+  individual process and returned by the session `run` function. In a program
+  these results are accessible within the "transition choice" block for each
+  mode (session). The `Process` trait adds the required methods (automatically
+  implemented in the `def_session!` macro) `result_ref`, `result_mut` for
+  getting and setting the internal return value and `global_result` for
+  wrapping the internal return type as a global presult type. As a convenience
+  another required method `extract_result` is added to the `Process` interface
+  (and automatically implemented by the `def_session!` macro) that attempts to
+  unwrap a given global presult into the local result type for that process.
+
 - *Custom initialization*: Processes can optionally provide `initialize` and
   `terminate` actions to perform just before running (in the `Ready` state) and
   just after running (in the `Ended` state), respectively.
+
 - *Asynchronous polling*: This process kind was added which has the message
   polling behavior of synchronous processes with the ungoverned loop of
-  asynchronous processes. Process kinds are defined in terms of two aspects:
+  asynchronous processes. This is mostly intended for situations where the
+  `update` function will block on some external mechanism (e.g. waiting on
+  input events from system or vsync in a frameloop). Process kinds are defined
+  in terms of two aspects:
 
-    * *Synchronous* vs. *Asynchronous*: With and without loop timing; the
+    * *Synchronous* vs. *Asynchronous*: With and without *loop timing*; the
       former will not poll or update more than a specified number of ticks per
       second, and will "catch up" if a tick takes longer than the alotted time,
       while the latter will always loop immediately.
-    * *Polling* vs. *Blocking*: The former will poll each endpoint to
-      exhaustion with `try_recv`, while the latter is only allowed a single
-      endpoint on which it blocks waiting for messages with `recv`.
+    * *Polling* vs. *Blocking*: How message are *received*; the former will
+      poll each endpoint to exhaustion with `try_recv`, while the latter is
+      only allowed a single endpoint on which it blocks waiting for messages
+      with `recv`.
 
-  `Kind::Synchronous` processes only allow polling for messages and
-  `Kind::Asynchronous` processes are always blocking, while the new process
-  kind `Kind::AsynchronousPolling` is always polling.
+    `Kind::Synchronous` processes only allow polling for messages and
+    `Kind::Asynchronous` processes are always blocking, while the new process
+    kind `Kind::AsynchronousPolling` is always polling. Keep in mind that in the
+    *other* sense of "asynchrony", all *sends* from processes are *asynchronous*
+    in that they do not wait for the receiver to retrieve the message. It was
+    debated whether to adopt "isochronous" and "anisochronous" to describe
+    looping behavior to avoid confusion, but for now it will be left as
+    "synchronous" and "asynchronous".
 
 The following issues *remain* from v0.0.1:
 
-- [Reusable processes]: It is not possible to re-use process definitions.
-  Therefore, if two sessions use a process that is identical, the code must be
-  duplicated. This can be eased somewhat by giving both processes a single
-  "inner" type that handles the logic uniformly for both, so that they are
-  essentially thin wrappers around this type.
-- There are some coherence requirements for programs that are checked by debug
-  assertions or at runtime. A better solution would be along the lines of what
-  is done with sessions where a definition is built and verified at
-  initialization time. These requirements are that processes to be mapped as
-  continuations are mapped one-to-one, and that main processes can be mapped to
-  eachother but not to other processes. Other checks may be done on the graph
-  of transitions to ensure that all modes are reachable.
-- State machines are used at a few points in the implementation; mostly they
-  are "simple" transitions that lack actions, guards, or parameters. More could
-  be done there, but it's unlikely to be possible to capture *all* affected
-  program logic within events.
-- To allow for continuations, processes need to be able to return results to
-  the session and to receive continuations from the session. Currently this is
-  done with standard `std::sync::mpsc` channels, but it might be possible to
-  replace these with session-typed channels, adding some safety guarantees to
-  communication on these channels.
+- [*Reusable processes*](#reusable-processes): It is not possible to re-use
+  process definitions. Therefore, if two sessions use a process that is
+  identical, the code must be duplicated. This can be eased somewhat by giving
+  both processes a single "inner" type that handles the logic uniformly for
+  both, so that they are essentially thin wrappers around this type.
+- *Program coherence*: There are some coherence requirements for programs that
+  are checked by debug assertions or at runtime. A better solution would be
+  along the lines of what is done with sessions where a definition is built and
+  verified at initialization time. These requirements are that processes to be
+  mapped as continuations are mapped one-to-one, and that main processes can be
+  mapped to eachother but not to other processes. Other checks may be done on
+  the graph of transitions to ensure that all modes are reachable.
+- *State machine usage*: State machines are used at a few points in the
+  implementation; mostly they are "simple" transitions that lack actions,
+  guards, or parameters. More could be done there, but it's unlikely to be
+  possible to capture *all* affected program logic within events.
+- *Session typed program control channels*: To allow for continuations,
+  processes need to be able to return results to the session and to receive
+  continuations from the session. Currently this is done with standard
+  `std::sync::mpsc` channels, but it might be possible to replace these with
+  session-typed channels, adding some safety guarantees to communication on
+  these channels.
 
-The following issues are *added* to v0.0.10:
+The following implementation issues *remain* from v0.0.1:
 
-- [Control flow mechanisms]: Currently process control flow is controlled by
-  returning `process::ControlFlow::Break` from either `handle_message` or
-  `update` methods of the process; this can affect different results depending
-  on the kind of the process. The goal is not to enforce policy on how
-  processes are synchronized, but that the mechanisms available make it
-  possible to feasibly implement a policy that doesn't result in orphan
-  messages or send failures.
+- *Session dotfile functions*: The methods for producing session dotfiles rely
+  on macro expansion. It would be better for maintainability and modifiability
+  if this could be re-implemented in a purely functional manner, since session
+  definition information is already available in the form of `session::Def`.
+
+The following issues are *added* to v0.0.11:
+
+- [Control flow mechanisms](#control-flow-mechanisms): Currently process
+  control flow is controlled by returning `process::ControlFlow::Break` from
+  either `handle_message` or `update` methods of the process; this can affect
+  different results depending on the kind of the process. The goal is not to
+  enforce policy on how processes are synchronized, but that the mechanisms
+  available make it possible to feasibly implement a policy that doesn't result
+  in orphan messages or send failures.
 
 
 ## Control flow mechanisms
 
+We want control flow mechanisms that make it feasible to implement
+synchronization policies that don't result in *orphan messages* or *send
+failures*. Whether or not *receive failures* (disconnections) can or should be
+avoided is an open question. (As noted below, receive failures are less likely
+to happen and easier to avoid as long as a terminating "finish" or "stop"
+message is always the last one sent on a channel before the sender drops: the
+actual receiving end is *not* disconnected until the last message has been
+received.)
+
+An *orphan message* is a message that was sent but never received
+(*automatically*) within the process run loop. Each process can run a
+`terminate` action after the loop has finished where further messages can be
+received, but this requires that any remaining messages are received *manually*
+by the user. After this point, before destroying the channels they are checked
+for orphan messages (which will generate warnings).
+
+A *send failure* is an attempt to send on a channel for which the receiver has
+disconnected. The message will never be deliverable, and is returned along with
+the send error so it can be recovered. Because all sends are *manual*, it is up
+to the user to respond appropriately to a send failure.
+
+*Receive failures* are a little more complicated due to there being two kinds
+ of reception:
+
+- For a blocking receive (`Kind::Asynchronous` processes), there is only one
+  endpoint and due to the in-order reception of messages, once a "final"
+  message has been received, the channel should never contain any further
+  messages, and once the last message is received (if the sender has
+  disconnected) the next attempt will produce a disconnection error. If the
+  process is *expecting* to be notified of a "final" message, then seeing a
+  disconnected channel truly is a sign of an error since the only alternative
+  would be for the asynchronous process in question to be the one intended to
+  signal a "finish" event (either directly or indirectly through other outgoing
+  channels) which can never be received since that other peer has definitely
+  dropped.
+
+    Receives are also complicated by *sink* channels. An asynchronous endpoint
+    of a sink channel can receive from multiple other peers (currently it is
+    not automatically indicated in the message which specific other peer it
+    originates from, only that it came from *some* peer sender to that channel
+    is known), and will only be able to tell when *all* the sending peers have
+    dropped by seeing a disconnected endpoint. It is also more difficult to
+    guarantee that a "finish" message received on a sink channel is going to be
+    the last message on the channel: without some other synchronization between
+    the sending peers themselves, one of them may independently send further
+    messages. A more reasonable solution for synchronizing "finish" conditions
+    on a sink channel would probably be to require a separate "finish" message
+    from each peer connected to the channel (a kind of policy left to users to
+    implement).
+- For polling receive (`Kind::Synchronous` and `Kind::AsynchronousPolling`
+  processes), the situation for processes holding single endpoints is similar
+  to asynchronous processes, and those holding multiple endpoints is also
+  similar to a single-endpoint sink channel (see above). That is, if a polling
+  process has a single input channel, that channel should never be seen as
+  disconnected by the receiver before a "final" event is received on that
+  channel (or sent via a backchannel if the direction of control is reversed).
+  If a polling process has more than one input channel, it is possible that
+  there is some delay between reception of each separate "finish" message, so
+  the process may need to continue polling disconnected channels several times
+  before the last channel is "closed" (after which the process in question can
+  be assured that no further messages will be received).
+
+It should be noted that for a receiver, the channel is not disconnected until
+all messages have been received. Ensuring a "stop" message is the last message
+sent on such a channel ensures that receiving from a disconnected channel never
+happens (since such a message will cause a break in the control flow, see
+below).
+
 The run loops for each process kind are roughly as follows:
 
-*synchronous*
+*Synchronous* (Polling):
 
     while running {
-      for each endpoint {
-        for each message on endpoint.try_recv() {
-          handle_message (message)
+      if time for tick {
+        'poll_outer: for each endpoint {
+          'poll_inner: loop match endpoint.try_recv() {
+            Ok(message)       => if self.handle_message(message) == break {
+              running = false; break 'poll_inner
+            }
+            Err(Empty)        => break 'poll_inner
+            Err(Disconnected) => {
+              running = false; break 'poll_inner
+            }
+          }
+        }
+        if tick count == ticks per update {
+          if self.update() == break {
+            running = false
+          }
+        }
+      } else not time for tick {
+        warn early tick
+      }
+      if not time for next tick {
+        sleep until next tick
+      } else time for next tick {
+        warn late tick
+      }
+    }
+
+*Asynchronous* (Blocking):
+
+    while running {
+      match endpoint.recv() {
+        Ok(message)       => if self.handle_message(message) == break {
+          running = false
+        }
+        Err(Disconnected) => {
+          running = false
+        }
+      }
+      if message count == messages per update {
+        if self.update() == break {
+          running = false
         }
       }
     }
+
+*AsynchronousPolling*:
+
+    while running {
+      'poll_outer: for each endpoint {
+        'poll_inner: loop match endpoint.try_recv() {
+          Ok(message)       => if self.handle_message(message) == break {
+            running = false; break 'poll_inner
+          }
+          Err(Empty)        => break 'poll_inner
+          Err(Disconnected) => {
+            running = false; break 'poll_inner
+          }
+        }
+      }
+      if self.update() == break {
+        running = false
+      }
+    }
+
+A motivating example is the following session with three processes, all of
+which are polling:
+
+    A * ----> * C
+      |       ^
+      |       |
+      +-> * --+
+          B
+
+There are two ways for process `A` to signal "stop" to peers `B` and `C`:
+
+1. Process `A` sends individual "stop" messages directly to each of `B` and
+   `C`. This introduces two hazards depending on the order that `B` and `C` are
+   dropped:
+      i. If `B` drops before `C`, `C` may be currently trying to *receive* on
+        the disconnected channel `B->C`
+      ii. If `C` drops before `B`, `B` may be trying to *send* messages on the
+        disconnected channel `B->C`
+2. Process `A` sends an initial "stop" message to process `B` which then
+   forwards a "stop" message to process `C`. In this case the hazard is that if
+   `A` drops after sending the initial "stop" message, process `C` will
+   continue trying to poll the disconnected channel `A->C` until the "stop"
+   message is received from process `B`, even if (actually, precisely when)
+   there are no pending messages from `A` and no further messages were sent on
+   `A->C` after the initial "stop".
+
+If (1.) and (2.) are combined, a third possible scheme is that process `A`
+sends "stop" messages on each of its channels, and process `B` sends another
+"stop" message on its channel to `C`. This only eliminates hazard (1i.) above--
+`B` will always send the "stop" message before dropping so `C` will not see a
+disconnected channel until it is emptied.
+
+It may be useful to back up and explore some other primitive configurations. We
+will denote a channel from process `A` to process `B` as `AB`, sending a
+message as `AB^x` and receiving a message as`AB_x` where `q` denotes a "finish"
+or "stop" message after which no further messages will be sent on that channel,
+and dropping a process `X` is denoted `drop(X)`.
+
+1. `A -> B` -- The only possible finite message trace for this session is:
+
+        [ ..., AB^q, ..., AB_q ]
+
+    where the first `...` contains an ordered interleaving of sends and
+    corresponding receives, the second `...` can contain receives for sends
+    prior to the "stop" message but not yet received, and `drop(A)`, `drop(B)`
+    may appear freely after `AB^q` or `AB_q`, respectively.
+2. `A <=> B` -- (one channel in each direction) Here `A` must stay alive so that
+  `B` can continue to send messages until the `AB^q` send is received (`AB_q`):
+
+        [ ..., AB^q, ..., AB_q, ..., BA^q, ..., BA_q ]
+
+    and `drop(A)` may appear freely after `BA_q` and `drop(B)` may appear
+    freely after `BA^q` (note here that unlike the example (1.) of a single
+    channel, process `B` may drop before process `A` in this case with
+    bidirectional messages). The directionality here is essentially symmetric,
+    the role of either `A` or `B` is exchangeable and it is even possible that
+    either process may initiate the "quit" sequence, even simultaneously,
+    without a problem.
+3. `A -> B + C` -- (channels `AB` and `AC`) Here `A` is a source sending to
+  both `B` and `C`. Each channel is an isolated case of (1.) above.
+4. `A + B -> C` -- (channels `AC` and `BC`) There is no way in this situation
+  to initiate a termination of the session from a single point. Either `A` and
+  `B` must decide independently at some point to signal completion to `C`, or
+  else there must be another channel involved to synchronize this action.
+5. `A -> B -> C` -- (channels `AB` and `BC`) This is identical to two instances
+   of single channels (1.) above.
+6. `A -> B -> C -> A` -- (channels `AB`, `BC`, `CA`) This defines a cyclic
+   topology which is like (5.) combined with (2.) in that `A` must remain alive
+   until a "stop" message is received from `C`:
+
+        [ ..., AB^q, ..., AB_q, ..., BC^q, ..., BC_q, ..., CA^q, ..., CA_q ]
+7. `A -> (B -> C)` -- (channels `AB`, `AC`, and `BC`) This is the "motivating
+   example" given above. The key feature is that the problem of (4.) is
+   encountered again: a receiver (`C`) with two independent senders (`A` and
+   `B`) requires some kind of coordination between the senders. Here however
+   there is a channel `AB` connecting them; `A` can initiate "stoppage" by
+   sending `AB^q` and `AC^q` in any order. Reception of `AC_q` does not cause
+   `C` to terminate however, since `B` may not have processed `AB_q` yet and
+   can continue sending messages on `BC` until `BC^q`. Since `A` is not
+   connected by any backchannels to `B` or `C`, it cannot be constrained to
+   stay alive, and so may drop any time after both `AB^q` and `AC^q` are sent.
+   This exposes the key issue with the current message handling semantics:
+
+    - *Process `C` will continue to poll `AC` after `AC_q` (until `BC_q`),
+      possibly after `A` has dropped and `AC` is disconnected.* It is also
+      possible that `BC_q` is received before `AC_q`, in which case `BC` will
+      be polled one final time (possibly disconnected) in a normal round of
+      polling all endpoints.
+
+This case (7.) as a motivating example is not an unreasonable one: it
+represents a simple directed acyclic graph of data flow.
+
+<U>The bottom line is that *if* the current scheme of polling *all* endpoints
+on *every* round of polling, it *is* possible (and even likely) in this
+situation that a disconnected channel will be polled.</U>
+
+&#x261e; Note that the situation changes if `AC` and `BC` are actually a single
+*sink* channel `(A+B)->C`, since either endpoint and any pending messages will
+keep the single channel alive. Here we can implicitly assume that if `A` is the
+"initiator" and `BC_q` is received, then no further messages will be received
+since `A` initiated the "stoppage", no messages can appear on `(A+B)->C` after
+`BC_q`.
+
+
+**Ideas**
+
+- One idea for handling this situation is to allow channels to marked as
+  "finished" by a special message or an additional control flow type.
+    * "Stop" messages
+    * "Stop" control flow
