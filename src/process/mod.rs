@@ -1,6 +1,9 @@
 use ::std;
 
+//use ::bit_set;
+//use ::bit_vec;
 use ::either;
+use ::smallvec;
 use ::vec_map;
 
 use ::rs_utils;
@@ -385,7 +388,13 @@ pub trait Process <CTX, RES> where
     let mut message_count      = 0;
     let mut update_count       = 0;
 
-    let endpoints = self.take_endpoints();
+    let endpoints         = self.take_endpoints();
+    let mut num_open_channels = endpoints.len();
+    let mut open_channels     = smallvec::SmallVec::<[bool; 8]>::from_vec ({
+      let mut v = Vec::with_capacity (num_open_channels);
+      v.resize (num_open_channels, true);
+      v
+    });
     'run_loop: while self.state_id() == inner::StateId::Running {
       let t_now = std::time::SystemTime::now();
       if cfg!(debug_assertions) {
@@ -400,46 +409,8 @@ pub trait Process <CTX, RES> where
           t_now);
 
         // poll messages
-        'poll_outer: for (cid, endpoint) in endpoints.iter() {
-          use num::FromPrimitive;
-          let channel_id = CTX::CID::from_usize (cid).unwrap();
-          'poll_inner: loop {
-            match endpoint.try_recv() {
-              Ok (message) => {
-                use message::Global;
-                debug!("{} {:?}",
-                  format!("process[{:?}] received message on channel[{:?}]:",
-                    self.id(), channel_id).green().bold(),
-                  message.id());
-                match self.handle_message (message) {
-                  ControlFlow::Continue => {}
-                  ControlFlow::Break    => {
-                    if self.state_id() == inner::StateId::Running {
-                      self.inner_mut().handle_event (inner::EventId::End.into())
-                        .unwrap();
-                    }
-                    break 'poll_inner
-                  }
-                }
-                message_count += 1;
-              }
-              Err (channel::TryRecvError::Empty) => { break 'poll_inner }
-              Err (channel::TryRecvError::Disconnected) => {
-                use colored::Colorize;
-                warn!("{} sender disconnected",
-                  format!(
-                    "process[{:?}] try receive on channel[{:?}] failed:",
-                    self.id(), channel_id
-                  ).yellow().bold());
-                if self.state_id() == inner::StateId::Running {
-                  self.inner_mut().handle_event (inner::EventId::End.into())
-                    .unwrap();
-                }
-                break 'poll_inner
-              }
-            }
-          }
-        }
+        poll_messages (self, &endpoints,
+          &mut open_channels, &mut num_open_channels, &mut message_count);
 
         tick_count += 1;
         ticks_since_update += 1;
@@ -543,11 +514,11 @@ pub trait Process <CTX, RES> where
         }
         Err (channel::RecvError) => {
           use colored::Colorize;
-          warn!("{} sender disconnected",
+          info!("{} sender disconnected",
             format!(
               "process[{:?}] receive on channel[{:?}] failed:",
               self.id(), channel_id
-            ).yellow().bold());
+            ).red().bold());
           if self.state_id() == inner::StateId::Running {
             self.inner_mut().handle_event (inner::EventId::End.into())
               .unwrap();
@@ -592,51 +563,18 @@ pub trait Process <CTX, RES> where
     let mut message_count = 0;
     #[allow(unused_variables)]
     let mut update_count  = 0;
+
     let endpoints = self.take_endpoints();
+    let mut num_open_channels = endpoints.len();
+    let mut open_channels     = smallvec::SmallVec::<[bool; 8]>::from_vec ({
+      let mut v = Vec::with_capacity (num_open_channels);
+      v.resize (num_open_channels, true);
+      v
+    });
     'run_loop: while self.state_id() == inner::StateId::Running {
       // poll messages
-      'poll_outer: for (cid, endpoint) in endpoints.iter() {
-        use num::FromPrimitive;
-        let channel_id = CTX::CID::from_usize (cid).unwrap();
-        'poll_inner: loop {
-          match endpoint.try_recv() {
-            Ok (message) => {
-              use message::Global;
-              debug!("{} {:#?}",
-                format!("process[{:?}] receive message on channel[{:?}]:",
-                  self.id(), channel_id).green().bold(),
-                message.id());
-              let handle_message_result = self.handle_message (message);
-              match handle_message_result {
-                ControlFlow::Continue => {}
-                ControlFlow::Break    => {
-                  if self.state_id() == inner::StateId::Running {
-                    self.inner_mut().handle_event (inner::EventId::End.into())
-                      .unwrap()
-                  }
-                  break 'poll_inner
-                }
-              }
-              message_count += 1;
-            }
-            Err (channel::TryRecvError::Empty) => { break 'poll_inner }
-            Err (channel::TryRecvError::Disconnected) => {
-              use colored::Colorize;
-              warn!("{} sender disconnected",
-                format!(
-                  "process[{:?}] try receive on channel[{:?}] failed:",
-                  self.id(), channel_id
-                ).yellow().bold());
-              if self.state_id() == inner::StateId::Running {
-                self.inner_mut().handle_event (inner::EventId::End.into())
-                  .unwrap();
-              }
-              break 'poll_inner
-            }
-          }
-        }
-      }
-
+      poll_messages (self, &endpoints,
+        &mut open_channels, &mut num_open_channels, &mut message_count);
       // update
       trace!("process[{:?}] update[{}]", self.id(), update_count);
       let update_result = self.update();
@@ -654,6 +592,7 @@ pub trait Process <CTX, RES> where
     } // end 'run_loop
     self.put_endpoints (endpoints);
   } // end fn run_asycnhronous_polling
+
 } // end trait Process
 
 /// Unique identifier with a total mapping to process defs.
@@ -954,6 +893,9 @@ impl <M> From <Result <(), channel::SendError <M>>> for ControlFlow {
 //  functions
 ///////////////////////////////////////////////////////////////////////////////
 
+//
+//  public
+//
 pub fn report <CTX : session::Context> () where
   CTX : 'static
 {
@@ -962,3 +904,82 @@ pub fn report <CTX : session::Context> () where
   Inner::<CTX>::report();
   println!("...process report");
 }
+
+//
+//  private
+//
+
+//
+//  fn poll_messages
+//
+/// Message polling loop for `Synchronous` and `AsynchronousPolling` processes.
+#[inline]
+fn poll_messages <CTX, P, RES> (
+  process           : &mut P,
+  endpoints         : &vec_map::VecMap <Box <channel::Endpoint <CTX>>>,
+  open_channels     : &mut smallvec::SmallVec <[bool; 8]>,
+  num_open_channels : &mut usize,
+  message_count     : &mut usize)
+where
+  CTX : session::Context + 'static,
+  P   : Process <CTX, RES> + Sized,
+  RES : Presult <CTX, P>
+{
+
+  #[inline]
+  fn channel_close (is_open : &mut bool, num_open : &mut usize) {
+    debug_assert!(*is_open);
+    debug_assert!(0 < *num_open);
+    *is_open = false;
+    *num_open -= 1;
+  }
+
+  // for each open channel (outer loop), poll for messages with try_recv (inner
+  // loop) until "empty" or "disconnected" is encountered
+  let mut open_index = 0;
+  'poll_outer: for (cid, endpoint) in endpoints.iter() {
+    use num::FromPrimitive;
+    let channel_id = CTX::CID::from_usize (cid).unwrap();
+    let channel_open = &mut open_channels[open_index];
+    open_index += 1;
+    if !*channel_open {
+      continue 'poll_outer
+    }
+    'poll_inner: loop {
+      use colored::Colorize;
+      match endpoint.try_recv() {
+        Ok (message) => {
+          use message::Global;
+          debug!("{} {:?}",
+            format!("process[{:?}] received message on channel[{:?}]:",
+              process.id(), channel_id).green().bold(),
+            message.id());
+          *message_count += 1;
+          match process.handle_message (message) {
+            ControlFlow::Continue => {}
+            ControlFlow::Break    => {
+              channel_close (channel_open, num_open_channels);
+              // only transition to "ended" if this is the last channel
+              // to close
+              if *num_open_channels == 0 {
+                process.inner_mut().handle_event (inner::EventId::End.into())
+                  .unwrap();
+              }
+              break 'poll_inner
+            }
+          }
+        }
+        Err (channel::TryRecvError::Empty) => { break 'poll_inner }
+        Err (channel::TryRecvError::Disconnected) => {
+          info!("{} sender disconnected",
+            format!(
+              "process[{:?}] try receive on channel[{:?}]:",
+              process.id(), channel_id
+            ).red().bold());
+          channel_close (channel_open, num_open_channels);
+          break 'poll_inner
+        }
+      } // end match try_recv
+    } // end 'poll_inner
+  } // end 'poll_outer
+} // end fn poll_messages

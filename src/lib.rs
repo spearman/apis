@@ -6,8 +6,11 @@
 
 #[macro_use] extern crate log;
 
+//extern crate bit_set;
+//extern crate bit_vec;
 extern crate num;
 extern crate either;
+extern crate smallvec;
 extern crate vec_map;
 
 extern crate colored;

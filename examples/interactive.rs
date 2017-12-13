@@ -248,7 +248,7 @@ pub mod readline_echoup {
 } // end mod readline_echoup
 
 ///////////////////////////////////////////////////////////////////////////////
-//  mode ReadlineEchorev                                                      //
+//  mode ReadlineEchorev                                                     //
 ///////////////////////////////////////////////////////////////////////////////
 
 pub mod readline_echorev {
