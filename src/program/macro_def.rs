@@ -48,8 +48,7 @@ macro_rules! def_program {
       /// Run the program to completion.
       fn run (&mut self) {
         use colored::Colorize;
-        info!("{} run...",
-          format!("program {}:", stringify!($program)).cyan().bold());
+        info!("program[{}]: {}", stringify!($program), "run...".cyan().bold());
         // TODO: create program ready/ended states and transitions
         debug_assert_eq!(self.state.id, StateId::$initial_mode);
 
@@ -104,11 +103,12 @@ macro_rules! def_program {
             match transition {
 
               $(EventId::$transition => {
-                info!("{} <{}> => <{}>",
-                  format!("mode transition[{}]:",
-                    stringify!($transition)).cyan().bold(),
-                  stringify!($source_context),
-                  stringify!($target_context));
+                info!("mode transition[{}]: {}",
+                  stringify!($transition),
+                  format!("<{}> => <{}>",
+                    stringify!($source_context),
+                    stringify!($target_context)).cyan().bold()
+                );
 
                 assert_eq!(self.state.id, StateId::$source_context,
                   "current state does not match transition source");
@@ -337,8 +337,7 @@ macro_rules! def_program {
           }
           // end transition or break
         } // end 'run_loop
-        info!("{} ...run",
-          format!("program {}:", stringify!($program)).cyan().bold());
+        info!("program[{}]: {}", stringify!($program), "...run".cyan().bold());
       } // end fn run
     } // end impl Program for $program
 

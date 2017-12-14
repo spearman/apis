@@ -237,11 +237,9 @@ pub trait Process <CTX, RES> where
     self.sourcepoints()[cid].send (message.into()).map_err (|send_error| {
       use colored::Colorize;
       use message::Global;
-      warn!("{} receiver disconnected",
-        format!(
-          "process[{:?}] send message[{:?}] on channel[{:?}] failed:",
-          self.id(), send_error.0.id(), channel_id
-        ).yellow().bold());
+      warn!("process[{:?}] send message[{:?}] on channel[{:?}] failed: {}",
+        self.id(), send_error.0.id(), channel_id,
+        "receiver disconnected".red().bold());
       send_error
     })
   }
@@ -256,12 +254,10 @@ pub trait Process <CTX, RES> where
       |send_error| {
         use colored::Colorize;
         use message::Global;
-        warn!("{} receiver disconnected",
-          format!(
-            "process[{:?}] send to process[{:?}] message[{:?}] \
-              on channel[{:?}] failed:",
-            self.id(), recipient, send_error.0.id(), channel_id
-          ).yellow().bold());
+        warn!("process[{:?}] send to process[{:?}] message[{:?}] \
+          on channel[{:?}] failed: {}",
+            self.id(), recipient, send_error.0.id(), channel_id,
+            "receiver disconnected".red().bold());
         send_error
       }
     )
@@ -296,11 +292,9 @@ pub trait Process <CTX, RES> where
           match endpoint.try_recv() {
             Ok (message) => {
               use message::Global;
-              warn!("{} {:?}",
-                format!("process[{:?}] unhandled message on \
-                  channel[{:?}]:",
-                  self.id(), channel_id).yellow().bold(),
-                message.id());
+              warn!("process[{:?}] unhandled message on channel[{:?}]: {}",
+                self.id(), channel_id,
+                format!("message[{:?}]", message.id()).yellow().bold());
               unhandled_count += 1;
             }
             Err (channel::TryRecvError::Empty) |
@@ -311,10 +305,8 @@ pub trait Process <CTX, RES> where
         }
       }
       if unhandled_count > 0 {
-        warn!("{} {}",
-          format!("process[{:?}] unhandled message count:",
-            self.id()).yellow().bold(),
-          unhandled_count);
+        warn!("process[{:?}] unhandled message count: {}",
+          self.id(), format!("{}", unhandled_count).yellow().bold());
       }
     }
     debug_assert!(self.sourcepoints().is_empty());
@@ -366,9 +358,8 @@ pub trait Process <CTX, RES> where
     self.inner_mut().handle_event (inner::EventId::Run.into()).unwrap();
 
     let t_start = std::time::SystemTime::now();
-    debug!("{} {:?}",
-      format!("process[{:?}] start time:", self.id()).cyan(),
-      t_start);
+    debug!("process[{:?}] start time: {}",
+      self.id(), format!("{:?}", t_start).cyan().bold());
     let (tick_ms, ticks_per_update) = {
       match *self.kind() {
         Kind::Synchronous { tick_ms, ticks_per_update }
@@ -399,14 +390,14 @@ pub trait Process <CTX, RES> where
       let t_now = std::time::SystemTime::now();
       if cfg!(debug_assertions) {
         let t_since = t_now.duration_since (t_next);
-        trace!("t_since: {:?}", t_since);
+        trace!("process[{:?}] tick[{}] t_since: {:?}",
+          self.id(), tick_count, t_since);
       }
       if t_next < t_now {
         t_last += tick_dur;
         t_next += tick_dur;
-        debug!("{} tick! @ {:?}",
-          format!("process[{:?}]:", self.id()).blue().bold(),
-          t_now);
+        debug!("process[{:?}] tick[{}]: {}",
+          self.id(), tick_count, format!("tick! @ {:?}", t_now).blue().bold());
 
         // poll messages
         poll_messages (self, &endpoints,
@@ -431,10 +422,8 @@ pub trait Process <CTX, RES> where
           ticks_since_update = 0;
         }
       } else {
-        warn!("{} tick[{}]",
-          format!("process[{:?}] tick too early:", self.id())
-            .yellow().bold(),
-          tick_count);
+        warn!("process[{:?}] tick[{}]: {}",
+          self.id(), tick_count, "tick too early".yellow().bold());
       }
 
       let t_after = std::time::SystemTime::now();
@@ -446,9 +435,8 @@ pub trait Process <CTX, RES> where
           t_until.as_secs()*1000 +
           t_until.subsec_nanos() as u64/1_000_000))
       } else {
-        warn!("{} tick[{}]",
-          format!("process[{:?}] late tick:", self.id()).yellow().bold(),
-          tick_count);
+        warn!("process[{:?}] tick[{}]: {}",
+          self.id(), tick_count, "late tick".yellow().bold());
       }
 
     } // end 'run_loop
@@ -468,9 +456,8 @@ pub trait Process <CTX, RES> where
     self.inner_mut().handle_event (inner::EventId::Run.into()).unwrap();
 
     let t_start = std::time::SystemTime::now();
-    debug!("{} {:?}",
-      format!("process[{:?}] start time:", self.id()).cyan(),
-      t_start);
+    debug!("process[{:?}] start time: {}",
+      self.id(), format!("{:?}", t_start).cyan().bold());
 
     let messages_per_update = {
       match *self.kind() {
@@ -495,10 +482,9 @@ pub trait Process <CTX, RES> where
       // wait on message
       match endpoint.recv() {
         Ok (message) => {
-          debug!("{} {:#?}",
-            format!("process[{:?}] receive message on channel[{:?}]:",
-              self.id(), channel_id).green().bold(),
-            message.id());
+          debug!("process[{:?}] received on channel[{:?}]: {}",
+            self.id(), channel_id,
+            format!("message[{:?}]", message.id()).green().bold());
           let handle_message_result = self.handle_message (message);
           match handle_message_result {
             ControlFlow::Continue => {}
@@ -514,11 +500,8 @@ pub trait Process <CTX, RES> where
         }
         Err (channel::RecvError) => {
           use colored::Colorize;
-          info!("{} sender disconnected",
-            format!(
-              "process[{:?}] receive on channel[{:?}] failed:",
-              self.id(), channel_id
-            ).red().bold());
+          info!("process[{:?}] receive on channel[{:?}] failed: {}",
+              self.id(), channel_id, "sender disconnected".red().bold());
           if self.state_id() == inner::StateId::Running {
             self.inner_mut().handle_event (inner::EventId::End.into())
               .unwrap();
@@ -555,9 +538,8 @@ pub trait Process <CTX, RES> where
     self.inner_mut().handle_event (inner::EventId::Run.into()).unwrap();
 
     let t_start = std::time::SystemTime::now();
-    debug!("{} {:?}",
-      format!("process[{:?}] start time:", self.id()).cyan(),
-      t_start);
+    debug!("process[{:?}] start time: {:?}",
+      self.id(), format!("{:?}", t_start).cyan().bold());
     debug_assert_eq!(Kind::AsynchronousPolling, *self.kind());
     #[allow(unused_variables)]
     let mut message_count = 0;
@@ -950,10 +932,9 @@ where
       match endpoint.try_recv() {
         Ok (message) => {
           use message::Global;
-          debug!("{} {:?}",
-            format!("process[{:?}] received message on channel[{:?}]:",
-              process.id(), channel_id).green().bold(),
-            message.id());
+          debug!("process[{:?}] received on channel[{:?}]: {}",
+            process.id(), channel_id,
+              format!("message[{:?}]", message.id()).green().bold());
           *message_count += 1;
           match process.handle_message (message) {
             ControlFlow::Continue => {}
@@ -971,11 +952,8 @@ where
         }
         Err (channel::TryRecvError::Empty) => { break 'poll_inner }
         Err (channel::TryRecvError::Disconnected) => {
-          info!("{} sender disconnected",
-            format!(
-              "process[{:?}] try receive on channel[{:?}]:",
-              process.id(), channel_id
-            ).red().bold());
+          info!("process[{:?}] try receive on channel[{:?}]: {}",
+            process.id(), channel_id, "sender disconnected".red().bold());
           channel_close (channel_open, num_open_channels);
           break 'poll_inner
         }

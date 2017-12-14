@@ -385,12 +385,12 @@ impl <CTX : Context> Session <CTX> {
     } // end spawn all processes not found in input process handles
     self.handle_event (EventId::Run.into()).unwrap();
 
-    debug!("{} started",
-      format!("session {:?}:", self).to_string().cyan().bold());
+    debug!("session[{:?}]: {}", self, "started...".cyan().bold());
   }
 
   /// Send continuations and wait until terminated threads have joined.
   fn finish (&mut self) where Self : Sized {
+    use colored::Colorize;
     for (_, process_handle) in self.as_mut().process_handles.drain() {
       match process_handle.join_or_continue {
         either::Either::Left (join_handle) => {
@@ -406,12 +406,13 @@ impl <CTX : Context> Session <CTX> {
         either::Either::Right (None) => { /* do nothing */ }
       }
     }
+    debug!("session[{:?}]: {}", self, "...finished".cyan().bold());
   }
 } // end impl Session
 
 impl <CTX : Context> std::fmt::Debug for Session <CTX> {
   fn fmt (&self, f : &mut std::fmt::Formatter) -> std::fmt::Result {
-    write!(f, "{}[{:?}]", self.name(), self.state_id())
+    write!(f, "{}({:?})", self.name(), self.state_id())
   }
 }
 
