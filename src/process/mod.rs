@@ -233,6 +233,10 @@ pub trait Process <CTX, RES> where
   ) -> Result <(), channel::SendError <CTX::GMSG>>
     where CTX : 'static
   {
+    use colored::Colorize;
+    debug!("process[{:?}] sending on channel[{:?}]: {}",
+      self.id(), channel_id,
+      format!("message[{:?}]", message).green().bold());
     let cid = channel_id.clone().into();
     self.sourcepoints()[cid].send (message.into()).map_err (|send_error| {
       use colored::Colorize;
@@ -248,6 +252,10 @@ pub trait Process <CTX, RES> where
   ) -> Result <(), channel::SendError <CTX::GMSG>>
     where CTX : 'static
   {
+    use colored::Colorize;
+    debug!("process[{:?}] sending to process[{:?}] on channel[{:?}]: {}",
+      self.id(), recipient, channel_id,
+      format!("message[{:?}]", message).green().bold());
     let cid = channel_id.into();
     self.sourcepoints()[cid].send_to (message.into(), recipient).map_err (
       |send_error| {
@@ -534,7 +542,7 @@ pub trait Process <CTX, RES> where
     self.inner_mut().handle_event (inner::EventId::Run.into()).unwrap();
 
     let t_start = std::time::SystemTime::now();
-    debug!("process[{:?}] start time: {:?}",
+    debug!("process[{:?}] start time: {}",
       self.id(), format!("{:?}", t_start).cyan().bold());
     debug_assert_eq!(Kind::AsynchronousPolling, *self.kind());
     #[allow(unused_variables)]
