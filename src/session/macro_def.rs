@@ -147,6 +147,7 @@ macro_rules! def_session {
     //  messages
     //
     $(
+    #[derive(Debug)]
     pub enum $message_type $message_variants
     )*
 
@@ -195,6 +196,7 @@ macro_rules! def_session {
     //
     //  global message type
     //
+    #[derive(Debug)]
     pub enum GlobalMessage {
       $(
       $message_type ($message_type)

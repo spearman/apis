@@ -236,9 +236,8 @@ pub trait Process <CTX, RES> where
     let cid = channel_id.clone().into();
     self.sourcepoints()[cid].send (message.into()).map_err (|send_error| {
       use colored::Colorize;
-      use message::Global;
       warn!("process[{:?}] send message[{:?}] on channel[{:?}] failed: {}",
-        self.id(), send_error.0.id(), channel_id,
+        self.id(), send_error.0, channel_id,
         "receiver disconnected".red().bold());
       send_error
     })
@@ -253,10 +252,9 @@ pub trait Process <CTX, RES> where
     self.sourcepoints()[cid].send_to (message.into(), recipient).map_err (
       |send_error| {
         use colored::Colorize;
-        use message::Global;
         warn!("process[{:?}] send to process[{:?}] message[{:?}] \
           on channel[{:?}] failed: {}",
-            self.id(), recipient, send_error.0.id(), channel_id,
+            self.id(), recipient, send_error.0, channel_id,
             "receiver disconnected".red().bold());
         send_error
       }
@@ -291,10 +289,9 @@ pub trait Process <CTX, RES> where
         loop {
           match endpoint.try_recv() {
             Ok (message) => {
-              use message::Global;
               warn!("process[{:?}] unhandled message on channel[{:?}]: {}",
                 self.id(), channel_id,
-                format!("message[{:?}]", message.id()).yellow().bold());
+                format!("message[{:?}]", message).yellow().bold());
               unhandled_count += 1;
             }
             Err (channel::TryRecvError::Empty) |
@@ -379,9 +376,9 @@ pub trait Process <CTX, RES> where
     let mut message_count      = 0;
     let mut update_count       = 0;
 
-    let endpoints         = self.take_endpoints();
-    let mut num_open_channels = endpoints.len();
-    let mut open_channels     = smallvec::SmallVec::<[bool; 8]>::from_vec ({
+    let endpoints              = self.take_endpoints();
+    let mut num_open_channels  = endpoints.len();
+    let mut open_channels      = smallvec::SmallVec::<[bool; 8]>::from_vec ({
       let mut v = Vec::with_capacity (num_open_channels);
       v.resize (num_open_channels, true);
       v
@@ -478,13 +475,12 @@ pub trait Process <CTX, RES> where
     let (cid, endpoint) = endpoints.iter().next().unwrap();
     let channel_id      = CTX::CID::from_usize (cid).unwrap();
     'run_loop: while self.state_id() == inner::StateId::Running {
-      use message::Global;
       // wait on message
       match endpoint.recv() {
         Ok (message) => {
           debug!("process[{:?}] received on channel[{:?}]: {}",
             self.id(), channel_id,
-            format!("message[{:?}]", message.id()).green().bold());
+            format!("message[{:?}]", message).green().bold());
           let handle_message_result = self.handle_message (message);
           match handle_message_result {
             ControlFlow::Continue => {}
@@ -931,10 +927,9 @@ where
       use colored::Colorize;
       match endpoint.try_recv() {
         Ok (message) => {
-          use message::Global;
           debug!("process[{:?}] received on channel[{:?}]: {}",
             process.id(), channel_id,
-              format!("message[{:?}]", message.id()).green().bold());
+              format!("message[{:?}]", message).green().bold());
           *message_count += 1;
           match process.handle_message (message) {
             ControlFlow::Continue => {}

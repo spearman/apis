@@ -1,4 +1,5 @@
-- pretty print session defaults
-- deriving debug was removed for processes, messages, and sessions, although it
+- dotfile pretty print session defaults
+- deriving debug was removed for processes and sessions, although it
   would be nice to manually request this if possible
 - program trait
+- more trace! log messages in process run loops
