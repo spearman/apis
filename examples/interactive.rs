@@ -8,8 +8,7 @@
 
 #[macro_use] extern crate macro_attr;
 #[macro_use] extern crate enum_derive;
-#[macro_use] extern crate macro_machines;
-#[macro_use] extern crate rs_utils;
+#[macro_use] extern crate enum_unitary;
 
 extern crate num;
 
@@ -20,6 +19,9 @@ extern crate escapade;
 #[macro_use] extern crate log;
 extern crate colored;
 extern crate simplelog;
+
+extern crate rs_utils;
+#[macro_use] extern crate macro_machines;
 
 #[macro_use] extern crate apis;
 
@@ -88,9 +90,7 @@ def_program! {
 
 pub mod readline_echoup {
   use ::std;
-  use ::num;
   use ::vec_map;
-  use ::rs_utils;
 
   use ::apis;
 
@@ -253,9 +253,7 @@ pub mod readline_echoup {
 
 pub mod readline_echorev {
   use ::std;
-  use ::num;
   use ::vec_map;
-  use ::rs_utils;
 
   use ::apis;
 

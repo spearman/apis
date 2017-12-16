@@ -6,8 +6,7 @@
 #[macro_use] extern crate unwrap;
 #[macro_use] extern crate macro_attr;
 #[macro_use] extern crate enum_derive;
-#[macro_use] extern crate macro_machines;
-#[macro_use] extern crate rs_utils;
+#[macro_use] extern crate enum_unitary;
 
 extern crate num;
 extern crate rand;
@@ -19,6 +18,9 @@ extern crate escapade;
 #[macro_use] extern crate log;
 extern crate colored;
 extern crate simplelog;
+
+extern crate rs_utils;
+#[macro_use] extern crate macro_machines;
 
 #[macro_use] extern crate apis;
 
@@ -87,9 +89,7 @@ def_program! {
 
 pub mod chargen_upcase {
   use ::std;
-  use ::num;
   use ::vec_map;
-  use ::rs_utils;
 
   use ::apis;
 
@@ -200,10 +200,8 @@ pub mod chargen_upcase {
 
 pub mod rand_source {
   use ::std;
-  use ::num;
   use ::rand;
   use ::vec_map;
-  use ::rs_utils;
 
   use ::apis;
 

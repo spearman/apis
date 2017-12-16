@@ -22,9 +22,9 @@ smallvec = "0.6.*"
 vec_map = "0.8.*"
 
 # local dependencies
-[dependencies.unbounded-spsc]
+[dependencies.enum-unitary]
 version = "0.1.*"
-git = "git://github.com/spearman/unbounded-spsc.git"
+git = "git://github.com/spearman/enum-unitary.git"
 
 [dependencies.rs-utils]
 version = "0.0.*"
@@ -35,6 +35,10 @@ git = "git://github.com/spearman/rs-utils.git"
 version = "0.2.*"
 git = "git://github.com/spearman/macro-machines.git"
 #path = "/home/spearman/rs/local/macro-machines"
+
+[dependencies.unbounded-spsc]
+version = "0.1.*"
+git = "git://github.com/spearman/unbounded-spsc.git"
 
 # dev dependencies
 [dev-dependencies]

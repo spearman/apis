@@ -116,9 +116,9 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
   /// ```
   /// #![feature(const_fn)]
   /// #![feature(try_from)]
-  /// #[macro_use] extern crate rs_utils;
   /// #[macro_use] extern crate macro_attr;
   /// #[macro_use] extern crate enum_derive;
+  /// #[macro_use] extern crate enum_unitary;
   ///
   /// extern crate num;
   /// extern crate vec_map;
@@ -175,9 +175,9 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
   /// ```
   /// #![feature(const_fn)]
   /// #![feature(try_from)]
-  /// #[macro_use] extern crate rs_utils;
   /// #[macro_use] extern crate macro_attr;
   /// #[macro_use] extern crate enum_derive;
+  /// #[macro_use] extern crate enum_unitary;
   ///
   /// extern crate num;
   /// extern crate vec_map;
@@ -230,7 +230,7 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
   /// ```
 
   fn def() -> Result <Def <Self>, Vec <DefineError>> {
-    use rs_utils::EnumUnitary;
+    use enum_unitary::EnumUnitary;
 
     let mut channel_def = vec_map::VecMap::new();
     // no channel defs for nullary channel ids
@@ -290,7 +290,7 @@ impl <CTX : Context> Session <CTX> {
     process_handles : vec_map::VecMap <process::Handle <CTX>>,
     main_process    : Option <CTX::GPROC>
   ) -> vec_map::VecMap <CTX::GPRES> {
-    use rs_utils::EnumUnitary;
+    use enum_unitary::EnumUnitary;
     use process::Global;
 
     self.start (process_handles, channels, main_process);
@@ -453,7 +453,7 @@ impl <CTX : Context> Def <CTX> {
     // create empty vec maps representing the sourcepoints and endpoints for
     // each process
     let mut sourcepoints_from_channels : vec_map::VecMap <Vec <CTX::CID>> = {
-      use rs_utils::EnumUnitary;
+      use enum_unitary::EnumUnitary;
       let mut v = vec_map::VecMap::new();
       for pid in CTX::PID::iter_variants() {
         assert!(v.insert (pid.into(), Vec::new()).is_none());

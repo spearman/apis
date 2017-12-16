@@ -1,9 +1,9 @@
 #![feature(const_fn)]
 #![feature(try_from)]
 
-#[macro_use] extern crate rs_utils;
 #[macro_use] extern crate macro_attr;
 #[macro_use] extern crate enum_derive;
+#[macro_use] extern crate enum_unitary;
 
 extern crate num;
 
@@ -19,30 +19,30 @@ def_session! {
       let _message_in = message_in
     [
       process A () {
-        kind { apis::process::Kind::synchronous_default() }
-        sourcepoints []
-        endpoints    []
+        kind           { apis::process::Kind::synchronous_default() }
+        sourcepoints   []
+        endpoints      []
         handle_message { apis::process::ControlFlow::Break }
         update         { apis::process::ControlFlow::Break }
       }
       process B () {
-        kind { apis::process::Kind::synchronous_default() }
-        sourcepoints []
-        endpoints    []
+        kind           { apis::process::Kind::synchronous_default() }
+        sourcepoints   []
+        endpoints      []
         handle_message { apis::process::ControlFlow::Break }
         update         { apis::process::ControlFlow::Break }
       }
       process C () {
-        kind { apis::process::Kind::synchronous_default() }
-        sourcepoints []
-        endpoints    []
+        kind           { apis::process::Kind::synchronous_default() }
+        sourcepoints   []
+        endpoints      []
         handle_message { apis::process::ControlFlow::Break }
         update         { apis::process::ControlFlow::Break }
       }
       process D () {
-        kind { apis::process::Kind::synchronous_default() }
-        sourcepoints []
-        endpoints    []
+        kind           { apis::process::Kind::synchronous_default() }
+        sourcepoints   []
+        endpoints      []
         handle_message { apis::process::ControlFlow::Break }
         update         { apis::process::ControlFlow::Break }
       }

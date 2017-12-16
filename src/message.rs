@@ -1,6 +1,6 @@
 use ::std;
 
-use ::rs_utils;
+use ::enum_unitary;
 
 use ::session;
 
@@ -21,7 +21,7 @@ use ::session;
 
 /// Unique ID for each global message type used in a given session context.
 pub trait Id where
-  Self : rs_utils::enum_unitary::EnumUnitary
+  Self : enum_unitary::EnumUnitary
 {}
 
 /// The global message type.

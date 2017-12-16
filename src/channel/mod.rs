@@ -2,7 +2,7 @@ use ::std;
 
 use ::vec_map;
 
-use ::rs_utils;
+use ::enum_unitary;
 
 use ::Message;
 //use ::process;
@@ -116,7 +116,7 @@ pub enum TryRecvError {
 
 /// Unique identifier with a total mapping to channel infos.
 pub trait Id <CTX> where
-  Self : rs_utils::enum_unitary::EnumUnitary,
+  Self : enum_unitary::EnumUnitary,
   CTX  : session::Context <CID=Self>
 {
   //

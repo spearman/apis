@@ -8,8 +8,7 @@
 
 #[macro_use] extern crate macro_attr;
 #[macro_use] extern crate enum_derive;
-#[macro_use] extern crate macro_machines;
-#[macro_use] extern crate rs_utils;
+#[macro_use] extern crate enum_unitary;
 
 extern crate num;
 
@@ -22,6 +21,9 @@ extern crate colored;
 extern crate simplelog;
 
 extern crate glium;
+
+extern crate rs_utils;
+#[macro_use] extern crate macro_machines;
 
 #[macro_use] extern crate apis;
 
@@ -136,9 +138,7 @@ def_program! {
 
 pub mod bgr {
   use ::std;
-  use ::num;
   use ::vec_map;
-  use ::rs_utils;
 
   use ::glium;
   use ::glium::glutin;
@@ -262,9 +262,7 @@ pub mod bgr {
 
 pub mod cym {
   use ::std;
-  use ::num;
   use ::vec_map;
-  use ::rs_utils;
 
   //use ::glium;
   use ::glium::glutin;
@@ -374,9 +372,7 @@ pub mod cym {
 
 pub mod wgb {
   use ::std;
-  use ::num;
   use ::vec_map;
-  use ::rs_utils;
 
   //use ::glium;
   use ::glium::glutin;

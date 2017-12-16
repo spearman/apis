@@ -7,7 +7,7 @@
 
 #[macro_use] extern crate macro_attr;
 #[macro_use] extern crate enum_derive;
-#[macro_use] extern crate rs_utils;
+#[macro_use] extern crate enum_unitary;
 
 extern crate num;
 
@@ -17,6 +17,8 @@ extern crate escapade;
 //#[macro_use] extern crate log;
 extern crate colored;
 extern crate simplelog;
+
+extern crate rs_utils;
 
 #[macro_use] extern crate apis;
 

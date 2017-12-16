@@ -6,7 +6,7 @@ use ::either;
 use ::smallvec;
 use ::vec_map;
 
-use ::rs_utils;
+use ::enum_unitary;
 
 use ::channel;
 use ::Message;
@@ -583,7 +583,7 @@ pub trait Process <CTX, RES> where
 
 /// Unique identifier with a total mapping to process defs.
 pub trait Id <CTX> where
-  Self : rs_utils::enum_unitary::EnumUnitary,
+  Self : enum_unitary::EnumUnitary,
   CTX  : session::Context <PID=Self>
 {
   fn def      (&self) -> Def <CTX>;

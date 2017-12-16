@@ -30,9 +30,9 @@
 /// ```
 /// #![feature(const_fn)]
 /// #![feature(try_from)]
-/// #[macro_use] extern crate rs_utils;
 /// #[macro_use] extern crate macro_attr;
 /// #[macro_use] extern crate enum_derive;
+/// #[macro_use] extern crate enum_unitary;
 ///
 /// extern crate num;
 /// extern crate vec_map;
