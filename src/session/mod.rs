@@ -28,7 +28,7 @@ def_machine_nodefault! {
   Session <CTX : { Context }> (
     def             : Def <CTX>,
     process_handles : vec_map::VecMap <process::Handle <CTX>>,
-    main_process    : Option <CTX::GPROC>
+    main_process    : Option <Box <CTX::GPROC>>
   ) where let _session = self {
     STATES [
       state Ready   ()
@@ -288,7 +288,7 @@ impl <CTX : Context> Session <CTX> {
   pub fn run_with (&mut self,
     channels        : vec_map::VecMap <channel::Channel <CTX>>,
     process_handles : vec_map::VecMap <process::Handle <CTX>>,
-    main_process    : Option <CTX::GPROC>
+    main_process    : Option <Box <CTX::GPROC>>
   ) -> vec_map::VecMap <CTX::GPRES> {
     use enum_unitary::EnumUnitary;
     use process::Global;
@@ -312,7 +312,7 @@ impl <CTX : Context> Session <CTX> {
   fn start (&mut self,
     mut process_handles : vec_map::VecMap <process::Handle <CTX>>,
     mut channels        : vec_map::VecMap <channel::Channel <CTX>>,
-    mut main_process    : Option <CTX::GPROC>
+    mut main_process    : Option <Box <CTX::GPROC>>
   ) {
     use colored::Colorize;
 
@@ -361,7 +361,7 @@ impl <CTX : Context> Session <CTX> {
               // provided as an input since it should be accompanied by a
               // process handle
               debug_assert!(main_process.is_none());
-              main_process = Some (process::Id::gproc (inner));
+              main_process = Some (Box::new (process::Id::gproc (inner)));
               return process::Handle {
                 result_rx, continuation_tx,
                 join_or_continue: either::Either::Right (None)

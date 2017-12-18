@@ -65,7 +65,9 @@ macro_rules! def_program {
             Option <vec_map::VecMap
               <$crate::process::Handle <$mode_mod::$mode_context>>>,
           pub main_process :
-            Option <<$mode_mod::$mode_context as $crate::session::Context>::GPROC>
+            Option <Box <
+              <$mode_mod::$mode_context as $crate::session::Context>::GPROC
+            >>
         }
         let mut $mode_mod : $mode_context = $mode_context {
           channels:        None,
@@ -306,9 +308,10 @@ macro_rules! def_program {
                       {
                         let old_process = session.as_mut().main_process.take()
                           .unwrap();
-                        let new_process = constructor_closure (old_process);
+                        let new_process = constructor_closure (*old_process);
                         debug_assert!($target_mod.main_process.is_none());
-                        $target_mod.main_process = Some (new_process.into());
+                        $target_mod.main_process
+                          = Some (Box::new (new_process.into()));
                       }
                     })*)*
                     // end continuations

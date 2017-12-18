@@ -1,6 +1,6 @@
 [package]
 name = "apis"
-version = "0.0.13"
+version = "0.0.14"
 authors = ["Shane Pearman <spearman@github.com>"]
 license = "MPL-2.0"
 
