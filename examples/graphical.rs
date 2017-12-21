@@ -96,15 +96,15 @@ def_program! {
         let mode_control
           = cym::InputRender::extract_result (&mut _results).unwrap();
         match mode_control {
-          ModeControl::Next => Some (EventId::ToWgb),
+          ModeControl::Next => Some (EventId::ToWek),
           ModeControl::Quit => None
         }
       }
-      mode wgb::Wgb {
+      mode wek::Wek {
         use apis::Process;
         println!("_results: {:?}", _results);
         let mode_control
-          = wgb::InputRender::extract_result (&mut _results).unwrap();
+          = wek::InputRender::extract_result (&mut _results).unwrap();
         match mode_control {
           ModeControl::Next => Some (EventId::ToBgr),
           ModeControl::Quit => None
@@ -117,14 +117,14 @@ def_program! {
           _cym.glutin_glium_context = _bgr.glutin_glium_context.take();
         }
       ]
-      transition ToWgb <cym::Cym> => <wgb::Wgb> [
-        InputRender (_cym) => InputRender (_wgb) {
-          _wgb.glutin_glium_context = _cym.glutin_glium_context.take();
+      transition ToWek <cym::Cym> => <wek::Wek> [
+        InputRender (_cym) => InputRender (_wek) {
+          _wek.glutin_glium_context = _cym.glutin_glium_context.take();
         }
       ]
-      transition ToBgr <wgb::Wgb> => <bgr::Bgr> [
-        InputRender (_wgb) => InputRender (_bgr) {
-          _bgr.glutin_glium_context = _wgb.glutin_glium_context.take();
+      transition ToBgr <wek::Wek> => <bgr::Bgr> [
+        InputRender (_wek) => InputRender (_bgr) {
+          _bgr.glutin_glium_context = _wek.glutin_glium_context.take();
         }
       ]
     ]
@@ -367,10 +367,10 @@ pub mod cym {
 } // end mod cym
 
 ///////////////////////////////////////////////////////////////////////////////
-//  mode Wgb                                                                 //
+//  mode Wek                                                                 //
 ///////////////////////////////////////////////////////////////////////////////
 
-pub mod wgb {
+pub mod wek {
   use ::std;
   use ::vec_map;
 
@@ -383,7 +383,7 @@ pub mod wgb {
   use ::ModeControl;
 
   def_session! {
-    context Wgb {
+    context Wek {
       PROCESSES where
         let _proc       = self,
         let _message_in = message_in
@@ -396,8 +396,8 @@ pub mod wgb {
           kind           { apis::process::Kind::AsynchronousPolling }
           sourcepoints   []
           endpoints      []
-          initialize     { println!("...WGB initialize..."); }
-          terminate      { println!("...WGB terminate..."); }
+          initialize     { println!("...wek initialize..."); }
+          terminate      { println!("...wek terminate..."); }
           handle_message { unreachable!() }
           update         { _proc.input_render_update() }
         }
@@ -443,10 +443,10 @@ pub mod wgb {
                       Some (glutin::VirtualKeyCode::W) => {
                         clear_color = (1.0, 1.0, 1.0, 1.0);
                       }
-                      Some (glutin::VirtualKeyCode::G) => {
+                      Some (glutin::VirtualKeyCode::E) => {
                         clear_color = (0.5, 0.5, 0.5, 1.0);
                       }
-                      Some (glutin::VirtualKeyCode::B) => {
+                      Some (glutin::VirtualKeyCode::K) => {
                         clear_color = (0.0, 0.0, 0.0, 1.0);
                       }
                       _ => {}
@@ -475,7 +475,7 @@ pub mod wgb {
       result
     } // end fn input_render_update
   } // end impl InputRender
-} // end mod wgb
+} // end mod wek
 
 ///////////////////////////////////////////////////////////////////////////////
 //  main                                                                     //
