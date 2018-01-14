@@ -18,8 +18,6 @@ extern crate escapade;
 extern crate colored;
 extern crate simplelog;
 
-extern crate rs_utils;
-
 #[macro_use] extern crate apis;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -28,7 +26,7 @@ extern crate rs_utils;
 
 //  Off, Error, Warn, Info, Debug, Trace
 pub const LOG_LEVEL_FILTER
-  : simplelog::LogLevelFilter = simplelog::LogLevelFilter::Info;
+  : simplelog::LevelFilter = simplelog::LevelFilter::Info;
 
 ///////////////////////////////////////////////////////////////////////////////
 //  session                                                                  //
@@ -226,9 +224,10 @@ fn main() {
   use colored::Colorize;
   use apis::session::Context;
 
-  let example_name = &rs_utils::process::EXE_FILE_NAME;
+  let example_name = std::path::PathBuf::from (std::env::args().next().unwrap())
+    .file_name().unwrap().to_str().unwrap().to_string();
 
-  println!("{}", format!("{} main...", **example_name)
+  println!("{}", format!("{} main...", example_name)
     .green().bold());
 
   unwrap!{
@@ -241,7 +240,7 @@ fn main() {
 
   // create a dotfile for the session
   let mut f = unwrap!{
-    std::fs::File::create (format!("{}.dot", **example_name))
+    std::fs::File::create (format!("{}.dot", example_name))
   };
   unwrap!{ f.write_all (ChargenUpcaseSink::dotfile().as_bytes()) };
   drop (f);
@@ -255,6 +254,6 @@ fn main() {
   let results = session.run();
   println!("results: {:?}", results);
 
-  println!("{}", format!("...{} main", **example_name)
+  println!("{}", format!("...{} main", example_name)
     .green().bold());
 }

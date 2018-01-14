@@ -19,7 +19,6 @@ extern crate escapade;
 extern crate unbounded_spsc;
 
 extern crate enum_unitary;
-extern crate rs_utils;
 
 #[macro_use] extern crate macro_machines;
 

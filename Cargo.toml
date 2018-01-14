@@ -13,11 +13,13 @@ num = "0.1.*"
 
 #bit-set = "0.4.*"
 #bit-vec = "0.4.*"
-colored = "1.*"
-either = "1.3.*"
+# temporary local fork for lazy_static bump
+colored = { version = "1.*", git = "git://github.com/spearman/colored.git", branch = "bump-lazy_static" }
+either = "1.*"
 escapade = "0.0.*"
-log = "0.3.*"
-simplelog = "0.4.*"
+log = "0.4.*"
+# temporary local fork for log update
+simplelog = { version = "0.4.*", git = "git://github.com/spearman/simplelog.rs.git", branch = "log-update" }
 smallvec = "0.6.*"
 vec_map = "0.8.*"
 
@@ -26,15 +28,10 @@ vec_map = "0.8.*"
 version = "0.1.*"
 git = "git://github.com/spearman/enum-unitary.git"
 
-[dependencies.rs-utils]
-version = "0.0.*"
-git = "git://github.com/spearman/rs-utils.git"
-#path = "/home/spearman/rs/local/rs-utils"
-
 [dependencies.macro-machines]
 version = "0.2.*"
 git = "git://github.com/spearman/macro-machines.git"
-#path = "/home/spearman/rs/local/macro-machines"
+#path = "../macro-machines"
 
 [dependencies.unbounded-spsc]
 version = "0.1.*"
@@ -44,9 +41,10 @@ git = "git://github.com/spearman/unbounded-spsc.git"
 [dev-dependencies]
 mock = { path = "./mock/" }
 
-unwrap = "1.*"
-num = "0.1.*"
-rand = "0.3.*"
+# enum_unitary support
 macro-attr = "0.2.*"
 enum_derive = "0.1.*"
-glium = "0.18.*"
+
+unwrap = "1.*"
+rand = "0.4.*"
+glium = "0.19.*"
