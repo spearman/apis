@@ -13,8 +13,8 @@ num = "0.1.*"
 
 #bit-set = "0.4.*"
 #bit-vec = "0.4.*"
-# temporary local fork for lazy_static bump
-colored = { version = "1.*", git = "git://github.com/spearman/colored.git", branch = "bump-lazy_static" }
+# unpublished upstream dependency update
+colored = { version = "1.*", git = "git://github.com/mackwic/colored.git" }
 either = "1.*"
 escapade = "0.0.*"
 log = "0.4.*"
