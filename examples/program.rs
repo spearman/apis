@@ -106,7 +106,7 @@ pub mod chargen_upcase {
         //
         process Chargen (update_count : u64) {
           kind {
-            apis::process::Kind::Synchronous { tick_ms: 20, ticks_per_update: 1 }
+            apis::process::Kind::Isochronous { tick_ms: 20, ticks_per_update: 1 }
           }
           sourcepoints   [Charstream]
           endpoints      []
@@ -221,7 +221,7 @@ pub mod rand_source {
           dropthing    : Option <::Dropthing> = None
         ) {
           kind {
-            apis::process::Kind::Synchronous { tick_ms: 20, ticks_per_update: 1 }
+            apis::process::Kind::Isochronous { tick_ms: 20, ticks_per_update: 1 }
           }
           sourcepoints   [Randints]
           endpoints      []

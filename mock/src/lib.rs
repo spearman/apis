@@ -19,28 +19,28 @@ def_session! {
       let _message_in = message_in
     [
       process A () {
-        kind           { apis::process::Kind::synchronous_default() }
+        kind           { apis::process::Kind::isochronous_default() }
         sourcepoints   []
         endpoints      []
         handle_message { apis::process::ControlFlow::Break }
         update         { apis::process::ControlFlow::Break }
       }
       process B () {
-        kind           { apis::process::Kind::synchronous_default() }
+        kind           { apis::process::Kind::isochronous_default() }
         sourcepoints   []
         endpoints      []
         handle_message { apis::process::ControlFlow::Break }
         update         { apis::process::ControlFlow::Break }
       }
       process C () {
-        kind           { apis::process::Kind::synchronous_default() }
+        kind           { apis::process::Kind::isochronous_default() }
         sourcepoints   []
         endpoints      []
         handle_message { apis::process::ControlFlow::Break }
         update         { apis::process::ControlFlow::Break }
       }
       process D () {
-        kind           { apis::process::Kind::synchronous_default() }
+        kind           { apis::process::Kind::isochronous_default() }
         sourcepoints   []
         endpoints      []
         handle_message { apis::process::ControlFlow::Break }

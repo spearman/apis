@@ -40,7 +40,7 @@ def_session! {
     [
       process Sendfoo1 () {
         kind {
-          apis::process::Kind::Synchronous { tick_ms: 20, ticks_per_update: 1 }
+          apis::process::Kind::Isochronous { tick_ms: 20, ticks_per_update: 1 }
         }
         sourcepoints   [Foochan]
         endpoints      []
@@ -52,7 +52,7 @@ def_session! {
       }
       process Sendfoo2 () {
         kind {
-          apis::process::Kind::Synchronous { tick_ms: 20, ticks_per_update: 1 }
+          apis::process::Kind::Isochronous { tick_ms: 20, ticks_per_update: 1 }
         }
         sourcepoints   [Foochan]
         endpoints      []
@@ -63,7 +63,7 @@ def_session! {
         }
       }
       process Hangup () {
-        kind           { apis::process::Kind::AsynchronousPolling }
+        kind           { apis::process::Kind::Anisochronous }
         sourcepoints   []
         endpoints      [Foochan]
         handle_message { unreachable!() }

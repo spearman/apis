@@ -40,7 +40,7 @@ def_session! {
     [
       process Chargen (update_count : u64) -> (Option <()>) {
         kind {
-          apis::process::Kind::Synchronous { tick_ms: 20, ticks_per_update: 1 }
+          apis::process::Kind::Isochronous { tick_ms: 20, ticks_per_update: 1 }
         }
         sourcepoints   [Charstream]
         endpoints      []

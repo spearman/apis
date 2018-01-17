@@ -48,7 +48,7 @@
 ///       let _message_in = message_in
 ///     [
 ///       process Chargen (update_count : u64) {
-///         kind { process::Kind::Synchronous {
+///         kind { process::Kind::Isochronous {
 ///           tick_ms: 20,
 ///           ticks_per_update: 1 } }
 ///         sourcepoints [Charstream]

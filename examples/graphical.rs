@@ -95,15 +95,15 @@ def_program! {
         let mode_control
           = cym::InputRender::extract_result (&mut _results).unwrap();
         match mode_control {
-          ModeControl::Next => Some (EventId::ToWek),
+          ModeControl::Next => Some (EventId::ToWsk),
           ModeControl::Quit => None
         }
       }
-      mode wek::Wek {
+      mode wsk::Wsk {
         use apis::Process;
         println!("_results: {:?}", _results);
         let mode_control
-          = wek::InputRender::extract_result (&mut _results).unwrap();
+          = wsk::InputRender::extract_result (&mut _results).unwrap();
         match mode_control {
           ModeControl::Next => Some (EventId::ToBgr),
           ModeControl::Quit => None
@@ -116,14 +116,14 @@ def_program! {
           _cym.glutin_glium_context = _bgr.glutin_glium_context.take();
         }
       ]
-      transition ToWek <cym::Cym> => <wek::Wek> [
-        InputRender (_cym) => InputRender (_wek) {
-          _wek.glutin_glium_context = _cym.glutin_glium_context.take();
+      transition ToWsk <cym::Cym> => <wsk::Wsk> [
+        InputRender (_cym) => InputRender (_wsk) {
+          _wsk.glutin_glium_context = _cym.glutin_glium_context.take();
         }
       ]
-      transition ToBgr <wek::Wek> => <bgr::Bgr> [
-        InputRender (_wek) => InputRender (_bgr) {
-          _bgr.glutin_glium_context = _wek.glutin_glium_context.take();
+      transition ToBgr <wsk::Wsk> => <bgr::Bgr> [
+        InputRender (_wsk) => InputRender (_bgr) {
+          _bgr.glutin_glium_context = _wsk.glutin_glium_context.take();
         }
       ]
     ]
@@ -171,7 +171,7 @@ pub mod bgr {
             }
           }
         ) -> (ModeControl) {
-          kind           { apis::process::Kind::AsynchronousPolling }
+          kind           { apis::process::Kind::Anisochronous }
           sourcepoints   [ ]
           endpoints      [ ]
           initialize     { println!("...BGR initialize..."); }
@@ -282,7 +282,7 @@ pub mod cym {
           clear_color          : (f32, f32, f32, f32) = (0.0, 1.0, 1.0, 1.0),
           glutin_glium_context : Option <GlutinGliumContext> = None
         ) -> (ModeControl) {
-          kind           { apis::process::Kind::AsynchronousPolling }
+          kind           { apis::process::Kind::Anisochronous }
           sourcepoints   []
           endpoints      []
           terminate      { println!("...CYM terminate..."); }
@@ -366,10 +366,10 @@ pub mod cym {
 } // end mod cym
 
 ///////////////////////////////////////////////////////////////////////////////
-//  mode Wek                                                                 //
+//  mode Wsk                                                                 //
 ///////////////////////////////////////////////////////////////////////////////
 
-pub mod wek {
+pub mod wsk {
   use ::std;
   use ::vec_map;
 
@@ -382,7 +382,7 @@ pub mod wek {
   use ::ModeControl;
 
   def_session! {
-    context Wek {
+    context Wsk {
       PROCESSES where
         let _proc       = self,
         let _message_in = message_in
@@ -392,11 +392,11 @@ pub mod wek {
           clear_color          : (f32, f32, f32, f32) = (1.0, 1.0, 1.0, 1.0),
           glutin_glium_context : Option <GlutinGliumContext> = None
         ) -> (ModeControl) {
-          kind           { apis::process::Kind::AsynchronousPolling }
+          kind           { apis::process::Kind::Anisochronous }
           sourcepoints   []
           endpoints      []
-          initialize     { println!("...wek initialize..."); }
-          terminate      { println!("...wek terminate..."); }
+          initialize     { println!("...wsk initialize..."); }
+          terminate      { println!("...wsk terminate..."); }
           handle_message { unreachable!() }
           update         { _proc.input_render_update() }
         }
@@ -442,7 +442,7 @@ pub mod wek {
                       Some (glutin::VirtualKeyCode::W) => {
                         clear_color = (1.0, 1.0, 1.0, 1.0);
                       }
-                      Some (glutin::VirtualKeyCode::E) => {
+                      Some (glutin::VirtualKeyCode::S) => {
                         clear_color = (0.5, 0.5, 0.5, 1.0);
                       }
                       Some (glutin::VirtualKeyCode::K) => {
@@ -474,7 +474,7 @@ pub mod wek {
       result
     } // end fn input_render_update
   } // end impl InputRender
-} // end mod wek
+} // end mod wsk
 
 ///////////////////////////////////////////////////////////////////////////////
 //  main                                                                     //

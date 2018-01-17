@@ -132,14 +132,14 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
   ///       let _message_in = message_in
   ///     [
   ///       process A () {
-  ///         kind { apis::process::Kind::synchronous_default() }
+  ///         kind { apis::process::Kind::isochronous_default() }
   ///         sourcepoints [X]
   ///         endpoints    []
   ///         handle_message { apis::process::ControlFlow::Break }
   ///         update         { apis::process::ControlFlow::Break }
   ///       }
   ///       process B () {
-  ///         kind { apis::process::Kind::synchronous_default() }
+  ///         kind { apis::process::Kind::isochronous_default() }
   ///         sourcepoints []
   ///         endpoints    [X, Y]
   ///         handle_message { apis::process::ControlFlow::Break }
@@ -191,14 +191,14 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
   ///       let _message_in = message_in
   ///     [
   ///       process A () {
-  ///         kind { apis::process::Kind::synchronous_default() }
+  ///         kind { apis::process::Kind::isochronous_default() }
   ///         sourcepoints [X,Y]
   ///         endpoints    []
   ///         handle_message { apis::process::ControlFlow::Break }
   ///         update         { apis::process::ControlFlow::Break }
   ///       }
   ///       process B () {
-  ///         kind { apis::process::Kind::synchronous_default() }
+  ///         kind { apis::process::Kind::isochronous_default() }
   ///         sourcepoints []
   ///         endpoints    [X]
   ///         handle_message { apis::process::ControlFlow::Break }

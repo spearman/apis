@@ -117,7 +117,7 @@ macro_rules! def_program {
 
                 #[allow(unreachable_patterns)]
                 match self.state.data {
-                  StateData::$source_context { ref mut session } => {
+                  StateData::$source_context { session: ref mut _session } => {
                     // TODO: session definition is redundantly verified and
                     // created both here and when the next session is
                     // initialized, is there a good way to avoid this?
@@ -161,7 +161,7 @@ macro_rules! def_program {
                       let next_process_id = $target_mod::ProcessId::$target_proc;
                       let next_pid        = next_process_id as usize;
                       let mut prev_process_handle
-                        = session.as_mut().process_handles.remove (prev_pid)
+                        = _session.as_mut().process_handles.remove (prev_pid)
                           .unwrap();
 
                       // peer channels
@@ -253,7 +253,7 @@ macro_rules! def_program {
                           prev_process_handle.join_or_continue.is_right()
                         };
                         assert!{
-                          session.as_mut().process_handles.insert (
+                          _session.as_mut().process_handles.insert (
                             prev_pid, prev_process_handle).is_none()
                         };
                         // create the next process handle
@@ -286,7 +286,7 @@ macro_rules! def_program {
                         prev_process_handle.join_or_continue
                           = either::Either::Right (Some (continuation));
                         assert!{
-                          session.as_mut().process_handles.insert (
+                          _session.as_mut().process_handles.insert (
                             prev_pid, prev_process_handle).is_none()
                         };
 
@@ -306,7 +306,7 @@ macro_rules! def_program {
                       if let Some (constructor_closure)
                         = maybe_constructor_closure
                       {
-                        let old_process = session.as_mut().main_process.take()
+                        let old_process = _session.as_mut().main_process.take()
                           .unwrap();
                         let new_process = constructor_closure (*old_process);
                         debug_assert!($target_mod.main_process.is_none());

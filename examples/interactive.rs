@@ -102,7 +102,7 @@ pub mod readline_echoup {
         process Readline (
           dropthing : Option <::Dropthing> = Some (Default::default())
         ) -> (Option <()>) {
-          kind           { apis::process::Kind::AsynchronousPolling }
+          kind           { apis::process::Kind::Anisochronous }
           sourcepoints   [Toecho]
           endpoints      [Fromecho]
           handle_message { _proc.readline_handle_message (_message_in) }
@@ -272,7 +272,7 @@ pub mod readline_echorev {
         process Readline (
           dropthing : Option <::Dropthing> = None
         ) -> (Option <()>) {
-          kind           { apis::process::Kind::AsynchronousPolling }
+          kind           { apis::process::Kind::Anisochronous }
           sourcepoints   [Toecho]
           endpoints      [Fromecho]
           handle_message { _proc.readline_handle_message (_message_in) }

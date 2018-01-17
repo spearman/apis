@@ -40,7 +40,7 @@ def_session! {
     [
       process Hangup1 () {
         kind {
-          apis::process::Kind::Synchronous { tick_ms: 20, ticks_per_update: 1 }
+          apis::process::Kind::Isochronous { tick_ms: 20, ticks_per_update: 1 }
         }
         sourcepoints   [Foochan]
         endpoints      []
@@ -52,7 +52,7 @@ def_session! {
       }
       process Hangup2 () {
         kind {
-          apis::process::Kind::Synchronous { tick_ms: 20, ticks_per_update: 1 }
+          apis::process::Kind::Isochronous { tick_ms: 20, ticks_per_update: 1 }
         }
         sourcepoints   [Foochan]
         endpoints      []

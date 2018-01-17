@@ -263,9 +263,9 @@ to the user to respond appropriately to a send failure.
 *Receive failures* are a little more complicated due to there being two kinds
  of reception:
 
-- For a blocking receive (`Kind::Asynchronous` processes), there is only one
-  endpoint and due to the in-order reception of messages, once a "final"
-  message has been received, the channel should never contain any further
+- For a blocking receive (`Kind::Asynchronous` processes) there is only one
+  endpoint, and due to the in-order reception of messages, once a "final"
+  message has been received the channel should never contain any further
   messages, and once the last message is received (if the sender has
   disconnected) the next attempt will produce a disconnection error. If the
   process is *expecting* to be notified of a "final" message, then seeing a
@@ -490,6 +490,9 @@ since `A` initiated the "stoppage", no messages can appear on `(A+B)->C` after
     this is somewhat more complicated than the current "break/continue"
     semantics, an easier solution might be possible:
 
+
+**Working solution**
+
 Since current simple examples already work without issue, we don't want to
 change the current scheme too much. A minimal change would be to consider
 "breaking" coming from a `handle_message` call only marks *that channel* as
@@ -501,3 +504,25 @@ seeing "stop" on that channel, and seeing a disconnection after "stop" would no
 longer be considered a warning.
 
 This also means that `Asynchronous` processes can remain unchanged.
+
+
+## Renaming of process kinds
+
+Arrived at above is the naming scheme for process kinds:
+
+             polling             blocking
+             ===================-================
+    timed    Synchronous
+    untimed  AsynchronousPolling Asynchronous
+
+We want to add a third type of polling process that is "rate limiting" in that
+it will loop immediately if enough time passed since the last polling operation
+started, otherwise it sleeps until the next polling time. Compared to the
+`Synchronous` process kind above, there is no "catching up". The naming scheme
+may be modified as follows to include the new process kind:
+
+                        polling             blocking
+                        ===================-================
+    timed-absolute      Isochronous
+    timed-rate limited  Mesochronous
+    untimed             Anisochronous       Asynchronous

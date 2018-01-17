@@ -1,6 +1,6 @@
 [package]
 name = "apis"
-version = "0.0.14"
+version = "0.0.15"
 authors = ["Shane Pearman <spearman@github.com>"]
 license = "MPL-2.0"
 
@@ -18,8 +18,6 @@ colored = { version = "1.*", git = "git://github.com/mackwic/colored.git" }
 either = "1.*"
 escapade = "0.0.*"
 log = "0.4.*"
-# temporary local fork for log update
-simplelog = { version = "0.4.*", git = "git://github.com/spearman/simplelog.rs.git", branch = "log-update" }
 smallvec = "0.6.*"
 vec_map = "0.8.*"
 
@@ -45,6 +43,8 @@ mock = { path = "./mock/" }
 macro-attr = "0.2.*"
 enum_derive = "0.1.*"
 
+# temporary local fork for log update
+simplelog = { version = "0.4.*", git = "git://github.com/spearman/simplelog.rs.git", branch = "log-update" }
 unwrap = "1.*"
 rand = "0.4.*"
 glium = "0.19.*"
