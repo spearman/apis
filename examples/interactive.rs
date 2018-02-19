@@ -412,10 +412,7 @@ pub mod readline_echorev {
 ///////////////////////////////////////////////////////////////////////////////
 
 fn main() {
-  use std::io::Write;
   use colored::Colorize;
-  use apis::Program;
-
   let example_name = std::path::PathBuf::from (std::env::args().next().unwrap())
     .file_name().unwrap().to_str().unwrap().to_string();
 
@@ -429,6 +426,8 @@ fn main() {
   };
 
   // create a dotfile for the program state machine
+  use std::io::Write;
+  use macro_machines::MachineDotfile;
   let mut f = unwrap!{
     std::fs::File::create (format!("{}.dot", example_name))
   };
@@ -439,6 +438,7 @@ fn main() {
   Interactive::report();
 
   // create a program in the initial mode
+  use apis::Program;
   let mut myprogram = Interactive::initial();
   //debug!("myprogram: {:#?}", myprogram);
   // run to completion

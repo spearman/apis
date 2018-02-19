@@ -18,6 +18,8 @@ extern crate escapade;
 extern crate colored;
 extern crate simplelog;
 
+extern crate macro_machines;
+
 #[macro_use] extern crate apis;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -162,38 +164,34 @@ impl Upcase {
 ///////////////////////////////////////////////////////////////////////////////
 
 fn main() {
-  use std::io::Write;
   use colored::Colorize;
-  use apis::session::Context;
 
   let example_name = std::path::PathBuf::from (std::env::args().next().unwrap())
     .file_name().unwrap().to_str().unwrap().to_string();
 
-  println!("{}", format!("{} main...", example_name)
-    .green().bold());
+  println!("{}", format!("{} main...", example_name).green().bold());
 
-  unwrap!{
-    simplelog::TermLogger::init (
-      LOG_LEVEL_FILTER,
-      simplelog::Config::default())
-  };
+  unwrap!(
+    simplelog::TermLogger::init (LOG_LEVEL_FILTER, simplelog::Config::default())
+  );
 
   apis::report::<ChargenUpcase>();
 
   // create a dotfile for the session
-  let mut f = unwrap!{
-    std::fs::File::create (format!("{}.dot", example_name))
-  };
-  unwrap!{ f.write_all (ChargenUpcase::dotfile().as_bytes()) };
+  use std::io::Write;
+  let mut f = unwrap!(std::fs::File::create (format!("{}.dot", example_name)));
+  unwrap!(f.write_all (ChargenUpcase::dotfile().as_bytes()));
   drop (f);
   // create a dotfile for the process inner state machine
-  let mut f = unwrap!{ std::fs::File::create ("process-inner.dot") };
-  unwrap!{
+  use macro_machines::MachineDotfile;
+  let mut f = unwrap!(std::fs::File::create ("process-inner.dot"));
+  unwrap!(
     f.write_all (apis::process::Inner::<ChargenUpcase>::dotfile().as_bytes())
-  };
+  );
   drop (f);
 
   // here is where we find out if the session definition has any errors
+  use apis::session::Context;
   let session_def = unwrap!{ ChargenUpcase::def() };
   // create the session from the definition
   let mut session : apis::session::Session <ChargenUpcase> = session_def.into();
@@ -201,6 +199,5 @@ fn main() {
   let results = session.run();
   println!("results: {:?}", results);
 
-  println!("{}", format!("...{} main", example_name)
-    .green().bold());
+  println!("{}", format!("...{} main", example_name).green().bold());
 }

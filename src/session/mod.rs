@@ -1,14 +1,5 @@
-use ::std;
-//use ::num;
-
-use ::either;
-use ::vec_map;
-
-use ::macro_machines;
-
-use ::channel;
-use ::message;
-use ::process;
+use ::{std, either, vec_map};
+use ::{channel, message, process};
 
 ///////////////////////////////////////////////////////////////////////////////
 //  submodules

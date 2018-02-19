@@ -16,7 +16,6 @@ num = "0.1.*"
 # unpublished upstream dependency update
 colored = { version = "1.*", git = "git://github.com/mackwic/colored.git" }
 either = "1.*"
-escapade = "0.0.*"
 log = "0.4.*"
 smallvec = "0.6.*"
 vec_map = "0.8.*"
@@ -27,7 +26,7 @@ version = "0.1.*"
 git = "git://github.com/spearman/enum-unitary.git"
 
 [dependencies.macro-machines]
-version = "0.2.*"
+version = "0.4.*"
 git = "git://github.com/spearman/macro-machines.git"
 #path = "../macro-machines"
 
@@ -39,12 +38,13 @@ git = "git://github.com/spearman/unbounded-spsc.git"
 [dev-dependencies]
 mock = { path = "./mock/" }
 
+escapade = "0.0.*"
+glium = "0.20.*"
+rand = "0.4.*"
+simplelog = "0.5.*"
+unwrap = "1.*"
+
 # enum_unitary support
 macro-attr = "0.2.*"
 enum_derive = "0.1.*"
 
-# temporary local fork for log update
-simplelog = { version = "0.4.*", git = "git://github.com/spearman/simplelog.rs.git", branch = "log-update" }
-unwrap = "1.*"
-rand = "0.4.*"
-glium = "0.19.*"

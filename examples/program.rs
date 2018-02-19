@@ -393,9 +393,7 @@ pub mod rand_source {
 ///////////////////////////////////////////////////////////////////////////////
 
 fn main() {
-  use std::io::Write;
   use colored::Colorize;
-  use apis::Program;
 
   let example_name = std::path::PathBuf::from (std::env::args().next().unwrap())
     .file_name().unwrap().to_str().unwrap().to_string();
@@ -410,6 +408,8 @@ fn main() {
   };
 
   // create a dotfile for the program state machine
+  use std::io::Write;
+  use macro_machines::MachineDotfile;
   let mut f = unwrap!{
     std::fs::File::create (format!("{}.dot", example_name))
   };
@@ -417,6 +417,7 @@ fn main() {
   drop (f);
 
   // create a program in the initial mode
+  use apis::Program;
   let mut myprogram = Myprogram::initial();
   //debug!("myprogram: {:#?}", myprogram);
   Myprogram::report();

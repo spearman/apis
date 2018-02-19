@@ -1,11 +1,5 @@
-use ::std;
-use ::vec_map;
-
-use ::macro_machines;
-
-use ::channel;
-use ::process;
-use ::session;
+use ::{std, vec_map};
+use ::{channel, process, session};
 
 /// The `sourcepoints` field is wrapped in a `Refcell` and an `Option` so that
 /// it may be "removed" from the process with `take_endpoints` while the run

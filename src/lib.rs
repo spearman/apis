@@ -1,3 +1,5 @@
+//! Reactive session-oriented asynchronous process-calculus framework
+
 #![allow(dead_code)]
 #![feature(const_fn)]
 #![feature(core_intrinsics)]
@@ -15,7 +17,6 @@ extern crate smallvec;
 extern crate vec_map;
 
 extern crate colored;
-extern crate escapade;
 
 extern crate unbounded_spsc;
 

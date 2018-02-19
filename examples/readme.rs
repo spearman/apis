@@ -256,11 +256,11 @@ def_program! {
 
 fn main() {
   simplelog::TermLogger::init (
-    simplelog::LevelFilter::Debug,
-    simplelog::Config::default()
+    simplelog::LevelFilter::Debug, simplelog::Config::default()
   ).unwrap();
 
   use std::io::Write;
+  use macro_machines::MachineDotfile;
   let mut f = std::fs::File::create ("charsink.dot").unwrap();
   f.write_all (char_sink::CharSink::dotfile_hide_defaults().as_bytes())
     .unwrap();

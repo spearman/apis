@@ -481,23 +481,20 @@ pub mod wsk {
 ///////////////////////////////////////////////////////////////////////////////
 
 fn main() {
-  use std::io::Write;
   use colored::Colorize;
-  use apis::Program;
 
   let example_name = std::path::PathBuf::from (std::env::args().next().unwrap())
     .file_name().unwrap().to_str().unwrap().to_string();
 
-  println!("{}", format!("{} main...", example_name)
-    .green().bold());
+  println!("{}", format!("{} main...", example_name).green().bold());
 
-  unwrap!{
-    simplelog::TermLogger::init (
-      LOG_LEVEL_FILTER,
-      simplelog::Config::default())
-  };
+  unwrap!(
+    simplelog::TermLogger::init (LOG_LEVEL_FILTER, simplelog::Config::default())
+  );
 
   // create a dotfile for the program state machine
+  use std::io::Write;
+  use macro_machines::MachineDotfile;
   let mut f = unwrap!{
     std::fs::File::create (format!("{}.dot", example_name))
   };
@@ -508,11 +505,11 @@ fn main() {
   Graphical::report();
 
   // create a program in the initial mode
+  use apis::Program;
   let mut myprogram = Graphical::initial();
   //debug!("myprogram: {:#?}", myprogram);
   // run to completion
   myprogram.run();
 
-  println!("{}", format!("...{} main", example_name)
-    .green().bold());
+  println!("{}", format!("...{} main", example_name).green().bold());
 }
