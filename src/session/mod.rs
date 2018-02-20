@@ -20,7 +20,7 @@ def_machine_nodefault! {
     def             : Def <CTX>,
     process_handles : vec_map::VecMap <process::Handle <CTX>>,
     main_process    : Option <Box <CTX::GPROC>>
-  ) where let _session = self {
+  ) @ _session {
     STATES [
       state Ready   ()
       state Running ()

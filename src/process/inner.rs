@@ -12,7 +12,7 @@ def_machine_nodefault! {
     sourcepoints   : vec_map::VecMap <Box <channel::Sourcepoint <CTX>>>,
     endpoints      : std::cell::RefCell <Option <
       vec_map::VecMap <Box <channel::Endpoint <CTX>>>>>
-  ) where let _inner = self {
+  ) @ _inner {
     STATES [
       state Ready   ()
       state Running ()
