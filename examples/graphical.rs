@@ -14,7 +14,6 @@ extern crate num;
 
 extern crate either;
 extern crate vec_map;
-extern crate escapade;
 
 #[macro_use] extern crate log;
 extern crate colored;
@@ -33,7 +32,7 @@ use glium::glutin;
 ///////////////////////////////////////////////////////////////////////////////
 
 //  Off, Error, Warn, Info, Debug, Trace
-pub const LOG_LEVEL_FILTER
+pub const LOG_LEVEL
   : simplelog::LevelFilter = simplelog::LevelFilter::Info;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -488,20 +487,16 @@ fn main() {
 
   println!("{}", format!("{} main...", example_name).green().bold());
 
-  unwrap!(
-    simplelog::TermLogger::init (LOG_LEVEL_FILTER, simplelog::Config::default())
-  );
+  unwrap!(simplelog::TermLogger::init (LOG_LEVEL, simplelog::Config::default()));
 
   // create a dotfile for the program state machine
   use std::io::Write;
   use macro_machines::MachineDotfile;
-  let mut f = unwrap!{
-    std::fs::File::create (format!("{}.dot", example_name))
-  };
+  let mut f = unwrap!(std::fs::File::create (format!("{}.dot", example_name)));
   unwrap!(f.write_all (Graphical::dotfile_hide_defaults().as_bytes()));
   drop (f);
 
-  // show some information about the program
+  // report size information
   Graphical::report();
 
   // create a program in the initial mode

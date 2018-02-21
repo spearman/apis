@@ -12,7 +12,6 @@
 #[macro_use] extern crate macro_attr;
 extern crate colored;
 extern crate either;
-extern crate escapade;
 extern crate num;
 extern crate vec_map;
 
@@ -23,8 +22,7 @@ extern crate simplelog;
 ///////////////////////////////////////////////////////////////////////////////
 
 pub mod int_source {
-  use ::std;
-  use ::vec_map;
+  use ::{std, vec_map};
   use ::apis;
 
   const MAX_UPDATES : u64 = 10;
@@ -124,8 +122,7 @@ pub mod int_source {
 }
 
 pub mod char_sink {
-  use ::std;
-  use ::vec_map;
+  use ::{std, vec_map};
   use ::apis;
 
   const MAX_UPDATES : u64 = 10;
@@ -260,31 +257,27 @@ fn main() {
   ).unwrap();
 
   use std::io::Write;
-  use macro_machines::MachineDotfile;
+  // write session dotfiles
+  use apis::session::Context;
   let mut f = std::fs::File::create ("charsink.dot").unwrap();
-  f.write_all (char_sink::CharSink::dotfile_hide_defaults().as_bytes())
-    .unwrap();
+  f.write_all (
+    char_sink::CharSink::def().unwrap().dotfile_hide_defaults().as_bytes()
+  ).unwrap();
   drop (f);
   let mut f = std::fs::File::create ("intsource.dot").unwrap();
-  f.write_all (int_source::IntSource::dotfile_hide_defaults().as_bytes())
-    .unwrap();
+  f.write_all (
+    int_source::IntSource::def().unwrap().dotfile_hide_defaults().as_bytes()
+  ).unwrap();
   drop (f);
+  // write program state machine dotfile
+  use macro_machines::MachineDotfile;
   let mut f = std::fs::File::create ("myprogram.dot").unwrap();
   f.write_all (Myprogram::dotfile_hide_defaults().as_bytes()).unwrap();
   drop (f);
 
   use apis::Program;
-  // create a program in the initial mode
+  // create program in the initial mode
   let mut myprogram = Myprogram::initial();
   // run to completion
   myprogram.run();
-
-  /*
-  use apis::session::Context;
-  let session_def = int_source::IntSource::def().unwrap();
-  let mut session : apis::session::Session <int_source::IntSource>
-    = session_def.into();
-  let results = session.run();
-  println!("results: {:?}", results);
-  */
 }

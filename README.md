@@ -28,7 +28,6 @@ enum-unitary = { version = "0.1.*", git = "git://github.com/spearman/enum-unitar
 colored = "1.*"
 either = "1.*"
 enum_derive = "0.1.*"
-escapade = "0.0.*"
 log = "0.4.*"
 macro-attr = "0.2.*"
 num = "0.1.*"
@@ -56,7 +55,6 @@ The dependencies above should then be made available:
 #[macro_use] extern crate macro_attr;
 extern crate colored;
 extern crate either;
-extern crate escapade;
 extern crate num;
 extern crate vec_map;
 ```
@@ -71,8 +69,7 @@ Define and run a session:
 /// peers which sum the received values and return a final sum in the session
 /// result.
 pub mod int_source {
-  use ::std;
-  use ::vec_map;
+  use ::{std, vec_map};
   use ::apis;
 
   const MAX_UPDATES : u64 = 10;
@@ -189,9 +186,10 @@ fn main() {
 Generate a graphviz dotfile and write to file:
 
 ```rust
+  let session_def = IntSource::def().unwrap();
   use std::io::Write;
   let mut f = std::fs::File::create ("intsource.dot").unwrap();
-  f.write_all (IntSource::dotfile_hide_defaults().as_bytes()).unwrap();
+  f.write_all (session_def.dotfile_hide_defaults().as_bytes()).unwrap();
   drop (f);
 ```
 

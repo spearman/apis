@@ -13,6 +13,7 @@
 //extern crate bit_vec;
 extern crate num;
 extern crate either;
+extern crate escapade;
 extern crate smallvec;
 extern crate vec_map;
 

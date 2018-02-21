@@ -13,7 +13,6 @@ extern crate rand;
 
 extern crate either;
 extern crate vec_map;
-extern crate escapade;
 
 #[macro_use] extern crate log;
 extern crate colored;
@@ -28,7 +27,7 @@ extern crate simplelog;
 ///////////////////////////////////////////////////////////////////////////////
 
 // Off, Error, Warn, Info, Debug, Trace
-pub const LOG_LEVEL_FILTER
+pub const LOG_LEVEL
   : simplelog::LevelFilter = simplelog::LevelFilter::Info;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -397,22 +396,14 @@ fn main() {
 
   let example_name = std::path::PathBuf::from (std::env::args().next().unwrap())
     .file_name().unwrap().to_str().unwrap().to_string();
+  println!("{}", format!("{} main...", example_name).green().bold());
 
-  println!("{}", format!("{} main...", example_name)
-    .green().bold());
-
-  unwrap!{
-    simplelog::TermLogger::init (
-      LOG_LEVEL_FILTER,
-      simplelog::Config::default())
-  };
+  unwrap!(simplelog::TermLogger::init (LOG_LEVEL, simplelog::Config::default()));
 
   // create a dotfile for the program state machine
   use std::io::Write;
   use macro_machines::MachineDotfile;
-  let mut f = unwrap!{
-    std::fs::File::create (format!("{}.dot", example_name))
-  };
+  let mut f = unwrap!(std::fs::File::create (format!("{}.dot", example_name)));
   unwrap!(f.write_all (Myprogram::dotfile_hide_defaults().as_bytes()));
   drop (f);
 
@@ -424,6 +415,5 @@ fn main() {
   // run to completion
   myprogram.run();
 
-  println!("{}", format!("...{} main", example_name)
-    .green().bold());
+  println!("{}", format!("...{} main", example_name).green().bold());
 }

@@ -8,7 +8,6 @@
 extern crate num;
 
 extern crate vec_map;
-extern crate escapade;
 
 #[macro_use] extern crate apis;
 

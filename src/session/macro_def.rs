@@ -36,7 +36,6 @@
 ///
 /// extern crate num;
 /// extern crate vec_map;
-/// extern crate escapade;
 /// #[macro_use] extern crate apis;
 ///
 /// use apis::{channel,message,process,session};
@@ -207,30 +206,6 @@ macro_rules! def_session {
     //  impls
     ///////////////////////////////////////////////////////////////////////////
 
-    //
-    //  session context
-    //
-    impl $context {
-      def_session!{
-        @impl_fn_dotfile
-        context $context {
-          PROCESSES [
-            $(
-            process $process
-              ($($field_name : $field_type $(= $field_default)*),*)
-              $(-> ($presult_type $(= $presult_default)*))* {}
-            )+
-          ]
-          CHANNELS  [
-            $(channel $channel <$local_type> ($kind) {
-              producers [$($producer),+]
-              consumers [$($consumer),+]
-            })*
-          ]
-        }
-      }
-    }
-
     impl $crate::session::Context for $context {
       type MID   = MessageId;
       type CID   = ChannelId;
@@ -239,13 +214,71 @@ macro_rules! def_session {
       type GPROC = GlobalProcess;
       type GPRES = GlobalPresult;
 
-      fn name() -> String {
-        format!("{:?}", $context)
+      fn name() -> &'static str {
+        stringify!($context)
       }
 
       fn maybe_main() -> Option <Self::PID> {
         $(use self::ProcessId::$main_process;)*
         def_session!(@expr_option $($main_process)*)
+      }
+
+      fn process_field_names() -> Vec <Vec <&'static str>> {
+        let mut v = Vec::new();
+        $({
+          let mut _w = Vec::new();
+          $(_w.push (stringify!($field_name));)*
+          v.push (_w);
+        })+
+        v
+      }
+      fn process_field_types() -> Vec <Vec <&'static str>> {
+        let mut v = Vec::new();
+        $({
+          let mut _w = Vec::new();
+          $(_w.push (stringify!($field_type));)*
+          v.push (_w);
+        })+
+        v
+      }
+      fn process_field_defaults() -> Vec <Vec <&'static str>> {
+        let mut v = Vec::new();
+        $({
+          let mut _w = Vec::new();
+          $(
+          _w.push ({
+            let default_expr = stringify!($($field_default)*);
+            if !default_expr.is_empty() {
+              default_expr
+            } else {
+              concat!(stringify!($field_type), "::default()")
+            }
+          });
+          )*
+          v.push (_w);
+        })+
+        v
+      }
+      fn process_result_types() -> Vec <&'static str> {
+        let mut v = Vec::new();
+        $(
+        v.push (stringify!($($presult_type)*));
+        )+
+        v
+      }
+      fn process_result_defaults() -> Vec <&'static str> {
+        let mut v = Vec::new();
+        $(
+        v.push (stringify!($($($presult_default)*)*));
+        )+
+        v
+      }
+      fn channel_local_types() -> Vec <&'static str> {
+        let mut _v = Vec::new();
+        $(
+        _v.push (stringify!($local_type));
+        )*
+        _v
       }
     }
 
@@ -495,609 +528,5 @@ macro_rules! def_session {
   //  @expr_default: use default
   //
   ( @expr_default ) => { Default::default() };
-
-  //
-  //  @impl_fn_dotfile
-  //
-  ( @impl_fn_dotfile
-    context $context:ident {
-      PROCESSES [
-        $(process $process:ident
-          ($($field_name:ident : $field_type:ty $(= $field_default:expr)*),*)
-          $(-> ($presult_type:ty $(= $presult_default:expr)*))*
-        {})+
-      ]
-      CHANNELS [
-        $(channel $channel:ident <$local_type:ident> ($kind:ident) {
-          producers [$($producer:ident),+]
-          consumers [$($consumer:ident),+]
-        })*
-      ]
-    }
-
-  ) => {
-
-    #[inline]
-    pub fn dotfile() -> String {
-      $context::_dotfile (false)
-    }
-
-    #[inline]
-    pub fn dotfile_hide_defaults() -> String {
-      $context::_dotfile (true)
-    }
-
-    // TODO: this will need a different macro invocation if it is to be allowed
-    /*
-    /// *Note*: printing pretty defaults will construct a default *value* and
-    /// pretty-print that instead of the raw expression.
-    #[inline]
-    pub fn dotfile_pretty_defaults() -> String {
-      $context::_dotfile (false, false)
-    }
-    */
-
-    fn _dotfile(
-      hide_defaults   : bool,
-      //pretty_defaults : bool  // TODO: pretty defaults
-    ) -> String {
-      let mut s = String::new();
-
-      // begin graph
-      s.push_str (def_session!(@fn_dotfile_begin).as_str());
-
-      // begin subgraph
-      s.push_str (def_session!(
-        @fn_dotfile_subgraph_begin
-        context $context {}
-      ).as_str());
-
-      // nodes
-      if !hide_defaults {
-        // TODO: pretty defaults
-        //if !pretty_defaults {
-          $(
-          s.push_str (def_session!(
-            @fn_dotfile_node
-            process $process
-              ($($field_name : $field_type $(= $field_default)*),*)
-              $(-> ($presult_type $(= $presult_default)*))* {}
-          ).as_str());
-          )+
-        /*
-        } else {
-          $(
-          s.push_str (def_session!(
-            @fn_dotfile_node_pretty_defaults
-            process $process
-              ($($field_name : $field_type $(= $field_default)*),*)
-              $(-> ($presult_type $(= $presult_default)*))* {}
-          ).as_str());
-          )+
-        }
-        */
-      } else {
-        $(
-        s.push_str (def_session!(
-          @fn_dotfile_node_hide_defaults
-          process $process
-            ($($field_name : $field_type $(= $field_default)*),*)
-            $(-> ($presult_type $(= $presult_default)*))* {}
-        ).as_str());
-        )+
-      }
-
-      // edges
-      $(
-      s.push_str (def_session!(
-        @fn_dotfile_channel
-        channel $channel <$local_type> ($kind) {
-          producers [$($producer),+]
-          consumers [$($consumer),+]
-        }
-      ).as_str());
-      )*
-
-      //  end graph
-      s.push_str (def_session!(@fn_dotfile_end).as_str());
-      s
-    } // end fn dotfile
-
-  };  // end @impl_fn_dotfile
-
-  //
-  //  @fn_dotfile_begin
-  //
-  ( @fn_dotfile_begin ) => {{
-    let mut s = String::new();
-    s.push_str (
-      "digraph {\n  \
-         rankdir=LR\n  \
-         node [shape=hexagon, fontname=\"Sans Bold\"]\n  \
-         edge [style=dashed, arrowhead=vee, fontname=\"Sans\"]\n");
-    s
-  }};
-
-  //
-  //  @fn_dotfile_subgraph_begin
-  //
-  ( @fn_dotfile_subgraph_begin
-    context $context:ident {}
-
-  ) => {{
-    //use escapade::Escapable;
-    let mut s = String::new();
-    let context_str = stringify!($context);
-    s.push_str (format!("  subgraph cluster_{} {{\n", context_str).as_str());
-    s.push_str (format!("    label=<{}>",context_str).as_str());
-
-    s.push_str ( "\
-      \n    shape=record\
-      \n    style=rounded\
-      \n    fontname=\"Sans Bold Italic\"\n");
-    s
-  }}; // end @fn_dotfile_subgraph_begin
-
-  //
-  //  @fn_dotfile_node
-  //
-  ( @fn_dotfile_node
-    process $process:ident
-      ($($field_name:ident : $field_type:ty $(= $field_default:expr)*),*)
-      $(-> ($presult_type:ty $(= $presult_default:expr)*))* {}
-
-  ) => {{
-    let mut s = String::new();
-
-    s.push_str (format!(
-      "    {:?} [label=<<TABLE BORDER=\"0\"><TR><TD><B>{:?}</B></TD></TR>",
-      ProcessId::$process, ProcessId::$process).as_str());
-
-    let mut _mono_font      = false;
-    let mut _field_names    = std::vec::Vec::<String>::new();
-    let mut _field_types    = std::vec::Vec::<String>::new();
-    let mut _field_defaults = std::vec::Vec::<String>::new();
-
-    $({
-      if !_mono_font {
-        s.push_str ("<TR><TD><FONT FACE=\"Mono\"><BR/>");
-        _mono_font = true;
-      }
-      _field_names.push (stringify!($field_name).to_string());
-      _field_types.push (stringify!($field_type).to_string());
-      let default_expr = {
-        let default_expr = stringify!($($field_default)*);
-        if !default_expr.is_empty() {
-          default_expr.to_string()
-        } else {
-          stringify!(Default::default()).chars().filter (
-            |c| !c.is_whitespace()
-          ).collect()
-        }
-      };
-      _field_defaults.push (default_expr.to_string());
-    })*
-
-    debug_assert_eq!(_field_names.len(), _field_types.len());
-    debug_assert_eq!(_field_types.len(), _field_defaults.len());
-
-    //
-    //  for each data field, print a line
-    //
-    // TODO: we are manually aligning the columns of the field
-    // name, field type, and default values, is there a better
-    // way ? (record node, html table, format width?)
-    if !_field_types.is_empty() {
-      debug_assert!(_mono_font);
-      debug_assert!(!_field_defaults.is_empty());
-
-      let mut field_string = String::new();
-      let separator = ",<BR ALIGN=\"LEFT\"/>";
-
-      let longest_fieldname = _field_names.iter().fold (0,
-        |longest, ref fieldname| {
-          let len = fieldname.len();
-          if longest < len {
-            len
-          } else {
-            longest
-          }
-        }
-      );
-
-      let longest_typename = _field_types.iter().fold (0,
-        |longest, ref typename| {
-          let len = typename.len();
-          if longest < len {
-            len
-          } else {
-            longest
-          }
-        }
-      );
-
-      for (i,f) in _field_names.iter().enumerate() {
-        use escapade::Escapable;
-
-        let spacer1 : String = std::iter::repeat (' ')
-          .take(longest_fieldname - f.len())
-          .collect();
-        let spacer2 : String = std::iter::repeat (' ')
-          .take(longest_typename - _field_types[i].len())
-          .collect();
-
-        field_string.push_str (
-          format!("{}{} : {}{} = {}",
-            f, spacer1, _field_types[i], spacer2, _field_defaults[i]
-          ).escape().into_inner().as_str()
-        );
-        field_string.push_str (format!("{}", separator).as_str());
-      }
-
-      let len = field_string.len();
-      field_string.truncate (len - separator.len());
-      s.push_str (format!("{}", field_string).as_str());
-    }
-
-    let result_type = stringify!($($presult_type)*).to_string();
-    if !result_type.is_empty() {
-      use escapade::Escapable;
-      if !_mono_font {
-        s.push_str ("<TR><TD><FONT FACE=\"Mono\"><BR/>");
-        _mono_font = true;
-      } else {
-        s.push_str ("<BR ALIGN=\"LEFT\"/></FONT></TD></TR>\
-          <TR><TD><FONT FACE=\"Mono\"><BR/>");
-      }
-      let default_expr = {
-        let default_expr = stringify!($($($presult_default)*)*);
-        if !default_expr.is_empty() {
-          default_expr.to_string()
-        } else {
-          stringify!(Default::default()).chars().filter (
-            |c| !c.is_whitespace()
-          ).collect()
-        }
-      };
-      s.push_str (
-        format!("-> {} = {}", result_type, default_expr)
-          .escape().into_inner().as_str());
-    }
-
-    /*
-    if s.chars().last().unwrap() == '>' {
-      let len = s.len();
-      s.truncate (len-5);
-    } else {
-      s.push_str ("</FONT>");
-    }
-    */
-
-    if _mono_font {
-      s.push_str ("<BR ALIGN=\"LEFT\"/></FONT></TD></TR>");
-    }
-
-    s.push_str ("</TABLE>>]\n");
-    s
-  }};  // end @fn_dotfile_node
-
-  //
-  //  @fn_dotfile_node_pretty_defaults
-  //
-  // TODO: this was adapted from the state machine macro which doesn't
-  // use an HTML table for layout so this may need to be reworked
-  /*
-  ( @fn_dotfile_node_pretty_defaults
-    process $process:ident
-      ($($field_name:ident : $field_type:ty $(= $field_default:expr)*),*)
-      $(-> ($presult_type:ty $(= $presult_default:expr)*))* {}
-
-  ) => {{
-    let mut s = String::new();
-
-    s.push_str (format!(
-      "    {:?} [label=<<TABLE BORDER=\"0\"><TR><TD><B>{:?}</B></TD></TR>",
-      ProcessId::$process, ProcessId::$process).as_str());
-
-    let mut _mono_font      = false;
-    let mut _field_names    = std::vec::Vec::<String>::new();
-    let mut _field_types    = std::vec::Vec::<String>::new();
-    let mut _field_defaults = std::vec::Vec::<String>::new();
-
-    $({
-      if !_mono_font {
-        s.push_str ("<TR><TD><FONT FACE=\"Mono\"><BR/>");
-        _mono_font = true;
-      }
-      _field_names.push (stringify!($field_name).to_string());
-      _field_types.push (stringify!($field_type).to_string());
-      let default_val : $field_type
-        = def_session!(@expr_default $($field_default)*);
-      let pretty_br = {
-        use escapade::Escapable;
-        let pretty_newline = format!("{:#?}", default_val);
-        let mut pretty_br = String::new();
-        let separator = "<BR ALIGN=\"LEFT\"/>\n";
-        for line in pretty_newline.lines() {
-          pretty_br.push_str (line.escape().into_inner().as_str());
-          pretty_br.push_str (separator);
-        }
-        let len = pretty_br.len();
-        pretty_br.truncate (len - separator.len());
-        pretty_br
-      };
-      _field_defaults.push (pretty_br);
-    })*
-
-    debug_assert_eq!(_field_names.len(), _field_types.len());
-    debug_assert_eq!(_field_types.len(), _field_defaults.len());
-
-    //
-    //  for each data field, print a line
-    //
-    // TODO: we are manually aligning the columns of the field
-    // name, field type, and default values, is there a better
-    // way ? (record node, html table, format width?)
-    if !_field_types.is_empty() {
-      debug_assert!(_mono_font);
-      debug_assert!(!_field_defaults.is_empty());
-
-      let mut field_string = String::new();
-      let separator = ",<BR ALIGN=\"LEFT\"/>";
-
-      let longest_fieldname = _field_names.iter().fold (0,
-        |longest, ref fieldname| {
-          let len = fieldname.len();
-          if longest < len {
-            len
-          } else {
-            longest
-          }
-        }
-      );
-
-      let longest_typename = _field_types.iter().fold (0,
-        |longest, ref typename| {
-          let len = typename.len();
-          if longest < len {
-            len
-          } else {
-            longest
-          }
-        }
-      );
-
-      for (i,f) in _field_names.iter().enumerate() {
-        use escapade::Escapable;
-
-        let spacer1 : String = std::iter::repeat (' ')
-          .take(longest_fieldname - f.len())
-          .collect();
-        let spacer2 : String = std::iter::repeat (' ')
-          .take(longest_typename - _field_types[i].len())
-          .collect();
-
-        field_string.push_str (
-          format!("{}{} : {}{} = {}",
-            f, spacer1, _field_types[i], spacer2, _field_defaults[i]
-          ).escape().into_inner().as_str()
-        );
-        field_string.push_str (format!("{}", separator).as_str());
-      }
-
-      let len = field_string.len();
-      field_string.truncate (len - separator.len());
-      s.push_str (format!("{}", field_string).as_str());
-    }
-
-    let result_type = stringify!($($presult_type)*).to_string();
-    if !result_type.is_empty() {
-      use escapade::Escapable;
-      if !_mono_font {
-        s.push_str ("<TR><TD><FONT FACE=\"Mono\"><BR/>");
-        _mono_font = true;
-      } else {
-        s.push_str ("<BR ALIGN=\"LEFT\"/></FONT></TD></TR>\
-          <TR><TD><FONT FACE=\"Mono\"><BR/>");
-      }
-      s.push_str (format!("-> {}", result_type).escape().into_inner().as_str());
-    }
-
-    /*
-    if s.chars().last().unwrap() == '>' {
-      let len = s.len();
-      s.truncate (len-5);
-    } else {
-      s.push_str ("</FONT>");
-    }
-    */
-
-    if _mono_font {
-      s.push_str ("<BR ALIGN=\"LEFT\"/></FONT></TD></TR>");
-    }
-
-    s.push_str ("</TABLE>>]\n");
-    s
-  }};  // end @fn_dotfile_node_pretty_defaults
-  */
-
-  //
-  //  @fn_dotfile_node_hide_defaults
-  //
-  ( @fn_dotfile_node_hide_defaults
-    process $process:ident
-      ($($field_name:ident : $field_type:ty $(= $field_default:expr)*),*)
-      $(-> ($presult_type:ty $(= $presult_default:expr)*))* {}
-
-  ) => {{
-    let mut s = String::new();
-
-    s.push_str (format!(
-      "    {:?} [label=<<TABLE BORDER=\"0\"><TR><TD><B>{:?}</B></TD></TR>",
-      ProcessId::$process, ProcessId::$process).as_str());
-
-    let mut _mono_font   = false;
-    let mut _field_names = std::vec::Vec::<String>::new();
-    let mut _field_types = std::vec::Vec::<String>::new();
-
-    $({
-      if !_mono_font {
-        s.push_str ("<TR><TD><FONT FACE=\"Mono\"><BR/>");
-        _mono_font = true;
-      }
-      _field_names.push (stringify!($field_name).to_string());
-      _field_types.push (stringify!($field_type).to_string());
-    })*
-
-    debug_assert_eq!(_field_names.len(), _field_types.len());
-
-    //
-    //  for each data field, print a line
-    //
-    // TODO: we are manually aligning the columns of the field
-    // name, field type, and default values, is there a better
-    // way ? (record node, html table, format width?)
-    if !_field_types.is_empty() {
-      debug_assert!(_mono_font);
-
-      let mut field_string = String::new();
-      let separator = ",<BR ALIGN=\"LEFT\"/>";
-
-      let longest_fieldname = _field_names.iter().fold (0,
-        |longest, ref fieldname| {
-          let len = fieldname.len();
-          if longest < len {
-            len
-          } else {
-            longest
-          }
-        }
-      );
-
-      for (i,f) in _field_names.iter().enumerate() {
-        use escapade::Escapable;
-
-        let spacer1 : String = std::iter::repeat (' ')
-          .take(longest_fieldname - f.len())
-          .collect();
-        field_string.push_str (
-          format!("{}{} : {}", f, spacer1, _field_types[i])
-            .escape().into_inner().as_str()
-        );
-        field_string.push_str (format!("{}", separator).as_str());
-      }
-
-      let len = field_string.len();
-      field_string.truncate (len - separator.len());
-      s.push_str (format!("{}", field_string).as_str());
-    }
-
-    let result_type = stringify!($($presult_type)*).to_string();
-    if !result_type.is_empty() {
-      use escapade::Escapable;
-      if !_mono_font {
-        s.push_str ("<TR><TD><FONT FACE=\"Mono\"><BR/>");
-        _mono_font = true;
-      } else {
-        s.push_str ("<BR ALIGN=\"LEFT\"/></FONT></TD></TR>\
-          <TR><TD><FONT FACE=\"Mono\"><BR/>");
-      }
-      s.push_str (format!("-> {}", result_type).escape().into_inner().as_str());
-    }
-
-    /*
-    if s.chars().last().unwrap() == '>' {
-      let len = s.len();
-      s.truncate (len-5);
-    } else {
-      s.push_str ("</FONT>");
-    }
-    */
-
-    if _mono_font {
-      s.push_str ("<BR ALIGN=\"LEFT\"/></FONT></TD></TR>");
-    }
-
-    s.push_str ("</TABLE>>]\n");
-    s
-  }};  // end @fn_dotfile_node_hide_defaults
-
-  //
-  //  @fn_dotfile_channel
-  //
-  ( @fn_dotfile_channel
-    channel $channel:ident <$local_type:ident> ($kind:ident) {
-      producers [$($producer:ident),+]
-      consumers [$($consumer:ident),+]
-    }
-
-  ) => {{
-    let mut s = String::new();
-    let channel_string = {
-      use escapade::Escapable;
-      let mut s = String::new();
-      s.push_str (
-        format!("{} <{}>", stringify!($channel), stringify!($local_type)
-      ).as_str());
-      s.escape().into_inner()
-    };
-    let producers = vec![$(ProcessId::$producer),+];
-    let consumers = vec![$(ProcessId::$consumer),+];
-    match $crate::channel::Kind::$kind {
-      $crate::channel::Kind::Simplex => {
-        s.push_str (format!(
-          "    {:?} -> {:?} [label=<<FONT FACE=\"Sans Italic\">{}</FONT>>]\n",
-          producers[0],
-          consumers[0],
-          channel_string).as_str());
-      }
-      $crate::channel::Kind::Source => {
-        // create a node
-        s.push_str (format!(
-          "    {:?} [label=<<B>+</B>>,\n      \
-              shape=diamond, style=\"\",\n      \
-              xlabel=<<FONT FACE=\"Sans Italic\">{}</FONT>>]\n",
-          ChannelId::$channel, channel_string).as_str());
-        // edges
-        s.push_str (format!("    {:?} -> {:?} []\n",
-          producers[0],
-          ChannelId::$channel).as_str());
-        for consumer in consumers {
-          s.push_str (format!("    {:?} -> {:?} []\n",
-            ChannelId::$channel,
-            consumer).as_str());
-        }
-      }
-      $crate::channel::Kind::Sink => {
-        // create a node
-        s.push_str (format!(
-          "    {:?} [label=<<B>+</B>>,\n      \
-              shape=diamond, style=\"\",\n      \
-              xlabel=<<FONT FACE=\"Sans Italic\">{}</FONT>>]\n",
-          ChannelId::$channel, channel_string).as_str());
-        // edges
-        s.push_str (format!("    {:?} -> {:?} []\n",
-          ChannelId::$channel,
-          consumers[0]).as_str());
-        for producer in producers {
-          s.push_str (format!("    {:?} -> {:?} []\n",
-            producer,
-            ChannelId::$channel).as_str());
-        }
-      }
-    }
-    s
-  }};  // end @fn_dotfile_channel
-
-  //
-  //  @fn_dotfile_end
-  //
-  ( @fn_dotfile_end ) => {{
-    let mut s = String::new();
-    s.push_str (
-      "  }\n\
-      }");
-    s
-  }};
 
 } // end def_session!

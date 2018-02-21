@@ -45,7 +45,7 @@ def_machine_nodefault! {
 /// Session metainformation.
 #[derive(Clone,Debug,Eq,PartialEq)]
 pub struct Def <CTX : Context> {
-  name        : String,
+  name        : &'static str,
   channel_def : vec_map::VecMap <channel::Def <CTX>>,
   process_def : vec_map::VecMap <process::Def <CTX>>
 }
@@ -92,7 +92,14 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
 
   //required
   fn maybe_main () -> Option <Self::PID>;
-  fn name       () -> String;
+  fn name       () -> &'static str;
+  // helper functions for dotfile creation
+  fn process_field_names()     -> Vec <Vec <&'static str>>;
+  fn process_field_types()     -> Vec <Vec <&'static str>>;
+  fn process_field_defaults()  -> Vec <Vec <&'static str>>;
+  fn process_result_types()    -> Vec <&'static str>;
+  fn process_result_defaults() -> Vec <&'static str>;
+  fn channel_local_types()     -> Vec <&'static str>;
 
   // provided
   //
@@ -113,7 +120,6 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
   ///
   /// extern crate num;
   /// extern crate vec_map;
-  /// extern crate escapade;
   /// #[macro_use] extern crate apis;
   ///
   /// def_session! {
@@ -172,7 +178,6 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
   ///
   /// extern crate num;
   /// extern crate vec_map;
-  /// extern crate escapade;
   /// #[macro_use] extern crate apis;
   ///
   /// def_session! {
@@ -245,6 +250,7 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
 
     Def::define (Self::name(), channel_def, process_def)
   }
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -256,8 +262,8 @@ impl <CTX : Context> Session <CTX> {
     &self.extended_state().def
   }
 
-  pub fn name (&self) -> &String {
-    &self.def().name
+  pub fn name (&self) -> &'static str {
+    self.def().name
   }
 
   pub fn state_id (&self) -> &StateId {
@@ -419,13 +425,30 @@ impl <CTX : Context> Def <CTX> {
     channels
   }
 
+  /// Generate a graphviz diagram for the defined session
+  #[inline]
+  pub fn dotfile (&self) -> String {
+    self.session_dotfile (false)
+  }
+
+  /// Generate a graphviz diagram for the defined session with default
+  /// expressions hidden
+  #[inline]
+  pub fn dotfile_hide_defaults (&self) -> String {
+    self.session_dotfile (true)
+  }
+
+  //
+  //  private functions
+  //
+
   /// The only method to create a valid session def struct.  Validates the
   /// channel def and process def definitions for one-to-one correspondence
   /// of producers and consumers to sourcepoints and endpoints, respectively.
   ///
   /// See public trait method `Context::def` for errors.
   fn define (
-    name        : String,
+    name        :  &'static str,
     channel_def : vec_map::VecMap <channel::Def <CTX>>,
     process_def : vec_map::VecMap <process::Def <CTX>>
   ) -> Result <Self, Vec <DefineError>> {
@@ -504,6 +527,201 @@ impl <CTX : Context> Def <CTX> {
       Ok (())
     }
   }
+
+  fn session_dotfile (&self, hide_defaults : bool) -> String {
+    use escapade::Escapable;
+
+    let mut s = String::new();
+
+    // begin graph
+    s.push_str (
+      "digraph {\
+     \n  rankdir=LR\
+     \n  node [shape=hexagon, fontname=\"Sans Bold\"]\
+     \n  edge [style=dashed, arrowhead=vee, fontname=\"Sans\"]\n");
+
+    // begin subgraph
+    debug_assert_eq!(self.name, CTX::name());
+    let context_str = self.name;
+    s.push_str (format!(
+      "  subgraph cluster_{} {{\n", context_str).as_str());
+    s.push_str (format!(
+      "    label=<{}>",context_str).as_str());
+    s.push_str ( "\
+     \n    shape=record\
+     \n    style=rounded\
+     \n    fontname=\"Sans Bold Italic\"\n");
+
+    // nodes (processes)
+    let process_field_names     = CTX::process_field_names();
+    let process_field_types     = CTX::process_field_types();
+    let process_field_defaults  = CTX::process_field_defaults();
+    let process_result_types    = CTX::process_result_types();
+    let process_result_defaults = CTX::process_result_defaults();
+    debug_assert_eq!(process_field_names.len(), process_field_types.len());
+    debug_assert_eq!(process_field_types.len(), process_field_defaults.len());
+    debug_assert_eq!(process_field_defaults.len(), process_result_types.len());
+    debug_assert_eq!(process_result_types.len(), process_result_defaults.len());
+    for (pid, process_def) in self.process_def.iter() {
+      let process_id = process_def.id();
+      s.push_str (format!(
+        "    {:?} [label=<<TABLE BORDER=\"0\"><TR><TD><B>{:?}</B></TD></TR>",
+        process_id, process_id).as_str());
+
+      let process_field_names    = &process_field_names[pid];
+      let process_field_types    = &process_field_types[pid];
+      let process_field_defaults = &process_field_defaults[pid];
+      debug_assert_eq!(process_field_names.len(), process_field_types.len());
+      debug_assert_eq!(process_field_types.len(), process_field_defaults.len());
+
+      let mut mono_font          = false;
+      if !process_field_names.is_empty() {
+        s.push_str ("<TR><TD><FONT FACE=\"Mono\"><BR/>");
+        mono_font = true;
+
+        //
+        //  for each data field, print a line
+        //
+        // TODO: we are manually aligning the columns of the field name, field
+        // type, and default values, is there a better way ? (record node, html
+        // table, format width?)
+        let mut field_string = String::new();
+        let separator = ",<BR ALIGN=\"LEFT\"/>";
+
+        let longest_fieldname = process_field_names.iter().fold (
+          0, |longest, ref fieldname| std::cmp::max (longest, fieldname.len()));
+
+        let longest_typename = process_field_types.iter().fold (
+          0, |longest, ref typename| std::cmp::max (longest, typename.len()));
+
+        for (i,f) in process_field_names.iter().enumerate() {
+          let spacer1 : String = std::iter::repeat (' ')
+            .take(longest_fieldname - f.len())
+            .collect();
+          let spacer2 : String = std::iter::repeat (' ')
+            .take(longest_typename - process_field_types[i].len())
+            .collect();
+
+          if !hide_defaults {
+            field_string.push_str (format!(
+              "{}{} : {}{} = {}",
+              f, spacer1, process_field_types[i], spacer2, process_field_defaults[i]
+            ).escape().into_inner().as_str());
+          } else {
+            field_string.push_str (format!(
+              "{}{} : {}", f, spacer1, process_field_types[i]
+            ).escape().into_inner().as_str());
+          }
+          field_string.push_str (format!("{}", separator).as_str());
+        }
+
+        let len = field_string.len();
+        field_string.truncate (len - separator.len());
+        s.push_str (format!("{}", field_string).as_str());
+      } // end print line for each field
+
+      let result_type = process_result_types[pid];
+      if !result_type.is_empty() {
+        if !mono_font {
+          s.push_str ("<TR><TD><FONT FACE=\"Mono\"><BR/>");
+          mono_font = true;
+        } else {
+          s.push_str ("<BR ALIGN=\"LEFT\"/></FONT></TD></TR>\
+            <TR><TD><FONT FACE=\"Mono\"><BR/>");
+        }
+        let result_default = process_result_defaults[pid];
+        if !hide_defaults {
+          s.push_str (format!(
+            "-> {} = {}", result_type, result_default
+          ).escape().into_inner().as_str());
+        } else {
+          s.push_str (format!(
+            "-> {}", result_type
+          ).escape().into_inner().as_str());
+        }
+      }
+
+      /*
+      if s.chars().last().unwrap() == '>' {
+        let len = s.len();
+        s.truncate (len-5);
+      } else {
+        s.push_str ("</FONT>");
+      }
+      */
+
+      if mono_font {
+        s.push_str ("<BR ALIGN=\"LEFT\"/></FONT></TD></TR>");
+      }
+
+      s.push_str ("</TABLE>>]\n");
+    } // end node for each process
+
+    // channels (edges)
+    let channel_local_types = CTX::channel_local_types();
+    for (cid, channel_def) in self.channel_def.iter() {
+      let channel_id     = channel_def.id();
+      let producers      = channel_def.producers();
+      let consumers      = channel_def.consumers();
+      let kind           = channel_def.kind();
+      let local_type     = channel_local_types[cid];
+      let channel_string = format!("{:?} <{}>", channel_id, local_type)
+        .as_str().escape().into_inner();
+      match *kind {
+        channel::Kind::Simplex => {
+          debug_assert_eq!(producers.len(), 1);
+          debug_assert_eq!(consumers.len(), 1);
+          s.push_str (format!(
+            "    {:?} -> {:?} [label=<<FONT FACE=\"Sans Italic\">{}</FONT>>]\n",
+            producers[0],
+            consumers[0],
+            channel_string).as_str());
+        }
+        channel::Kind::Source => {
+          debug_assert_eq!(producers.len(), 1);
+          // create a node
+          s.push_str (format!(
+            "    {:?} [label=<<B>+</B>>,\
+           \n      shape=diamond, style=\"\",\
+           \n      xlabel=<<FONT FACE=\"Sans Italic\">{}</FONT>>]\n",
+            channel_id, channel_string).as_str());
+          // edges
+          s.push_str (format!(
+            "    {:?} -> {:?} []\n", producers[0], channel_id
+          ).as_str());
+          for consumer in consumers.as_slice() {
+            s.push_str (format!(
+              "    {:?} -> {:?} []\n", channel_id, consumer
+            ).as_str());
+          }
+        }
+        channel::Kind::Sink => {
+          debug_assert_eq!(consumers.len(), 1);
+          // create a node
+          s.push_str (format!(
+            "    {:?} [label=<<B>+</B>>,\n      \
+                shape=diamond, style=\"\",\n      \
+                xlabel=<<FONT FACE=\"Sans Italic\">{}</FONT>>]\n",
+            channel_id, channel_string).as_str());
+          // edges
+          s.push_str (format!(
+            "    {:?} -> {:?} []\n", channel_id, consumers[0]
+          ).as_str());
+          for producer in producers.as_slice() {
+            s.push_str (format!(
+              "    {:?} -> {:?} []\n", producer, channel_id
+            ).as_str());
+          }
+        }
+      }
+    } // end edge for each channel
+
+    //  end graph
+    s.push_str (
+      "  }\n\
+      }");
+    s
+  } // end fn session_dotfile
 } // end impl Def
 
 impl <CTX : Context> From <Def <CTX>> for Session <CTX> {
@@ -517,12 +735,12 @@ impl <CTX : Context> From <Def <CTX>> for Session <CTX> {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-//  functions
+//  functions                                                                //
 ///////////////////////////////////////////////////////////////////////////////
 
 pub fn report <CTX : Context> () {
   println!("session report...");
-  println!("size of Session: {}", std::mem::size_of::<Session <CTX>>());
-  println!("size of session::Def: {}", std::mem::size_of::<Def <CTX>>());
+  println!("  size of Session: {}", std::mem::size_of::<Session <CTX>>());
+  println!("  size of session::Def: {}", std::mem::size_of::<Def <CTX>>());
   println!("...session report");
 }

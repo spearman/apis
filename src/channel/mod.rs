@@ -122,7 +122,7 @@ pub trait Id <CTX> where
   //
   //  required
   //
-  fn def            (&self) -> Def <CTX>;
+  fn def             (&self) -> Def <CTX>;
   fn message_type_id (&self) -> CTX::MID;
   /// Create a new channel.
   fn create (Def <CTX>) -> Channel <CTX>;

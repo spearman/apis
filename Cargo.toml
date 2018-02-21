@@ -1,6 +1,6 @@
 [package]
 name = "apis"
-version = "0.0.15"
+version = "0.0.16"
 authors = ["Shane Pearman <spearman@github.com>"]
 license = "MPL-2.0"
 
@@ -9,14 +9,14 @@ name = "apis"
 
 # remote dependencies
 [dependencies]
-num = "0.1.*"
-
 #bit-set = "0.4.*"
 #bit-vec = "0.4.*"
 # unpublished upstream dependency update
 colored = { version = "1.*", git = "git://github.com/mackwic/colored.git" }
 either = "1.*"
+escapade = "0.0.*"
 log = "0.4.*"
+num = "0.1.*"
 smallvec = "0.6.*"
 vec_map = "0.8.*"
 
@@ -38,7 +38,6 @@ git = "git://github.com/spearman/unbounded-spsc.git"
 [dev-dependencies]
 mock = { path = "./mock/" }
 
-escapade = "0.0.*"
 glium = "0.20.*"
 rand = "0.4.*"
 simplelog = "0.5.*"
@@ -47,4 +46,3 @@ unwrap = "1.*"
 # enum_unitary support
 macro-attr = "0.2.*"
 enum_derive = "0.1.*"
-

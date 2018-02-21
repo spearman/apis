@@ -12,7 +12,6 @@
 extern crate num;
 
 extern crate vec_map;
-extern crate escapade;
 
 /*#[macro_use]*/ extern crate log;
 extern crate colored;
@@ -25,7 +24,7 @@ extern crate simplelog;
 ///////////////////////////////////////////////////////////////////////////////
 
 //  Off, Error, Warn, Info, Debug, Trace
-pub const LOG_LEVEL_FILTER
+pub const LOG_LEVEL
   : simplelog::LevelFilter = simplelog::LevelFilter::Debug;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -99,26 +98,19 @@ fn main() {
   let example_name = std::path::PathBuf::from (std::env::args().next().unwrap())
     .file_name().unwrap().to_str().unwrap().to_string();
 
-  println!("{}", format!("{} main...", example_name)
-    .green().bold());
+  println!("{}", format!("{} main...", example_name).green().bold());
 
-  unwrap!{
-    simplelog::TermLogger::init (
-      LOG_LEVEL_FILTER,
-      simplelog::Config::default())
-  };
+  unwrap!(simplelog::TermLogger::init (LOG_LEVEL, simplelog::Config::default()));
 
+  // report size information
   apis::report::<DisconnectSenderSink>();
 
-  // create a dotfile for the session
-  let mut f = unwrap!{
-    std::fs::File::create (format!("{}.dot", example_name))
-  };
-  unwrap!{ f.write_all (DisconnectSenderSink::dotfile().as_bytes()) };
-  drop (f);
-
   // here is where we find out if the session definition has any errors
-  let session_def = unwrap!{ DisconnectSenderSink::def() };
+  let session_def = unwrap!(DisconnectSenderSink::def());
+  // create a dotfile for the session
+  let mut f = unwrap!(std::fs::File::create (format!("{}.dot", example_name)));
+  unwrap!(f.write_all (session_def.dotfile().as_bytes()));
+  drop (f);
   // create the session from the definition
   let mut session : apis::session::Session <DisconnectSenderSink>
     = session_def.into();
@@ -126,6 +118,5 @@ fn main() {
   let results = session.run();
   println!("results: {:?}", results);
 
-  println!("{}", format!("...{} main", example_name)
-    .green().bold());
+  println!("{}", format!("...{} main", example_name).green().bold());
 }
