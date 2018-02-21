@@ -366,7 +366,7 @@ pub trait Process <CTX, RES> where
     use num::FromPrimitive;
     use colored::Colorize;
 
-    self.inner_mut().handle_event (inner::EventId::Run.into()).unwrap();
+    self.inner_mut().handle_event (inner::EventParams::Run{}.into()).unwrap();
 
     let t_start = std::time::SystemTime::now();
     debug!("process[{:?}] start time: {}",
@@ -400,7 +400,7 @@ pub trait Process <CTX, RES> where
             ControlFlow::Continue => {}
             ControlFlow::Break    => {
               if self.state_id() == inner::StateId::Running {
-                self.inner_mut().handle_event (inner::EventId::End.into())
+                self.inner_mut().handle_event (inner::EventParams::End{}.into())
                   .unwrap();
               }
             }
@@ -413,7 +413,7 @@ pub trait Process <CTX, RES> where
           info!("process[{:?}] receive on channel[{:?}] failed: {}",
               self.id(), channel_id, "sender disconnected".red().bold());
           if self.state_id() == inner::StateId::Running {
-            self.inner_mut().handle_event (inner::EventId::End.into())
+            self.inner_mut().handle_event (inner::EventParams::End{}.into())
               .unwrap();
           }
         }
@@ -425,7 +425,7 @@ pub trait Process <CTX, RES> where
           ControlFlow::Continue => {}
           ControlFlow::Break    => {
             if self.state_id() == inner::StateId::Running {
-              self.inner_mut().handle_event (inner::EventId::End.into())
+              self.inner_mut().handle_event (inner::EventParams::End{}.into())
                 .unwrap();
             }
           }
@@ -459,7 +459,7 @@ pub trait Process <CTX, RES> where
   {
     use colored::Colorize;
 
-    self.inner_mut().handle_event (inner::EventId::Run.into()).unwrap();
+    self.inner_mut().handle_event (inner::EventParams::Run{}.into()).unwrap();
 
     let t_start = std::time::SystemTime::now();
     debug!("process[{:?}] start time: {}",
@@ -517,7 +517,7 @@ pub trait Process <CTX, RES> where
             ControlFlow::Continue => {}
             ControlFlow::Break    => {
               if self.state_id() == inner::StateId::Running {
-                self.inner_mut().handle_event (inner::EventId::End.into())
+                self.inner_mut().handle_event (inner::EventParams::End{}.into())
                   .unwrap();
               }
             }
@@ -565,7 +565,7 @@ pub trait Process <CTX, RES> where
   {
     use colored::Colorize;
 
-    self.inner_mut().handle_event (inner::EventId::Run.into()).unwrap();
+    self.inner_mut().handle_event (inner::EventParams::Run{}.into()).unwrap();
 
     let t_start = std::time::SystemTime::now();
     debug!("process[{:?}] start time: {}",
@@ -622,7 +622,7 @@ pub trait Process <CTX, RES> where
             ControlFlow::Continue => {}
             ControlFlow::Break    => {
               if self.state_id() == inner::StateId::Running {
-                self.inner_mut().handle_event (inner::EventId::End.into())
+                self.inner_mut().handle_event (inner::EventParams::End{}.into())
                   .unwrap();
               }
             }
@@ -659,7 +659,7 @@ pub trait Process <CTX, RES> where
   {
     use colored::Colorize;
 
-    self.inner_mut().handle_event (inner::EventId::Run.into()).unwrap();
+    self.inner_mut().handle_event (inner::EventParams::Run{}.into()).unwrap();
 
     let t_start = std::time::SystemTime::now();
     debug!("process[{:?}] start time: {}",
@@ -686,7 +686,7 @@ pub trait Process <CTX, RES> where
         ControlFlow::Continue => {}
         ControlFlow::Break    => {
           if self.state_id() == inner::StateId::Running {
-            self.inner_mut().handle_event (inner::EventId::End.into())
+            self.inner_mut().handle_event (inner::EventParams::End{}.into())
               .unwrap()
           }
         }
@@ -1024,13 +1024,13 @@ impl <M> From <Result <(), channel::SendError <M>>> for ControlFlow {
 //
 //  public
 //
-pub fn report <CTX : session::Context> () where
+pub fn report_sizes <CTX : session::Context> () where
   CTX : 'static
 {
-  println!("process report...");
-  println!("size of process::Def: {}", std::mem::size_of::<Def <CTX>>());
-  Inner::<CTX>::report();
-  println!("...process report");
+  println!("process report sizes...");
+  println!("  size of process::Def: {}", std::mem::size_of::<Def <CTX>>());
+  Inner::<CTX>::report_sizes();
+  println!("...process report sizes");
 }
 
 //
@@ -1089,8 +1089,9 @@ where
               // only transition to "ended" if this is the last channel
               // to close
               if *num_open_channels == 0 {
-                process.inner_mut().handle_event (inner::EventId::End.into())
-                  .unwrap();
+                process.inner_mut().handle_event (
+                  inner::EventParams::End{}.into()
+                ).unwrap();
               }
               break 'poll_inner
             }

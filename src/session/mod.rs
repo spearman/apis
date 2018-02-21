@@ -27,8 +27,8 @@ def_machine_nodefault! {
       state Ended   ()
     ]
     EVENTS [
-      event Run <Ready>   => <Running>
-      event End <Running> => <Ended>
+      event Run <Ready>   => <Running> ()
+      event End <Running> => <Ended>   ()
     ]
     initial_state:  Ready
     terminal_state: Ended {
@@ -266,10 +266,6 @@ impl <CTX : Context> Session <CTX> {
     self.def().name
   }
 
-  pub fn state_id (&self) -> &StateId {
-    self.state().id()
-  }
-
   /// Creates a new session and runs to completion.
   ///
   /// Transitions from `Ready` to `Running`, starts processes not already
@@ -301,7 +297,7 @@ impl <CTX : Context> Session <CTX> {
         results.insert (pid, process_handle.result_rx.recv().unwrap()).is_none()
       }
     }
-    self.handle_event (EventId::End.into()).unwrap();
+    self.handle_event (EventParams::End{}.into()).unwrap();
     results
   }
 
@@ -380,7 +376,7 @@ impl <CTX : Context> Session <CTX> {
       // take the main process if one was created
       extended_state.main_process = main_process.take();
     } // end spawn all processes not found in input process handles
-    self.handle_event (EventId::Run.into()).unwrap();
+    self.handle_event (EventParams::Run{}.into()).unwrap();
 
     debug!("session[{:?}]: {}", self, "started...".cyan().bold());
   }
@@ -738,9 +734,9 @@ impl <CTX : Context> From <Def <CTX>> for Session <CTX> {
 //  functions                                                                //
 ///////////////////////////////////////////////////////////////////////////////
 
-pub fn report <CTX : Context> () {
-  println!("session report...");
+pub fn report_sizes <CTX : Context> () {
+  println!("session report sizes...");
   println!("  size of Session: {}", std::mem::size_of::<Session <CTX>>());
   println!("  size of session::Def: {}", std::mem::size_of::<Def <CTX>>());
-  println!("...session report");
+  println!("...session report sizes");
 }

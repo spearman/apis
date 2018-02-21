@@ -497,7 +497,7 @@ fn main() {
   drop (f);
 
   // report size information
-  Graphical::report();
+  Graphical::report_sizes();
 
   // create a program in the initial mode
   use apis::Program;

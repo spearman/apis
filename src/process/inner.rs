@@ -19,15 +19,15 @@ def_machine_nodefault! {
       state Ended   ()
     ]
     EVENTS [
-      event Run <Ready>   => <Running>
-      event End <Running> => <Ended>
-      //event Tick    <Running> => <Running>
-      //event Update  <Running> => <Running>
-      //event Message <Running> => <Running>
-      //event Abort   <Ready>   => <Ended>
-      //event Reset   <Running> => <Ready>
-      //event Resume  <Ended>   => <Running>
-      //event Restart <Ended>   => <Ready>
+      event Run <Ready>   => <Running> ()
+      event End <Running> => <Ended>   ()
+      //event Tick    <Running> => <Running> ()
+      //event Update  <Running> => <Running> ()
+      //event Message <Running> => <Running> ()
+      //event Abort   <Ready>   => <Ended>   ()
+      //event Reset   <Running> => <Ready>   ()
+      //event Resume  <Ended>   => <Running> ()
+      //event Restart <Ended>   => <Ready>   ()
     ]
     initial_state:  Ready
     terminal_state: Ended {

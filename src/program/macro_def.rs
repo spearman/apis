@@ -35,7 +35,7 @@ macro_rules! def_program {
           ))+
         ]
         EVENTS [
-          $(event $transition <$source_context> => <$target_context>)+
+          $(event $transition <$source_context> => <$target_context> ())+
         ]
         initial_state: $initial_mode
       }
@@ -332,7 +332,7 @@ macro_rules! def_program {
 
             // causes the current session to drop, calling the finish
             // method which sends any continuations to processes
-            self.handle_event (transition.into()).unwrap()
+            self.handle_event (Event::from_id (transition)).unwrap()
 
           } else {
             // no transition chosen, break loop

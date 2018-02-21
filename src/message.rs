@@ -43,8 +43,8 @@ pub trait Message <CTX : session::Context> where
 //  functions
 ///////////////////////////////////////////////////////////////////////////////
 
-pub fn report <_CTX : session::Context> () {
-  println!("message report...");
+pub fn report_sizes <_CTX : session::Context> () {
+  println!("message report sizes...");
   /* nothing to report */
-  println!("...message report");
+  println!("...message report sizes");
 }

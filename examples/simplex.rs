@@ -172,7 +172,7 @@ fn main() {
 
   unwrap!(simplelog::TermLogger::init (LOG_LEVEL, simplelog::Config::default()));
 
-  apis::report::<ChargenUpcase>();
+  apis::report_sizes::<ChargenUpcase>();
 
   // create a dotfile for the process inner state machine
   use macro_machines::MachineDotfile;

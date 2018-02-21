@@ -103,7 +103,7 @@ fn main() {
   unwrap!(simplelog::TermLogger::init (LOG_LEVEL, simplelog::Config::default()));
 
   // report size information
-  apis::report::<DisconnectSenderSink>();
+  apis::report_sizes::<DisconnectSenderSink>();
 
   // here is where we find out if the session definition has any errors
   let session_def = unwrap!(DisconnectSenderSink::def());

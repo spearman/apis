@@ -49,11 +49,11 @@ pub use session::Session;
 //  functions
 ///////////////////////////////////////////////////////////////////////////////
 
-pub fn report <CTX : session::Context + 'static> () {
-  println!("modes report...");
-  session::report::<CTX>();
-  process::report::<CTX>();
-  channel::report::<CTX>();
-  message::report::<CTX>();
-  println!("...modes report");
+pub fn report_sizes <CTX : session::Context + 'static> () {
+  println!("apis report sizes...");
+  session::report_sizes::<CTX>();
+  process::report_sizes::<CTX>();
+  channel::report_sizes::<CTX>();
+  message::report_sizes::<CTX>();
+  println!("...apis report sizes");
 }

@@ -417,9 +417,9 @@ impl <T> std::error::Error for SendError <T> {
 //  functions
 ///////////////////////////////////////////////////////////////////////////////
 
-pub fn report <CTX : session::Context> () {
-  println!("channel report...");
-  println!("size of channel::Def: {}", std::mem::size_of::<Def <CTX>>());
-  println!("size of Channel: {}", std::mem::size_of::<Channel <CTX>>());
-  println!("...channel report");
+pub fn report_sizes <CTX : session::Context> () {
+  println!("channel report sizes...");
+  println!("  size of channel::Def: {}", std::mem::size_of::<Def <CTX>>());
+  println!("  size of Channel: {}", std::mem::size_of::<Channel <CTX>>());
+  println!("...channel report sizes");
 }

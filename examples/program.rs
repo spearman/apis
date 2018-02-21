@@ -411,7 +411,7 @@ fn main() {
   use apis::Program;
   let mut myprogram = Myprogram::initial();
   //debug!("myprogram: {:#?}", myprogram);
-  Myprogram::report();
+  Myprogram::report_sizes();
   // run to completion
   myprogram.run();
 
