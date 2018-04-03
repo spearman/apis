@@ -1,4 +1,11 @@
-/// Define a program state machine.
+/// Define a Program state machine.
+///
+/// The transition system defined by a Program is implemented as a state
+/// machine.
+///
+/// The two parts to the Program definition are the mode definitions and
+/// transition definitions.
+// TODO: remove the requirement to provide a module path
 #[macro_export]
 macro_rules! def_program {
 

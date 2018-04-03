@@ -1,4 +1,15 @@
-//! Reactive session-oriented asynchronous process-calculus framework
+//! Session-oriented asynchronous process-calculus framework
+//!
+//! Processes are "reactive" threads with defined message handling and update
+//! behavior.
+//!
+//! Sessions are collections of Processes and Channels in a fixed communication
+//! topology. The `def_session!` macro is used to define a Session, its Channels
+//! and Processes.
+//!
+//! A Program defines a transition system with Sessions as nodes. The
+//! `def_program!` macro is used to define modes (Sessions) and transitions
+//! between them.
 
 #![allow(dead_code)]
 #![feature(const_fn)]

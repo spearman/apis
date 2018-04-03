@@ -1,14 +1,13 @@
 # Apis
 
-> Reactive session-oriented asynchronous process-calculus framework
+> Session-oriented asynchronous process-calculus framework
 
 [Documentation](https://spearman.github.io/apis/apis/index.html)
 
 This crate defines traits and macros for defining *sessions* of reactive
-threads (here called "*processes*" in the sense of process calculus)
-communicating messages on a fixed topology of *channels*, and also for defining
-*programs* as transition systems where nodes are sessions (in this context
-referred to as "*modes*").
+threads ("*processes*" in the sense of process calculus) communicating messages
+over a fixed topology of *channels*, and macros for defining *programs* as
+transition systems where nodes are different sessions.
 
 
 ## Usage
@@ -65,9 +64,9 @@ extern crate vec_map;
 Define and run a session:
 
 ```rust
-/// A session in which a source thread sends `u64` values alternatively to two
-/// peers which sum the received values and return a final sum in the session
-/// result.
+/// Define a session 'IntSource' in which a source thread sends `u64` values
+/// alternatively to two peers which sum the received values and return a final
+/// sum in the session result.
 pub mod int_source {
   use ::{std, vec_map};
   use ::apis;
