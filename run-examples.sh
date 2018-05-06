@@ -15,7 +15,7 @@ while getopts "v" opt; do
   esac
 done
 
-for e in `ls examples/ -I readme.rs`; do
+for e in `ls examples/ -I readme.rs -I interactive.rs -I graphical.rs`; do
   example_name=`basename -s .rs $e`
   cargo run --example $example_name
   make -f MakefileDot $example_name

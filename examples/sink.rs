@@ -1,19 +1,29 @@
+//! Example of a session consisting of two senders and one receiver connected by a
+//! 'Sink' channel.
+//!
+//! The producers are 'Isochronous' (timed, polling) processes with 20ms tick
+//! length that will send arbitrary characters depending on the update count of
+//! each update. The consumer is an 'Asynchronous' process that will collect
+//! these characters into an uppercase string.
+//!
+//! On the 100th update and 150th updates, the first and second sending
+//! processes, respectively, will sleep for 100ms causing five 'late tick'
+//! warnings (one for each late tick) for each process (total ten warnings) to
+//! be logged until the delayed process has "caught up".
+//!
+//! Running this example will produce a DOT file representing the data flow
+//! diagram of the session. To create a PNG image from the generated DOT file:
+//!
+//! ```bash
+//! make -f MakefileDot sink
+//! ```
+
 #![allow(dead_code)]
+
 #![feature(const_fn)]
-#![feature(fnbox)]
 #![feature(try_from)]
 
 #[macro_use] extern crate unwrap;
-
-#[macro_use] extern crate macro_attr;
-#[macro_use] extern crate enum_derive;
-#[macro_use] extern crate enum_unitary;
-
-extern crate num;
-
-extern crate vec_map;
-
-#[macro_use] extern crate log;
 extern crate colored;
 extern crate simplelog;
 
@@ -34,8 +44,8 @@ pub const LOG_LEVEL
 def_session! {
   context ChargenUpcaseSink {
     PROCESSES where
-      let _proc       = self,
-      let _message_in = message_in
+      let process    = self,
+      let message_in = message_in
     [
       process Chargen1 (update_count : u64) {
         kind {
@@ -43,8 +53,8 @@ def_session! {
         }
         sourcepoints   [Charstream]
         endpoints      []
-        handle_message { _proc.chargen1_handle_message (_message_in) }
-        update         { _proc.chargen1_update() }
+        handle_message { process.chargen1_handle_message (message_in) }
+        update         { process.chargen1_update() }
       }
       process Chargen2 (update_count : u64) {
         kind {
@@ -52,15 +62,15 @@ def_session! {
         }
         sourcepoints   [Charstream]
         endpoints      []
-        handle_message { _proc.chargen2_handle_message (_message_in) }
-        update         { _proc.chargen2_update() }
+        handle_message { process.chargen2_handle_message (message_in) }
+        update         { process.chargen2_update() }
       }
       process Upcase (history : String, quit : u8) {
         kind           { apis::process::Kind::asynchronous_default() }
         sourcepoints   []
         endpoints      [Charstream]
-        handle_message { _proc.upcase_handle_message (_message_in) }
-        update         { _proc.upcase_update() }
+        handle_message { process.upcase_handle_message (message_in) }
+        update         { process.upcase_update() }
       }
     ]
     CHANNELS  [

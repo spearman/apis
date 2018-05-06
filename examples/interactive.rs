@@ -1,26 +1,41 @@
+//! This is an example of an interactive command-line program that transitions
+//! between two sessions and passes a state token between them.
+//!
+//! Each mode (session) is a readline loop sending messages to an echo server
+//! and receiving replies on a pair of one-way channels. In the first mode, the
+//! echo server will convert the message to ALL CAPS before sending the reply.
+//! In the second mode the echo server will reverse the message before sending
+//! the reply. Use the ':quit' command to transition from the first mode to the
+//! second, and to quit the program from the second mode.
+//!
+//! Note that it is possible to generate orphan message ('unhandled message')
+//! warnings. If the readline loop iterates to wait on user input before the
+//! echo server reply is received, then that message will stay in the queue
+//! until the user presses 'Enter', at which point the readline update function
+//! ends and a message handling round is initiated. If instead the user types in
+//! a quit command ':quit' before pressing 'Enter', readline process will end
+//! immediately after the update and will *not* handle messages, resulting in an
+//! orphan message warning.
+//!
+//! Running this example will produce a DOT file representing the program state
+//! transition diagram. To create a PNG image from the generated DOT file:
+//!
+//! ```bash
+//! make -f MakefileDot interactive
+//! ```
+
 #![feature(const_fn)]
 #![feature(core_intrinsics)]
 #![feature(fnbox)]
-#![feature(pattern)]
 #![feature(try_from)]
 
+#![feature(pattern)]
+
 #[macro_use] extern crate unwrap;
-
-#[macro_use] extern crate macro_attr;
-#[macro_use] extern crate enum_derive;
-#[macro_use] extern crate enum_unitary;
-
-extern crate num;
-
-extern crate either;
-extern crate vec_map;
-
-#[macro_use] extern crate log;
 extern crate colored;
 extern crate simplelog;
 
-#[macro_use] extern crate macro_machines;
-
+extern crate macro_machines;
 #[macro_use] extern crate apis;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -61,11 +76,11 @@ impl Drop for Dropthing {
 
 def_program! {
   program Interactive where
-    let _result = session.run()
+    let result = session.run()
   {
     MODES [
       mode readline_echoup::ReadlineEchoup {
-        println!("_result: {:?}", _result);
+        println!("result: {:?}", result);
         Some (EventId::ToReadlineEchorev)
       }
       mode readline_echorev::ReadlineEchorev
@@ -73,8 +88,8 @@ def_program! {
     TRANSITIONS  [
       transition ToReadlineEchorev
         <readline_echoup::ReadlineEchoup> => <readline_echorev::ReadlineEchorev> [
-          Readline (_readline_up) => Readline (_readline_rev) {
-            _readline_rev.dropthing = _readline_up.dropthing.take();
+          Readline (readline_up) => Readline (readline_rev) {
+            readline_rev.dropthing = readline_up.dropthing.take();
           }
         ]
     ]
@@ -88,15 +103,14 @@ def_program! {
 
 pub mod readline_echoup {
   use ::std;
-  use ::vec_map;
 
   use ::apis;
 
   def_session! {
     context ReadlineEchoup {
       PROCESSES where
-        let _proc       = self,
-        let _message_in = message_in
+        let process    = self,
+        let message_in = message_in
       [
         process Readline (
           dropthing : Option <::Dropthing> = Some (Default::default())
@@ -104,15 +118,15 @@ pub mod readline_echoup {
           kind           { apis::process::Kind::Anisochronous }
           sourcepoints   [Toecho]
           endpoints      [Fromecho]
-          handle_message { _proc.readline_handle_message (_message_in) }
-          update         { _proc.readline_update() }
+          handle_message { process.readline_handle_message (message_in) }
+          update         { process.readline_update() }
         }
         process Echoup () -> (Option <()>) {
           kind           { apis::process::Kind::asynchronous_default() }
           sourcepoints   [Fromecho]
           endpoints      [Toecho]
-          handle_message { _proc.echoup_handle_message (_message_in) }
-          update         { _proc.echoup_update() }
+          handle_message { process.echoup_handle_message (message_in) }
+          update         { process.echoup_update() }
         }
       ]
       CHANNELS  [
@@ -251,22 +265,21 @@ pub mod readline_echoup {
 
 pub mod readline_echorev {
   use ::std;
-  use ::vec_map;
 
   use ::apis;
 
   def_session! {
     context ReadlineEchorev {
       PROCESSES where
-        let _proc       = self,
-        let _message_in = message_in
+        let process    = self,
+        let message_in = message_in
       [
         process Echorev () -> (Option <()>) {
           kind           { apis::process::Kind::asynchronous_default() }
           sourcepoints   [Fromecho]
           endpoints      [Toecho]
-          handle_message { _proc.echorev_handle_message (_message_in) }
-          update         { _proc.echorev_update() }
+          handle_message { process.echorev_handle_message (message_in) }
+          update         { process.echorev_update() }
         }
         process Readline (
           dropthing : Option <::Dropthing> = None
@@ -274,8 +287,8 @@ pub mod readline_echorev {
           kind           { apis::process::Kind::Anisochronous }
           sourcepoints   [Toecho]
           endpoints      [Fromecho]
-          handle_message { _proc.readline_handle_message (_message_in) }
-          update         { _proc.readline_update() }
+          handle_message { process.readline_handle_message (message_in) }
+          update         { process.readline_update() }
         }
       ]
       CHANNELS  [
@@ -423,7 +436,7 @@ fn main() {
   use std::io::Write;
   use macro_machines::MachineDotfile;
   let mut f = unwrap!(std::fs::File::create (format!("{}.dot", example_name)));
-  unwrap!(f.write_all (Interactive::dotfile_hide_defaults().as_bytes()));
+  unwrap!(f.write_all (Interactive::dotfile().as_bytes()));
   drop (f);
 
   // show some information about the program

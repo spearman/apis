@@ -54,7 +54,7 @@ macro_rules! def_program {
     impl $crate::Program for $program {
       /// Run the program to completion.
       fn run (&mut self) {
-        use colored::Colorize;
+        use $crate::colored::Colorize;
         info!("program[{}]: {}", stringify!($program), "run...".cyan().bold());
         // TODO: create program ready/ended states and transitions
         debug_assert_eq!(self.state.id, StateId::$initial_mode);
@@ -66,10 +66,10 @@ macro_rules! def_program {
         $(
         struct $mode_context {
           pub channels :
-            Option <vec_map::VecMap
+            Option <$crate::vec_map::VecMap
               <$crate::Channel <$mode_mod::$mode_context>>>,
           pub process_handles :
-            Option <vec_map::VecMap
+            Option <$crate::vec_map::VecMap
               <$crate::process::Handle <$mode_mod::$mode_context>>>,
           pub main_process :
             Option <Box <
@@ -94,10 +94,12 @@ macro_rules! def_program {
               if $mode_mod.channels.is_none() {
                 $mode_mod.channels = Some (session.as_ref().def.create_channels());
               }
+              #[allow(unused_variables)]
+              #[allow(unused_mut)]
               let mut $result = session.run_with (
                 $mode_mod.channels.take().unwrap(),
                 $mode_mod.process_handles.take().unwrap_or_else (
-                  || vec_map::VecMap::new()),
+                  || $crate::vec_map::VecMap::new()),
                 $mode_mod.main_process.take()
               );
               def_program!(@option_transition_choice $($transition_choice)*)
@@ -131,7 +133,7 @@ macro_rules! def_program {
                     let target_session_def
                       = $target_mod::$target_context::def().unwrap();
                     let mut channels = target_session_def.create_channels();
-                    let mut process_handles = vec_map::VecMap::new();
+                    let mut process_handles = $crate::vec_map::VecMap::new();
 
                     // handle continuations
                     $($({
@@ -173,15 +175,15 @@ macro_rules! def_program {
 
                       // peer channels
                       let mut sourcepoints
-                        : vec_map::VecMap <Box
+                        : $crate::vec_map::VecMap <Box
                           <$crate::channel::Sourcepoint
                             <$target_mod::$target_context>>>
-                        = vec_map::VecMap::new();
+                        = $crate::vec_map::VecMap::new();
                       let mut endpoints
-                        : vec_map::VecMap <Box
+                        : $crate::vec_map::VecMap <Box
                           <$crate::channel::Endpoint
                             <$target_mod::$target_context>>>
-                        = vec_map::VecMap::new();
+                        = $crate::vec_map::VecMap::new();
                       for (cid, channel) in channels.iter_mut() {
                         if let Some (sourcepoint)
                           = channel.sourcepoints.remove (next_pid)
@@ -235,13 +237,18 @@ macro_rules! def_program {
                             Some (std::cell::RefCell::new (Some (endpoints)))
                           ).unwrap()
                         );
+                        #[allow(unused_variables)]
+                        #[allow(unused_mut)]
                         let mut $next_proc
                           = $target_mod::$target_proc::new (inner);
 
                         // perform custom continuation code and drop the process
                         match prev_gproc {
-                          $source_mod::GlobalProcess::$source_proc (mut $prev_proc)
+                          $source_mod::GlobalProcess::$source_proc (prev_proc)
                           => {
+                            #[allow(unused_variables)]
+                            #[allow(unused_mut)]
+                            let mut $prev_proc = prev_proc;
                             $closure_block
                             drop ($prev_proc);
                           }
@@ -266,7 +273,7 @@ macro_rules! def_program {
                         // create the next process handle
                         $crate::process::Handle {
                           result_rx, continuation_tx,
-                          join_or_continue: either::Either::Right (None)
+                          join_or_continue: $crate::either::Either::Right (None)
                         }
                       } else {
                         // create a continuation function
@@ -291,7 +298,7 @@ macro_rules! def_program {
                         let join_handle = prev_process_handle.join_or_continue
                           .left().unwrap();
                         prev_process_handle.join_or_continue
-                          = either::Either::Right (Some (continuation));
+                          = $crate::either::Either::Right (Some (continuation));
                         assert!{
                           _session.as_mut().process_handles.insert (
                             prev_pid, prev_process_handle).is_none()
@@ -300,7 +307,7 @@ macro_rules! def_program {
                         // create the next process handle
                         $crate::process::Handle {
                           result_rx, continuation_tx,
-                          join_or_continue: either::Either::Left (join_handle)
+                          join_or_continue: $crate::either::Either::Left (join_handle)
                         }
                       };
                       assert!{

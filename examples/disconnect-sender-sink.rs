@@ -1,19 +1,24 @@
+//! Example of attempting to asynchronously receive on a sink channel where both
+//! senders have hung up. This will wake the receiving process and generate a
+//! 'sender disconnected' info message.
+//!
+//! The sending threads are caused to sleep for a duration exceeding their tick
+//! rate so two 'late tick' warnings will be logged in addition to the 'sender
+//! disconnected' message.
+//!
+//! Running this example will produce a DOT file representing the data flow
+//! diagram of the session. To create a PNG image from the generated DOT file:
+//!
+//! ```bash
+//! make -f MakefileDot disconnect-sender-sink
+//! ```
+
 #![allow(dead_code)]
+
 #![feature(const_fn)]
-#![feature(fnbox)]
 #![feature(try_from)]
 
 #[macro_use] extern crate unwrap;
-
-#[macro_use] extern crate macro_attr;
-#[macro_use] extern crate enum_derive;
-#[macro_use] extern crate enum_unitary;
-
-extern crate num;
-
-extern crate vec_map;
-
-/*#[macro_use]*/ extern crate log;
 extern crate colored;
 extern crate simplelog;
 
@@ -34,8 +39,8 @@ pub const LOG_LEVEL
 def_session! {
   context DisconnectSenderSink {
     PROCESSES where
-      let _proc       = self,
-      let _message_in = message_in
+      let process    = self,
+      let message_in = message_in
     [
       process Hangup1 () {
         kind {

@@ -1,57 +1,62 @@
+//! Example program presented in README.md
+//!
+//! Note this program generates an 'unhandled message' warning in the second
+//! mode (session) as both producers send 'Quit' messages, but the receiver
+//! hangs up after the first is received.
+//!
+//! Running this example will produce a DOT file 'myprogram.dot' representing
+//! the program state transition diagram, and two DOT files 'charsink.dot' and
+//! 'intsource.dot' representing the data flow diagrams the program modes
+//! (sessions). To create PNG images from the generated DOT files:
+//!
+//! ```bash
+//! make -f MakefileDot myprogram charsink intsource
+//! ```
+
 #![feature(const_fn)]
 #![feature(core_intrinsics)]
 #![feature(fnbox)]
 #![feature(try_from)]
 
-#[macro_use] extern crate apis;
-#[macro_use] extern crate macro_machines;
-#[macro_use] extern crate enum_unitary;
-
-#[macro_use] extern crate enum_derive;
-#[macro_use] extern crate log;
-#[macro_use] extern crate macro_attr;
-extern crate colored;
-extern crate either;
-extern crate num;
-extern crate vec_map;
-
 extern crate simplelog;
+
+extern crate macro_machines;
+#[macro_use] extern crate apis;
 
 ///////////////////////////////////////////////////////////////////////////////
 //  modes                                                                    //
 ///////////////////////////////////////////////////////////////////////////////
 
 pub mod int_source {
-  use ::{std, vec_map};
-  use ::apis;
+  use ::{std, apis};
 
   const MAX_UPDATES : u64 = 10;
 
   def_session!{
     context IntSource {
       PROCESSES where
-        let _proc       = self,
-        let _message_in = message_in
+        let process    = self,
+        let message_in = message_in
       [
         process IntGen (update_count : u64) {
           kind { apis::process::Kind::Isochronous { tick_ms: 20, ticks_per_update: 1 } }
           sourcepoints   [Ints]
           endpoints      []
           handle_message { unreachable!() }
-          update         { _proc.int_gen_update() }
+          update         { process.int_gen_update() }
         }
         process Sum1 (sum : u64) -> (u64) {
           kind           { apis::process::Kind::asynchronous_default() }
           sourcepoints   []
           endpoints      [Ints]
-          handle_message { _proc.sum1_handle_message (_message_in) }
+          handle_message { process.sum1_handle_message (message_in) }
           update         { apis::process::ControlFlow::Continue }
         }
         process Sum2 (sum : u64) -> (u64) {
           kind           { apis::process::Kind::asynchronous_default() }
           sourcepoints   []
           endpoints      [Ints]
-          handle_message { _proc.sum2_handle_message (_message_in) }
+          handle_message { process.sum2_handle_message (message_in) }
           update         { apis::process::ControlFlow::Continue }
         }
       ]
@@ -73,7 +78,7 @@ pub mod int_source {
   impl IntGen {
     pub fn int_gen_update (&mut self) -> apis::process::ControlFlow {
       use apis::Process;
-      use num::FromPrimitive;
+      use apis::num::FromPrimitive;
       let to_id = (self.update_count % 2) + 1;
       let anint = self.update_count;
       let mut result = self.send_to (
@@ -122,16 +127,15 @@ pub mod int_source {
 }
 
 pub mod char_sink {
-  use ::{std, vec_map};
-  use ::apis;
+  use ::{std, apis};
 
   const MAX_UPDATES : u64 = 10;
 
   def_session! {
     context CharSink {
       PROCESSES where
-        let _proc       = self,
-        let _message_in = message_in
+        let process    = self,
+        let message_in = message_in
       [
         process Chargen1 (update_count : u64) {
           kind {
@@ -142,14 +146,14 @@ pub mod char_sink {
           handle_message { unreachable!() }
           update {
             let mut result = apis::process::ControlFlow::Continue;
-            if _proc.update_count % 2 == 0 {
-              result = _proc.send (ChannelId::Charstream, Charstreammessage::Achar ('a'))
+            if process.update_count % 2 == 0 {
+              result = process.send (ChannelId::Charstream, Charstreammessage::Achar ('a'))
                 .into();
             }
-            _proc.update_count += 1;
-            assert!(_proc.update_count <= MAX_UPDATES);
-            if result == apis::process::ControlFlow::Continue && _proc.update_count == MAX_UPDATES {
-              let _  = _proc.send (ChannelId::Charstream, Charstreammessage::Quit);
+            process.update_count += 1;
+            assert!(process.update_count <= MAX_UPDATES);
+            if result == apis::process::ControlFlow::Continue && process.update_count == MAX_UPDATES {
+              let _  = process.send (ChannelId::Charstream, Charstreammessage::Quit);
               result = apis::process::ControlFlow::Break;
             }
             result
@@ -165,14 +169,14 @@ pub mod char_sink {
           handle_message { unreachable!() }
           update {
             let mut result = apis::process::ControlFlow::Continue;
-            if _proc.update_count % 4 == 0 {
-              result = _proc.send (ChannelId::Charstream, Charstreammessage::Achar ('z'))
+            if process.update_count % 4 == 0 {
+              result = process.send (ChannelId::Charstream, Charstreammessage::Achar ('z'))
                 .into();
             }
-            _proc.update_count += 1;
-            assert!(_proc.update_count <= MAX_UPDATES);
-            if result == apis::process::ControlFlow::Continue && _proc.update_count == MAX_UPDATES {
-              let _  = _proc.send (ChannelId::Charstream, Charstreammessage::Quit);
+            process.update_count += 1;
+            assert!(process.update_count <= MAX_UPDATES);
+            if result == apis::process::ControlFlow::Continue && process.update_count == MAX_UPDATES {
+              let _  = process.send (ChannelId::Charstream, Charstreammessage::Quit);
               result = apis::process::ControlFlow::Break;
             }
             result
@@ -186,14 +190,14 @@ pub mod char_sink {
           sourcepoints   []
           endpoints      [Charstream]
           handle_message {
-            match _message_in {
+            match message_in {
               GlobalMessage::Charstreammessage (charstreammessage) => {
                 match charstreammessage {
                   Charstreammessage::Quit => {
                     apis::process::ControlFlow::Break
                   }
                   Charstreammessage::Achar (ch) => {
-                    _proc.history.push (ch.to_uppercase().next().unwrap());
+                    process.history.push (ch.to_uppercase().next().unwrap());
                     apis::process::ControlFlow::Continue
                   }
                 }
@@ -201,10 +205,10 @@ pub mod char_sink {
             }
           }
           update {
-            if *_proc.inner.state().id() == apis::process::inner::StateId::Ended {
-              println!("upcase history final: {}", _proc.history);
+            if *process.inner.state().id() == apis::process::inner::StateId::Ended {
+              println!("upcase history final: {}", process.history);
             } else {
-              println!("upcase history: {}", _proc.history);
+              println!("upcase history: {}", process.history);
             }
             apis::process::ControlFlow::Continue
           }
@@ -272,7 +276,7 @@ fn main() {
   // write program state machine dotfile
   use macro_machines::MachineDotfile;
   let mut f = std::fs::File::create ("myprogram.dot").unwrap();
-  f.write_all (Myprogram::dotfile_hide_defaults().as_bytes()).unwrap();
+  f.write_all (Myprogram::dotfile().as_bytes()).unwrap();
   drop (f);
 
   use apis::Program;

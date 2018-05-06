@@ -1,38 +1,26 @@
 [package]
 name = "apis"
-version = "0.0.17"
+version = "0.2.0"
 authors = ["Shane Pearman <spearman@github.com>"]
 license = "MPL-2.0"
 
 [lib]
 name = "apis"
 
-# remote dependencies
 [dependencies]
-#bit-set = "0.4.*"
-#bit-vec = "0.4.*"
 # unpublished upstream dependency update
 colored = { version = "1.*", git = "git://github.com/mackwic/colored.git" }
 either = "1.*"
 escapade = "0.0.*"
 log = "0.4.*"
-num = "0.1.*"
+num-traits = "0.2.*"
 smallvec = "0.6.*"
 vec_map = "0.8.*"
 
 # local dependencies
-[dependencies.enum-unitary]
-version = "0.1.*"
-git = "git://github.com/spearman/enum-unitary.git"
-
-[dependencies.macro-machines]
-version = "0.7.*"
-git = "git://github.com/spearman/macro-machines.git"
-#path = "../macro-machines"
-
-[dependencies.unbounded-spsc]
-version = "0.1.*"
-git = "git://github.com/spearman/unbounded-spsc.git"
+enum-unitary = "0.3.*"
+macro-machines = "0.8.*"
+unbounded-spsc = "0.1.*"
 
 # dev dependencies
 [dev-dependencies]
@@ -42,7 +30,3 @@ glium = "0.20.*"
 rand = "0.4.*"
 simplelog = "0.5.*"
 unwrap = "1.*"
-
-# enum_unitary support
-macro-attr = "0.2.*"
-enum_derive = "0.1.*"

@@ -1,4 +1,5 @@
-use ::{std, either, vec_map};
+use ::{std, either, vec_map,
+  num_traits as num};
 use ::{channel, message, process};
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -114,19 +115,14 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
   /// ```
   /// #![feature(const_fn)]
   /// #![feature(try_from)]
-  /// #[macro_use] extern crate macro_attr;
-  /// #[macro_use] extern crate enum_derive;
-  /// #[macro_use] extern crate enum_unitary;
   ///
-  /// extern crate num;
-  /// extern crate vec_map;
   /// #[macro_use] extern crate apis;
   ///
   /// def_session! {
   ///   context Mycontext {
   ///     PROCESSES where
-  ///       let _proc       = self,
-  ///       let _message_in = message_in
+  ///       let process    = self,
+  ///       let message_in = message_in
   ///     [
   ///       process A () {
   ///         kind { apis::process::Kind::isochronous_default() }
@@ -172,19 +168,14 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
   /// ```
   /// #![feature(const_fn)]
   /// #![feature(try_from)]
-  /// #[macro_use] extern crate macro_attr;
-  /// #[macro_use] extern crate enum_derive;
-  /// #[macro_use] extern crate enum_unitary;
   ///
-  /// extern crate num;
-  /// extern crate vec_map;
   /// #[macro_use] extern crate apis;
   ///
   /// def_session! {
   ///   context Mycontext {
   ///     PROCESSES where
-  ///       let _proc       = self,
-  ///       let _message_in = message_in
+  ///       let process    = self,
+  ///       let message_in = message_in
   ///     [
   ///       process A () {
   ///         kind { apis::process::Kind::isochronous_default() }
@@ -476,7 +467,7 @@ impl <CTX : Context> Def <CTX> {
     // fill the sourcepoint and endpoint vec maps according to the channel def
     // specifications
     for (cid, channel_def) in self.channel_def.iter() {
-      use num::FromPrimitive;
+      use self::num::FromPrimitive;
       let channel_id = CTX::CID::from_usize (cid).unwrap();
       debug_assert_eq!(channel_id, *channel_def.id());
       for producer_id in channel_def.producers().iter() {

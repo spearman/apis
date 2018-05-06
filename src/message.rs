@@ -1,4 +1,4 @@
-use ::std;
+use ::{std};
 
 use ::enum_unitary;
 

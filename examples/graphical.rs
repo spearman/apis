@@ -1,28 +1,34 @@
+//! This is an interactive program example in which a graphical rendering
+//! context is passed between sessions. The program cycles through three modes
+//! (sessions) by pressing the 'Tab' key. These sessions are simple (they only
+//! contain a single process and no channels). The transitions are defined such
+//! that the rendering context is passed from the previous session to the next
+//! session.
+//!
+//! - In 'Bgr' mode, the keys 'B', 'G', and 'R' will change the clear color.
+//! - In 'Cym' mode, the keys 'C', 'Y', and 'M' will change the clear color.
+//! - In 'Wsk' mode, the keys 'W', 'S', and 'K' will change the clear color.
+//!
+//! Note that generally this example should not generate any warnings or errors.
+//!
+//! Running this example will produce a DOT file representing the program state
+//! transition diagram. To create a PNG image from the generated DOT file:
+//!
+//! ```bash
+//! make -f MakefileDot graphical
+//! ```
+
 #![feature(const_fn)]
 #![feature(core_intrinsics)]
 #![feature(fnbox)]
-#![feature(pattern)]
 #![feature(try_from)]
 
 #[macro_use] extern crate unwrap;
-
-#[macro_use] extern crate macro_attr;
-#[macro_use] extern crate enum_derive;
-#[macro_use] extern crate enum_unitary;
-
-extern crate num;
-
-extern crate either;
-extern crate vec_map;
-
-#[macro_use] extern crate log;
 extern crate colored;
+extern crate glium;
 extern crate simplelog;
 
-extern crate glium;
-
-#[macro_use] extern crate macro_machines;
-
+extern crate macro_machines;
 #[macro_use] extern crate apis;
 
 use glium::glutin;
@@ -75,14 +81,14 @@ impl Default for ModeControl {
 
 def_program! {
   program Graphical where
-    let _results = session.run()
+    let results = session.run()
   {
     MODES [
       mode bgr::Bgr {
         use apis::Process;
-        println!("_results: {:?}", _results);
+        println!("results: {:?}", results);
         let mode_control
-          = bgr::InputRender::extract_result (&mut _results).unwrap();
+          = bgr::InputRender::extract_result (&mut results).unwrap();
         match mode_control {
           ModeControl::Next => Some (EventId::ToCym),
           ModeControl::Quit => None
@@ -90,9 +96,9 @@ def_program! {
       }
       mode cym::Cym {
         use apis::Process;
-        println!("_results: {:?}", _results);
+        println!("results: {:?}", results);
         let mode_control
-          = cym::InputRender::extract_result (&mut _results).unwrap();
+          = cym::InputRender::extract_result (&mut results).unwrap();
         match mode_control {
           ModeControl::Next => Some (EventId::ToWsk),
           ModeControl::Quit => None
@@ -100,9 +106,9 @@ def_program! {
       }
       mode wsk::Wsk {
         use apis::Process;
-        println!("_results: {:?}", _results);
+        println!("results: {:?}", results);
         let mode_control
-          = wsk::InputRender::extract_result (&mut _results).unwrap();
+          = wsk::InputRender::extract_result (&mut results).unwrap();
         match mode_control {
           ModeControl::Next => Some (EventId::ToBgr),
           ModeControl::Quit => None
@@ -111,18 +117,18 @@ def_program! {
     ]
     TRANSITIONS  [
       transition ToCym <bgr::Bgr> => <cym::Cym> [
-        InputRender (_bgr) => InputRender (_cym) {
-          _cym.glutin_glium_context = _bgr.glutin_glium_context.take();
+        InputRender (bgr) => InputRender (cym) {
+          cym.glutin_glium_context = bgr.glutin_glium_context.take();
         }
       ]
       transition ToWsk <cym::Cym> => <wsk::Wsk> [
-        InputRender (_cym) => InputRender (_wsk) {
-          _wsk.glutin_glium_context = _cym.glutin_glium_context.take();
+        InputRender (cym) => InputRender (wsk) {
+          wsk.glutin_glium_context = cym.glutin_glium_context.take();
         }
       ]
       transition ToBgr <wsk::Wsk> => <bgr::Bgr> [
-        InputRender (_wsk) => InputRender (_bgr) {
-          _bgr.glutin_glium_context = _wsk.glutin_glium_context.take();
+        InputRender (wsk) => InputRender (bgr) {
+          bgr.glutin_glium_context = wsk.glutin_glium_context.take();
         }
       ]
     ]
@@ -136,7 +142,6 @@ def_program! {
 
 pub mod bgr {
   use ::std;
-  use ::vec_map;
 
   use ::glium;
   use ::glium::glutin;
@@ -151,8 +156,8 @@ pub mod bgr {
   def_session! {
     context Bgr {
       PROCESSES where
-        let _proc       = self,
-        let _message_in = message_in
+        let process    = self,
+        let message_in = message_in
       [
         process InputRender (
           frame                : u64 = 0,
@@ -175,7 +180,7 @@ pub mod bgr {
           endpoints      [ ]
           initialize     { println!("...BGR initialize..."); }
           handle_message { unreachable!() }
-          update         { _proc.input_render_update() }
+          update         { process.input_render_update() }
         }
       ]
       CHANNELS [ ]
@@ -196,8 +201,7 @@ pub mod bgr {
       { // glutin_glium_context scope
         use glium::Surface;
 
-        let glutin_glium_context
-          = self.glutin_glium_context.as_mut().unwrap();
+        let glutin_glium_context = self.glutin_glium_context.as_mut().unwrap();
 
         // poll events
         glutin_glium_context.events_loop.poll_events (|event| {
@@ -260,7 +264,6 @@ pub mod bgr {
 
 pub mod cym {
   use ::std;
-  use ::vec_map;
 
   //use ::glium;
   use ::glium::glutin;
@@ -273,8 +276,8 @@ pub mod cym {
   def_session! {
     context Cym {
       PROCESSES where
-        let _proc       = self,
-        let _message_in = message_in
+        let process    = self,
+        let message_in = message_in
       [
         process InputRender (
           frame                : u64 = 0,
@@ -286,7 +289,7 @@ pub mod cym {
           endpoints      []
           terminate      { println!("...CYM terminate..."); }
           handle_message { unreachable!() }
-          update         { _proc.input_render_update() }
+          update         { process.input_render_update() }
         }
       ]
       CHANNELS [ ]
@@ -307,8 +310,7 @@ pub mod cym {
       { // glutin_glium_context scope
         use glium::Surface;
 
-        let glutin_glium_context
-          = self.glutin_glium_context.as_mut().unwrap();
+        let glutin_glium_context = self.glutin_glium_context.as_mut().unwrap();
 
         // poll events
         glutin_glium_context.events_loop.poll_events (|event| {
@@ -370,7 +372,6 @@ pub mod cym {
 
 pub mod wsk {
   use ::std;
-  use ::vec_map;
 
   //use ::glium;
   use ::glium::glutin;
@@ -383,8 +384,8 @@ pub mod wsk {
   def_session! {
     context Wsk {
       PROCESSES where
-        let _proc       = self,
-        let _message_in = message_in
+        let process    = self,
+        let message_in = message_in
       [
         process InputRender (
           frame                : u64 = 0,
@@ -397,7 +398,7 @@ pub mod wsk {
           initialize     { println!("...wsk initialize..."); }
           terminate      { println!("...wsk terminate..."); }
           handle_message { unreachable!() }
-          update         { _proc.input_render_update() }
+          update         { process.input_render_update() }
         }
       ]
       CHANNELS [ ]
@@ -418,8 +419,7 @@ pub mod wsk {
       { // glutin_glium_context scope
         use glium::Surface;
 
-        let glutin_glium_context
-          = self.glutin_glium_context.as_mut().unwrap();
+        let glutin_glium_context = self.glutin_glium_context.as_mut().unwrap();
 
         // poll events
         glutin_glium_context.events_loop.poll_events (|event| {
@@ -493,7 +493,7 @@ fn main() {
   use std::io::Write;
   use macro_machines::MachineDotfile;
   let mut f = unwrap!(std::fs::File::create (format!("{}.dot", example_name)));
-  unwrap!(f.write_all (Graphical::dotfile_hide_defaults().as_bytes()));
+  unwrap!(f.write_all (Graphical::dotfile().as_bytes()));
   drop (f);
 
   // report size information

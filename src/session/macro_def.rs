@@ -30,12 +30,6 @@
 /// ```
 /// #![feature(const_fn)]
 /// #![feature(try_from)]
-/// #[macro_use] extern crate macro_attr;
-/// #[macro_use] extern crate enum_derive;
-/// #[macro_use] extern crate enum_unitary;
-///
-/// extern crate num;
-/// extern crate vec_map;
 /// #[macro_use] extern crate apis;
 ///
 /// use apis::{channel,message,process,session};
@@ -43,8 +37,8 @@
 /// def_session! {
 ///   context Mycontext {
 ///     PROCESSES where
-///       let _proc       = self,
-///       let _message_in = message_in
+///       let process    = self,
+///       let message_in = message_in
 ///     [
 ///       process Chargen (update_count : u64) {
 ///         kind { process::Kind::Isochronous {
@@ -294,7 +288,7 @@ macro_rules! def_session {
           $($field_name: def_session!(@expr_default $($field_default)*)),*
         }
       }
-      fn extract_result (session_results : &mut vec_map::VecMap <GlobalPresult>)
+      fn extract_result (session_results : &mut $crate::vec_map::VecMap <GlobalPresult>)
         -> Result <($($presult_type)*), String>
       {
         let pid = ProcessId::$process as usize;
@@ -325,12 +319,14 @@ macro_rules! def_session {
       }
       $(
       fn initialize (&mut self) {
+        #[allow(unused_variables)]
         let $process_self = self;
         $initialize
       }
       )*
       $(
       fn terminate (&mut self) {
+        #[allow(unused_variables)]
         let $process_self = self;
         $terminate
       }
@@ -338,11 +334,14 @@ macro_rules! def_session {
       fn handle_message (&mut self, message : GlobalMessage)
         -> $crate::process::ControlFlow
       {
+        #[allow(unused_variables)]
         let $process_self = self;
+        #[allow(unused_variables)]
         let $message_in   = message;
         $handle_message
       }
       fn update (&mut self) -> $crate::process::ControlFlow {
+        #[allow(unused_variables)]
         let $process_self = self;
         $update
       }

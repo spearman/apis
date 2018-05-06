@@ -1,25 +1,24 @@
+//! This is an example of a minimal program that transitions between two
+//! sessions and passes a state token between them.
+//!
+//! Running this example will produce a DOT file representing the program state
+//! transition diagram. To create a PNG image from the generated DOT file:
+//!
+//! ```bash
+//! make -f MakefileDot program
+//! ```
+
 #![feature(const_fn)]
 #![feature(core_intrinsics)]
 #![feature(fnbox)]
 #![feature(try_from)]
 
 #[macro_use] extern crate unwrap;
-#[macro_use] extern crate macro_attr;
-#[macro_use] extern crate enum_derive;
-#[macro_use] extern crate enum_unitary;
-
-extern crate num;
-extern crate rand;
-
-extern crate either;
-extern crate vec_map;
-
-#[macro_use] extern crate log;
 extern crate colored;
+extern crate rand;
 extern crate simplelog;
 
-#[macro_use] extern crate macro_machines;
-
+extern crate macro_machines;
 #[macro_use] extern crate apis;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -60,11 +59,11 @@ impl Drop for Dropthing {
 
 def_program! {
   program Myprogram where
-    let _result = session.run()
+    let result = session.run()
   {
     MODES [
       mode chargen_upcase::ChargenUpcase {
-        println!("_result: {:?}", _result);
+        println!("result: {:?}", result);
         Some (EventId::ToRandSource)
       }
       mode rand_source::RandSource
@@ -72,8 +71,8 @@ def_program! {
     TRANSITIONS  [
       transition ToRandSource
         <chargen_upcase::ChargenUpcase> => <rand_source::RandSource> [
-          Upcase (_upcase) => RandGen (_randgen) {
-            _randgen.dropthing = _upcase.dropthing.take();
+          Upcase (upcase) => RandGen (randgen) {
+            randgen.dropthing = upcase.dropthing.take();
           }
         ]
     ]
@@ -87,8 +86,6 @@ def_program! {
 
 pub mod chargen_upcase {
   use ::std;
-  use ::vec_map;
-
   use ::apis;
 
   def_session! {
@@ -97,8 +94,8 @@ pub mod chargen_upcase {
     //
     context ChargenUpcase {
       PROCESSES where
-        let _proc       = self,
-        let _message_in = message_in
+        let process    = self,
+        let message_in = message_in
       [
         //
         //  process Chargen
@@ -112,29 +109,29 @@ pub mod chargen_upcase {
           handle_message { unreachable!() }
           update {
             let mut result = apis::process::ControlFlow::Continue;
-            if _proc.update_count % 5 == 0 {
-              result = _proc.send (
+            if process.update_count % 5 == 0 {
+              result = process.send (
                 ChannelId::Charstream, Charstreammessage::Achar ('z')
               ).into();
             }
-            if _proc.update_count % 7 == 0 {
-              result = _proc.send (
+            if process.update_count % 7 == 0 {
+              result = process.send (
                 ChannelId::Charstream, Charstreammessage::Achar ('y')
               ).into();
             }
-            if _proc.update_count % 9 == 0 {
-              result = _proc.send (
+            if process.update_count % 9 == 0 {
+              result = process.send (
                 ChannelId::Charstream, Charstreammessage::Achar ('x')
               ).into();
             }
-            _proc.update_count += 1;
+            process.update_count += 1;
             const MAX_UPDATES : u64 = 5;
-            assert!(_proc.update_count <= MAX_UPDATES);
+            assert!(process.update_count <= MAX_UPDATES);
             if result == apis::process::ControlFlow::Continue
-              && _proc.update_count == MAX_UPDATES
+              && process.update_count == MAX_UPDATES
             {
               let _
-                = _proc.send (ChannelId::Charstream, Charstreammessage::Quit);
+                = process.send (ChannelId::Charstream, Charstreammessage::Quit);
               result = apis::process::ControlFlow::Break;
             }
             result
@@ -151,14 +148,14 @@ pub mod chargen_upcase {
           sourcepoints   []
           endpoints      [Charstream]
           handle_message {
-            match _message_in {
+            match message_in {
               GlobalMessage::Charstreammessage (charstreammessage) => {
                 match charstreammessage {
                   Charstreammessage::Quit => {
                     apis::process::ControlFlow::Break
                   }
                   Charstreammessage::Achar (ch) => {
-                    _proc.history.push (ch.to_uppercase().next().unwrap());
+                    process.history.push (ch.to_uppercase().next().unwrap());
                     apis::process::ControlFlow::Continue
                   }
                 }
@@ -166,10 +163,10 @@ pub mod chargen_upcase {
             }
           }
           update {
-            if *_proc.inner.state().id() == apis::process::inner::StateId::Ended {
-              println!("upcase history final: {}", _proc.history);
+            if *process.inner.state().id() == apis::process::inner::StateId::Ended {
+              println!("upcase history final: {}", process.history);
             } else {
-              println!("upcase history: {}", _proc.history);
+              println!("upcase history: {}", process.history);
             }
             apis::process::ControlFlow::Continue
           }
@@ -199,7 +196,6 @@ pub mod chargen_upcase {
 pub mod rand_source {
   use ::std;
   use ::rand;
-  use ::vec_map;
 
   use ::apis;
 
@@ -209,8 +205,8 @@ pub mod rand_source {
     //
     context RandSource {
       PROCESSES where
-        let _proc       = self,
-        let _message_in = message_in
+        let process    = self,
+        let message_in = message_in
       [
         //
         //  process RandGen
@@ -227,27 +223,27 @@ pub mod rand_source {
           handle_message { unreachable!() }
           update {
             use rand::Rng;
-            use num::FromPrimitive;
+            use apis::num::FromPrimitive;
             let mut rng = rand::thread_rng();
             let rand_id = ProcessId::from_u64 (rng.gen_range::<u64> (1, 5))
               .unwrap();
             let rand_int = rng.gen_range::<u64> (1,100);
-            let mut result = _proc.send_to (
+            let mut result = process.send_to (
               ChannelId::Randints, rand_id, Randintsmessage::Anint (rand_int)
             ).into();
-            _proc.update_count += 1;
+            process.update_count += 1;
             const MAX_UPDATES : u64 = 5;
             if result == apis::process::ControlFlow::Break
-              || MAX_UPDATES < _proc.update_count
+              || MAX_UPDATES < process.update_count
             {
               // quit
-              let _ = _proc.send_to (
+              let _ = process.send_to (
                 ChannelId::Randints, ProcessId::Sum1, Randintsmessage::Quit);
-              let _ = _proc.send_to (
+              let _ = process.send_to (
                 ChannelId::Randints, ProcessId::Sum2, Randintsmessage::Quit);
-              let _ = _proc.send_to (
+              let _ = process.send_to (
                 ChannelId::Randints, ProcessId::Sum3, Randintsmessage::Quit);
-              let _ = _proc.send_to (
+              let _ = process.send_to (
                 ChannelId::Randints, ProcessId::Sum4, Randintsmessage::Quit);
               result = apis::process::ControlFlow::Break
             }
@@ -262,10 +258,10 @@ pub mod rand_source {
           sourcepoints   []
           endpoints      [Randints]
           handle_message {
-            match _message_in {
+            match message_in {
               GlobalMessage::Randintsmessage (Randintsmessage::Anint (anint)) => {
                 // continue
-                _proc.sum += anint;
+                process.sum += anint;
                 apis::process::ControlFlow::Continue
               }
               GlobalMessage::Randintsmessage (Randintsmessage::Quit) => {
@@ -275,10 +271,10 @@ pub mod rand_source {
             }
           }
           update {
-            if *_proc.inner.state().id() == apis::process::inner::StateId::Ended {
-              println!("sum 1 final: {}", _proc.sum);
+            if *process.inner.state().id() == apis::process::inner::StateId::Ended {
+              println!("sum 1 final: {}", process.sum);
             } else {
-              println!("sum 1: {}", _proc.sum);
+              println!("sum 1: {}", process.sum);
             }
             apis::process::ControlFlow::Continue
           }
@@ -291,10 +287,10 @@ pub mod rand_source {
           sourcepoints   []
           endpoints      [Randints]
           handle_message {
-            match _message_in {
+            match message_in {
               GlobalMessage::Randintsmessage (Randintsmessage::Anint (anint)) => {
                 // continue
-                _proc.sum += anint;
+                process.sum += anint;
                 apis::process::ControlFlow::Continue
               }
               GlobalMessage::Randintsmessage (Randintsmessage::Quit) => {
@@ -304,10 +300,10 @@ pub mod rand_source {
             }
           }
           update {
-            if *_proc.inner.state().id() == apis::process::inner::StateId::Ended {
-              println!("sum 2 final: {}", _proc.sum);
+            if *process.inner.state().id() == apis::process::inner::StateId::Ended {
+              println!("sum 2 final: {}", process.sum);
             } else {
-              println!("sum 2: {}", _proc.sum);
+              println!("sum 2: {}", process.sum);
             }
             apis::process::ControlFlow::Continue
           }
@@ -320,10 +316,10 @@ pub mod rand_source {
           sourcepoints   []
           endpoints      [Randints]
           handle_message {
-            match _message_in {
+            match message_in {
               GlobalMessage::Randintsmessage (Randintsmessage::Anint (anint)) => {
                 // continue
-                _proc.sum += anint;
+                process.sum += anint;
                 apis::process::ControlFlow::Continue
               }
               GlobalMessage::Randintsmessage (Randintsmessage::Quit) => {
@@ -333,10 +329,10 @@ pub mod rand_source {
             }
           }
           update {
-            if *_proc.inner.state().id() == apis::process::inner::StateId::Ended {
-              println!("sum 3 final: {}", _proc.sum);
+            if *process.inner.state().id() == apis::process::inner::StateId::Ended {
+              println!("sum 3 final: {}", process.sum);
             } else {
-              println!("sum 3: {}", _proc.sum);
+              println!("sum 3: {}", process.sum);
             }
             apis::process::ControlFlow::Continue
           }
@@ -349,10 +345,10 @@ pub mod rand_source {
           sourcepoints   []
           endpoints      [Randints]
           handle_message {
-            match _message_in {
+            match message_in {
               GlobalMessage::Randintsmessage (Randintsmessage::Anint (anint)) => {
                 // continue
-                _proc.sum += anint;
+                process.sum += anint;
                 apis::process::ControlFlow::Continue
               }
               GlobalMessage::Randintsmessage (Randintsmessage::Quit) => {
@@ -362,10 +358,10 @@ pub mod rand_source {
             }
           }
           update {
-            if *_proc.inner.state().id() == apis::process::inner::StateId::Ended {
-              println!("sum 4 final: {}", _proc.sum);
+            if *process.inner.state().id() == apis::process::inner::StateId::Ended {
+              println!("sum 4 final: {}", process.sum);
             } else {
-              println!("sum 4: {}", _proc.sum);
+              println!("sum 4: {}", process.sum);
             }
             apis::process::ControlFlow::Continue
           }
@@ -404,7 +400,7 @@ fn main() {
   use std::io::Write;
   use macro_machines::MachineDotfile;
   let mut f = unwrap!(std::fs::File::create (format!("{}.dot", example_name)));
-  unwrap!(f.write_all (Myprogram::dotfile_hide_defaults().as_bytes()));
+  unwrap!(f.write_all (Myprogram::dotfile().as_bytes()));
   drop (f);
 
   // create a program in the initial mode

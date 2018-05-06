@@ -1,24 +1,32 @@
+//! Example of a session consisting of two sessions connected by a one-way
+//! 'Simplex' channel.
+//!
+//! The producer is an 'Isochronous' (timed, polling) process with 20ms tick
+//! length that will send arbitrary characters depending on the update count of
+//! each update. The consumer is an 'Asynchronous' process that will collect
+//! these characters into an uppercase string.
+//!
+//! On the 100th update, the sending process is instructed to sleep for 100ms
+//! causing five 'late tick' warnings (one for each late tick) to be logged
+//! until the process is "caught up".
+//!
+//! Running this example will produce a DOT file representing the data flow
+//! diagram of the session. To create a PNG image from the generated DOT file:
+//!
+//! ```bash
+//! make -f MakefileDot simplex
+//! ```
+
 #![allow(dead_code)]
+
 #![feature(const_fn)]
-#![feature(fnbox)]
 #![feature(try_from)]
 
 #[macro_use] extern crate unwrap;
-
-#[macro_use] extern crate macro_attr;
-#[macro_use] extern crate enum_derive;
-#[macro_use] extern crate enum_unitary;
-
-extern crate num;
-
-extern crate vec_map;
-
-#[macro_use] extern crate log;
 extern crate colored;
 extern crate simplelog;
 
 extern crate macro_machines;
-
 #[macro_use] extern crate apis;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -36,8 +44,8 @@ pub const LOG_LEVEL
 def_session! {
   context ChargenUpcase {
     PROCESSES where
-      let _proc       = self,
-      let _message_in = message_in
+      let process    = self,
+      let message_in = message_in
     [
       process Chargen (update_count : u64) -> (Option <()>) {
         kind {
@@ -45,15 +53,15 @@ def_session! {
         }
         sourcepoints   [Charstream]
         endpoints      []
-        handle_message { _proc.chargen_handle_message (_message_in) }
-        update         { _proc.chargen_update() }
+        handle_message { process.chargen_handle_message (message_in) }
+        update         { process.chargen_update() }
       }
       process Upcase (history : String) -> (Option <()>) {
         kind           { apis::process::Kind::asynchronous_default() }
         sourcepoints   []
         endpoints      [Charstream]
-        handle_message { _proc.upcase_handle_message (_message_in) }
-        update         { _proc.upcase_update() }
+        handle_message { process.upcase_handle_message (message_in) }
+        update         { process.upcase_update() }
       }
     ]
     CHANNELS  [
@@ -178,7 +186,8 @@ fn main() {
   use macro_machines::MachineDotfile;
   let mut f = unwrap!(std::fs::File::create ("process-inner.dot"));
   unwrap!(
-    f.write_all (apis::process::Inner::<ChargenUpcase>::dotfile().as_bytes())
+    f.write_all (apis::process::Inner::<ChargenUpcase>::dotfile_show_defaults()
+      .as_bytes())
   );
   drop (f);
 

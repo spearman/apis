@@ -1,7 +1,5 @@
 use ::std;
-
-use ::session;
-use ::Process;
+use ::{session, Process};
 
 // TODO: should there be a conversion constraint between these traits ?
 

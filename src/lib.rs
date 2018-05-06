@@ -1,13 +1,15 @@
-//! Session-oriented asynchronous process-calculus framework
+//! # Apis <IMG STYLE="vertical-align: middle" SRC="https://raw.githubusercontent.com/spearman/apis/master/apis.png">
 //!
-//! Processes are "reactive" threads with defined message handling and update
+//! *Reactive, session-oriented, asynchronous process-calculus framework.*
+//!
+//! Processes are "reactive" threads with specified message handling and update
 //! behavior.
 //!
 //! Sessions are collections of Processes and Channels in a fixed communication
-//! topology. The `def_session!` macro is used to define a Session, its Channels
-//! and Processes.
+//! topology. The `def_session!` macro is used to define a Session together
+//! with its Channels and Processes.
 //!
-//! A Program defines a transition system with Sessions as nodes. The
+//! A 'Program' defines a transition system with Sessions as nodes. The
 //! `def_program!` macro is used to define modes (Sessions) and transitions
 //! between them.
 
@@ -16,25 +18,34 @@
 #![feature(core_intrinsics)]
 #![feature(fnbox)]
 #![feature(try_from)]
-#![feature(stmt_expr_attributes)]
+#![feature(macro_reexport)]
 
-#[macro_use] extern crate log;
+#[macro_reexport(log, trace, debug, info, warn, error)]
+extern crate log;
 
-//extern crate bit_set;
-//extern crate bit_vec;
-extern crate num;
-extern crate either;
 extern crate escapade;
 extern crate smallvec;
-extern crate vec_map;
-
-extern crate colored;
-
 extern crate unbounded_spsc;
 
-extern crate enum_unitary;
+#[doc(hidden)]
+pub extern crate colored;
+#[doc(hidden)]
+pub extern crate either;
+#[doc(nidden)]
+pub extern crate num_traits;
+#[doc(hidden)]
+pub extern crate vec_map;
 
+#[macro_reexport(enum_unitary, macro_attr, macro_attr_impl,
+  enum_derive_util, IterVariants, NextVariant, PrevVariant)]
+#[doc(hidden)]
+pub extern crate enum_unitary;
+
+#[macro_reexport(def_machine)]
 #[macro_use] extern crate macro_machines;
+
+#[doc(hidden)]
+pub use num_traits as num;
 
 ///////////////////////////////////////////////////////////////////////////////
 //  modules

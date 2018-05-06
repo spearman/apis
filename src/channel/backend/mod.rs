@@ -1,14 +1,6 @@
-use ::std;
+use ::{std, vec_map, unbounded_spsc};
 
-//use ::num;
-use ::vec_map;
-
-use ::unbounded_spsc;
-
-use ::channel;
-use ::Message;
-//use ::process;
-use ::session;
+use ::{channel, session, Message};
 
 ///////////////////////////////////////////////////////////////////////////////
 //  submodules

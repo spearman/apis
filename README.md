@@ -1,103 +1,103 @@
 # Apis
 
-> Session-oriented asynchronous process-calculus framework
+> Reactive, session-oriented, asynchronous process-calculus framework
 
-[Documentation](https://spearman.github.io/apis/apis/index.html)
+[Documentation](https://spearman.github.io/apis/apis/)
 
-This crate defines traits and macros for defining *sessions* of reactive
-threads ("*processes*" in the sense of process calculus) communicating messages
-over a fixed topology of *channels*, and macros for defining *programs* as
-transition systems where nodes are different sessions.
+This crate provides a macro and traits for defining *sessions* of reactive
+threads ("*processes*" in the sense of a 'process calculus') able to
+communicate through messages over a fixed topology of *channels*. It also
+provides a macro for defining a "*program*" as state transition systems on
+session nodes called "*modes*" which are able to pass state between processes
+from one mode to the next.
+
+
+**Current features**
+
+- Initialization-time validation of process and channel connectivity and
+  consistency within a session
+- Asynchronous sends and unbounded channels
+- Three kinds of channels classified by connection topology:
+    * 'Simplex' -- a one-way SPSC stream
+    * 'Sink' -- a standard MPSC channel
+    * 'Source' -- an SPMC unicast channel
+- Four kinds of process with varying receive and update behavior, roughly
+  divided into two classes by receive mechanism:
+    * "asynchronous" -- block-waiting receives for a single endpoint
+      ('Asynchronous')
+    * "synchronous" -- polling loops on any number of endpoints with various
+      timing schemes ('Isochronous', 'Mesochronous', 'Anisochronous')
+- Logging of events using the `log` logging API
+- Graphviz DOT file output for session data flow diagrams and program state
+  transition diagrams.
+
+
+**Current limitations**
+
+- Process and channel definitions are local to a particular session definition;
+  they cannot be re-used
+- Passing state between sessions is implemented in a *continuation-passing
+  style* and the Rust compiler cannot not optimize away the tail recursion in
+  this case; note this only occurs if state is explicitly transferred between
+  sessions, otherwise unaffected threads will join back with the main thread
+  and no tail recursion will take place.
 
 
 ## Usage
 
-**Dependencies**
-
-The macros used for defining sessions and programs expand to datatype and
-function implementations that depend on a number of support libraries which
-should be declared in the `Cargo.toml` manifest of any crate using `apis`:
-
-```toml
-[dependencies]
-apis = { version = "0.0.*", git = "git://github.com/spearman/apis.git" }
-macro-machines = { version = "0.2.*", git = "git://github.com/spearman/macro-machines.git" }
-enum-unitary = { version = "0.1.*", git = "git://github.com/spearman/enum-unitary.git" }
-
-colored = "1.*"
-either = "1.*"
-enum_derive = "0.1.*"
-log = "0.4.*"
-macro-attr = "0.2.*"
-num = "0.1.*"
-vec_map = "0.8.*"
-```
-
-and a number of unstable features in the crate root:
-
-```rust
-#![feature(const_fn)]
-#![feature(core_intrinsics)]
-#![feature(fnbox)]
-#![feature(try_from)]
-```
-
-The dependencies above should then be made available:
-
-```rust
-#[macro_use] extern crate apis;
-#[macro_use] extern crate macro_machines;
-#[macro_use] extern crate enum_unitary;
-
-#[macro_use] extern crate enum_derive;
-#[macro_use] extern crate log;
-#[macro_use] extern crate macro_attr;
-extern crate colored;
-extern crate either;
-extern crate num;
-extern crate vec_map;
-```
+The features of this library are implemented using two top-level macro
+definitions, `def_session!` and `def_program!`, to define sessions and
+programs, respectively.
 
 
 **Sessions**
 
-Define and run a session:
+The `def_session!` macro expands to datatype and function implementations that
+rely on two unstable features, `const_fn` and `try_from`:
 
 ```rust
-/// Define a session 'IntSource' in which a source thread sends `u64` values
-/// alternatively to two peers which sum the received values and return a final
-/// sum in the session result.
+#![feature(const_fn)]
+#![feature(try_from)]
+```
+
+Define a session 'IntSource' in which a source thread sends `u64` values
+alternatively to two peers which sum the received values and return a final sum
+in the *session result*:
+
+```rust
+#![feature(const_fn)]
+#![feature(try_from)]
+
 pub mod int_source {
-  use ::{std, vec_map};
-  use ::apis;
+  use ::{std, apis};
 
   const MAX_UPDATES : u64 = 10;
 
   def_session!{
     context IntSource {
       PROCESSES where
-        let _proc       = self,
-        let _message_in = message_in
+        let process    = self,
+        let message_in = message_in
       [
         process IntGen (update_count : u64) {
           kind { apis::process::Kind::Isochronous { tick_ms: 20, ticks_per_update: 1 } }
           sourcepoints   [Ints]
           endpoints      []
           handle_message { unreachable!() }
-          update         { _proc.int_gen_update() }
+          update         { process.int_gen_update() }
         }
         process Sum1 (sum : u64) -> (u64) {
           kind           { apis::process::Kind::asynchronous_default() }
           sourcepoints   []
           endpoints      [Ints]
-          handle_message { _proc.sum1_handle_message (_message_in) }
+          handle_message { process.sum1_handle_message (message_in) }
           update         { apis::process::ControlFlow::Continue }
         }
         process Sum2 (sum : u64) -> (u64) {
           kind           { apis::process::Kind::asynchronous_default() }
           sourcepoints   []
           endpoints      [Ints]
-          handle_message { _proc.sum2_handle_message (_message_in) }
+          handle_message { process.sum2_handle_message (message_in) }
           update         { apis::process::ControlFlow::Continue }
         }
       ]
@@ -182,7 +182,16 @@ fn main() {
 }
 ```
 
-Generate a graphviz dotfile and write to file:
+Note that it is necessary to introduce variable identifiers (here `process` and
+`message_in`) in the session definition so that they can be referred to in
+`handle_message` and `update` blocks, or in optional `initialize` and
+`terminate` blocks (not shown). Here the identifier `process` will be made a
+mutable self reference to the local process in each block, and `message_in`
+will be made an alias for the received message in the scope of `handle_message`
+blocks only.
+
+Generate a graphviz DOT file representing the session data flow diagram and
+write to file:
 
 ```rust
   let session_def = IntSource::def().unwrap();
@@ -203,6 +212,16 @@ composed into "*programs*", described next.
 
 **Programs**
 
+When defining a program using the `def_program!` macro, two additional unstable
+features, `core_intrinsics` and `fnbox`, are required:
+
+```rust
+#![feature(const_fn)]
+#![feature(core_intrinsics)]
+#![feature(fnbox)]
+#![feature(try_from)]
+```
+
 Define another session `CharSink` in module `char_sink` with different behavior
 and reversed message flow (implementation omitted, see `./examples/readme.rs`):
 
@@ -212,12 +231,12 @@ A *program* can then be defined which runs both sessions sequentially:
 
 ```rust
 def_program! {
-  program Myprogram where let _result = session.run() {
+  program Myprogram where let result = session.run() {
     MODES [
       mode int_source::IntSource {
         use apis::Process;
-        let sum1 = int_source::Sum1::extract_result (&mut _result).unwrap();
-        let sum2 = int_source::Sum2::extract_result (&mut _result).unwrap();
+        let sum1 = int_source::Sum1::extractresult (&mut result).unwrap();
+        let sum2 = int_source::Sum2::extractresult (&mut result).unwrap();
         println!("combined sums: {}", sum1 + sum2);
         Some (EventId::ToCharSink)
       }
@@ -239,12 +258,18 @@ fn main() {
 }
 ```
 
-Here the transition is always the same, however the results can be used to
-nondeterministically choose any transition with a source matching the last
-session.
+Note that it is necessary to introduce the `result` variable used here to
+access the result of a completed `session.run()` call in the 'transition choice
+blocks' associated to each mode. Here the transition is always the same,
+however the results can be used to nondeterministically choose any transition
+with a source matching the completed session.
 
-A program is implemented as a state machine for which a dotfile can also be
-generated:
+For examples of programs that transfer state from processes of one session to
+the next, see `program.rs`, `interactive.rs`, or `graphical.rs` in the
+`./examples/` directory.
+
+A program is implemented as a state machine for which a DOT file can be
+generated showing the program state transition system:
 
 ```rust
   use std::io::Write;
@@ -263,7 +288,7 @@ ignored unless a logging implementation is selected, for example `simplelog`:
 
 ```toml
 [dependencies]
-simplelog = "0.4.*"
+simplelog = "0.5.*"
 ```
 
 Using a `TermLogger` to display log messages in the terminal:
@@ -281,15 +306,12 @@ fn main() {
 
 ## Examples
 
-A number of example programs are given in `./examples/`. The `graphical.rs` and
-`interactive.rs` examples are interactive, requiring user input, while the rest
-can be run unattended. Some of these will intentionally generate warnings.
+A number of example programs are given in `./examples/`. Non-interactive
+examples can be run by the `./run-examples.sh` script which will also generate
+image files from generated DOT files. The `graphical.rs` and `interactive.rs`
+examples are interactive, requiring user input. These can be run with the
+`./run-interactive.sh` script which will also generate image files from the
+generate DOT files for these examples.
 
-
-## Limitations
-
-Mapping threads accross sessions involves continuation passing and Rust cannot
-optimize the tail call meaning the stack will eventually overflow if too many
-mapped transitions are triggered without joining back to the main thread at
-some point.
-
+Most of these examples will potentially or intentionally generate warnings, see
+the doc comments in individual examples for specifics.

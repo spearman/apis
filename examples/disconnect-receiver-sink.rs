@@ -1,19 +1,24 @@
+//! Example of attempting to send on a sink channel where the receiver has hung
+//! up. This will generate two 'receiver disconnected' warnings, one for each
+//! sender.
+//!
+//! The sending threads are caused to sleep for a duration exceeding their tick
+//! rate so two 'late tick' warnings will be logged in addition to the 'receiver
+//! disconnected' warnings.
+//!
+//! Running this example will produce a DOT file representing the data flow
+//! diagram of the session. To create a PNG image from the generated DOT file:
+//!
+//! ```bash
+//! make -f MakefileDot disconnect-receiver-sink
+//! ```
+
 #![allow(dead_code)]
+
 #![feature(const_fn)]
-#![feature(fnbox)]
 #![feature(try_from)]
 
 #[macro_use] extern crate unwrap;
-
-#[macro_use] extern crate macro_attr;
-#[macro_use] extern crate enum_derive;
-#[macro_use] extern crate enum_unitary;
-
-extern crate num;
-
-extern crate vec_map;
-
-/*#[macro_use]*/ extern crate log;
 extern crate colored;
 extern crate simplelog;
 
@@ -34,8 +39,8 @@ pub const LOG_LEVEL
 def_session! {
   context DisconnectReceiverSink {
     PROCESSES where
-      let _proc       = self,
-      let _message_in = message_in
+      let process    = self,
+      let message_in = message_in
     [
       process Sendfoo1 () {
         kind {
@@ -46,7 +51,7 @@ def_session! {
         handle_message { unreachable!() }
         update         {
           std::thread::sleep (std::time::Duration::from_millis (1000));
-          _proc.send (ChannelId::Foochan, Foochanmessage::Bar).into()
+          process.send (ChannelId::Foochan, Foochanmessage::Bar).into()
         }
       }
       process Sendfoo2 () {
@@ -58,7 +63,7 @@ def_session! {
         handle_message { unreachable!() }
         update         {
           std::thread::sleep (std::time::Duration::from_millis (500));
-          _proc.send (ChannelId::Foochan, Foochanmessage::Baz).into()
+          process.send (ChannelId::Foochan, Foochanmessage::Baz).into()
         }
       }
       process Hangup () {

@@ -1,18 +1,24 @@
+//! Example of attempting to send on a source channel where all the receivers
+//! have hung up. Attempting to send a message to each receiver in series will
+//! generate two 'receiver disconnected' warnings.
+//!
+//! The sending thread is caused to sleep for a duration exceeding its tick rate
+//! so a 'late tick' warning will be logged in addition to the 'receiver
+//! disconnected' warnings.
+//!
+//! Running this example will produce a DOT file representing the data flow
+//! diagram of the session. To create a PNG image from the generated DOT file:
+//!
+//! ```bash
+//! make -f MakefileDot disconnect-receiver-source
+//! ```
+
 #![allow(dead_code)]
+
 #![feature(const_fn)]
-#![feature(fnbox)]
 #![feature(try_from)]
 
 #[macro_use] extern crate unwrap;
-
-#[macro_use] extern crate macro_attr;
-#[macro_use] extern crate enum_derive;
-#[macro_use] extern crate enum_unitary;
-
-extern crate num;
-extern crate vec_map;
-
-//#[macro_use] extern crate log;
 extern crate colored;
 extern crate simplelog;
 
@@ -33,8 +39,8 @@ pub const LOG_LEVEL
 def_session! {
   context DisconnectReceiverSource {
     PROCESSES where
-      let _proc       = self,
-      let _message_in = message_in
+      let process    = self,
+      let message_in = message_in
     [
       process Foosource () {
         kind {
@@ -46,12 +52,12 @@ def_session! {
         update {
           std::thread::sleep (std::time::Duration::from_millis (1000));
           assert!{
-            _proc.send_to (ChannelId::Foochan, ProcessId::Hangup1,
+            process.send_to (ChannelId::Foochan, ProcessId::Hangup1,
               Foochanmessage::Fooint { foo: 1 }
             ).is_err()
           }
           assert!{
-            _proc.send_to (ChannelId::Foochan, ProcessId::Hangup2,
+            process.send_to (ChannelId::Foochan, ProcessId::Hangup2,
               Foochanmessage::Fooint { foo: 2 }
             ).is_err()
           }

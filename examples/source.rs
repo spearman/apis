@@ -1,21 +1,29 @@
+//! Example of a session consisting of one sender and four receivers connected
+//! by a 'Source' channel.
+//!
+//! The producer is an 'Isochronous' (timed, polling) process with a 20ms tick
+//! length that will send a randomly generated integer to a random consumer on
+//! each update. The consumers are 'Asynchronous' processes that will add received
+//! integers to a local 'sum' that starts with an initial value of -100.
+//!
+//! Note that generally this example should *not* generate any warnings or
+//! errors.
+//!
+//! Running this example will produce a DOT file representing the data flow
+//! diagram of the session. To create a PNG image from the generated DOT file:
+//!
+//! ```bash
+//! make -f MakefileDot source
+//! ```
+
 #![allow(dead_code)]
+
 #![feature(const_fn)]
-#![feature(fnbox)]
 #![feature(try_from)]
 
 #[macro_use] extern crate unwrap;
-
-#[macro_use] extern crate macro_attr;
-#[macro_use] extern crate enum_derive;
-#[macro_use] extern crate enum_unitary;
-
-extern crate num;
-extern crate rand;
-
-extern crate vec_map;
-
-//#[macro_use] extern crate log;
 extern crate colored;
+extern crate rand;
 extern crate simplelog;
 
 #[macro_use] extern crate apis;
@@ -35,8 +43,8 @@ pub const LOG_LEVEL
 def_session! {
   context RandSource {
     PROCESSES where
-      let _proc       = self,
-      let _message_in = message_in
+      let process    = self,
+      let message_in = message_in
     [
       process RandGen (update_count : u64) {
         kind {
@@ -47,22 +55,22 @@ def_session! {
         handle_message { unreachable!() }
         update {
           use rand::Rng;
-          use num::FromPrimitive;
+          use apis::num::FromPrimitive;
           let mut rng = rand::thread_rng();
           let rand_id = ProcessId::from_u64 (rng.gen_range::<u64> (1, 5))
             .unwrap();
           let rand_int = rng.gen_range::<i64> (1,100);
-          let send_result = _proc.send_to (
+          let send_result = process.send_to (
             ChannelId::Randints, rand_id, Randintsmessage::Anint (rand_int));
-          _proc.update_count += 1;
-          if send_result.is_err() || 50 <= _proc.update_count {
-            let _ = _proc.send_to (
+          process.update_count += 1;
+          if send_result.is_err() || 50 <= process.update_count {
+            let _ = process.send_to (
               ChannelId::Randints, ProcessId::Sum1, Randintsmessage::Quit);
-            let _ = _proc.send_to (
+            let _ = process.send_to (
               ChannelId::Randints, ProcessId::Sum2, Randintsmessage::Quit);
-            let _ = _proc.send_to (
+            let _ = process.send_to (
               ChannelId::Randints, ProcessId::Sum3, Randintsmessage::Quit);
-            let _ = _proc.send_to (
+            let _ = process.send_to (
               ChannelId::Randints, ProcessId::Sum4, Randintsmessage::Quit);
             apis::process::ControlFlow::Break
           } else {
@@ -75,21 +83,21 @@ def_session! {
         sourcepoints   []
         endpoints      [Randints]
         handle_message {
-          match _message_in {
+          match message_in {
             GlobalMessage::Randintsmessage (Randintsmessage::Quit) => {
               apis::process::ControlFlow::Break
             }
             GlobalMessage::Randintsmessage (Randintsmessage::Anint (anint)) => {
-              _proc.sum += anint;
+              process.sum += anint;
               apis::process::ControlFlow::Continue
             }
           }
         }
         update {
-          if *_proc.inner.state().id() == apis::process::inner::StateId::Ended {
-            println!("sum 1 final: {}", _proc.sum);
+          if *process.inner.state().id() == apis::process::inner::StateId::Ended {
+            println!("sum 1 final: {}", process.sum);
           } else {
-            println!("sum 1: {}", _proc.sum);
+            println!("sum 1: {}", process.sum);
           }
           apis::process::ControlFlow::Continue
         }
@@ -99,21 +107,21 @@ def_session! {
         sourcepoints   []
         endpoints      [Randints]
         handle_message {
-          match _message_in {
+          match message_in {
             GlobalMessage::Randintsmessage (Randintsmessage::Quit) => {
               apis::process::ControlFlow::Break
             }
             GlobalMessage::Randintsmessage (Randintsmessage::Anint (anint)) => {
-              _proc.sum += anint;
+              process.sum += anint;
               apis::process::ControlFlow::Continue
             }
           }
         }
         update {
-          if *_proc.inner.state().id() == apis::process::inner::StateId::Ended {
-            println!("sum 2 final: {}", _proc.sum);
+          if *process.inner.state().id() == apis::process::inner::StateId::Ended {
+            println!("sum 2 final: {}", process.sum);
           } else {
-            println!("sum 2: {}", _proc.sum);
+            println!("sum 2: {}", process.sum);
           }
           apis::process::ControlFlow::Continue
         }
@@ -123,21 +131,21 @@ def_session! {
         sourcepoints   []
         endpoints      [Randints]
         handle_message {
-          match _message_in {
+          match message_in {
             GlobalMessage::Randintsmessage (Randintsmessage::Quit) => {
               apis::process::ControlFlow::Break
             }
             GlobalMessage::Randintsmessage (Randintsmessage::Anint (anint)) => {
-              _proc.sum += anint;
+              process.sum += anint;
               apis::process::ControlFlow::Continue
             }
           }
         }
         update {
-          if *_proc.inner.state().id() == apis::process::inner::StateId::Ended {
-            println!("sum 3 final: {}", _proc.sum);
+          if *process.inner.state().id() == apis::process::inner::StateId::Ended {
+            println!("sum 3 final: {}", process.sum);
           } else {
-            println!("sum 3: {}", _proc.sum);
+            println!("sum 3: {}", process.sum);
           }
           apis::process::ControlFlow::Continue
         }
@@ -147,21 +155,21 @@ def_session! {
         sourcepoints   []
         endpoints      [Randints]
         handle_message {
-          match _message_in {
+          match message_in {
             GlobalMessage::Randintsmessage (Randintsmessage::Quit) => {
               apis::process::ControlFlow::Break
             }
             GlobalMessage::Randintsmessage (Randintsmessage::Anint (anint)) => {
-              _proc.sum += anint;
+              process.sum += anint;
               apis::process::ControlFlow::Continue
             }
           }
         }
         update {
-          if *_proc.inner.state().id() == apis::process::inner::StateId::Ended {
-            println!("sum 4 final: {}", _proc.sum);
+          if *process.inner.state().id() == apis::process::inner::StateId::Ended {
+            println!("sum 4 final: {}", process.sum);
           } else {
-            println!("sum 4: {}", _proc.sum);
+            println!("sum 4: {}", process.sum);
           }
           apis::process::ControlFlow::Continue
         }

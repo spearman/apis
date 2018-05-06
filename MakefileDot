@@ -1,7 +1,7 @@
 .PHONY: foo
 %: foo
-	dot -Tsvg $@.dot > $@.svg
-#dot -Tpng $@.dot > $@.png
+	dot -Tpng $@.dot > $@.png
+#dot -Tsvg $@.dot > $@.svg
 
 # dummy rule to prevent MakefileDot from trying to make itself
 MakefileDot: ;

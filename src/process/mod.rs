@@ -1,16 +1,9 @@
-use ::std;
+use ::{std, either, smallvec, vec_map,
+  num_traits as num};
 
-//use ::bit_set;
-//use ::bit_vec;
-use ::either;
-use ::smallvec;
-use ::vec_map;
+use ::{enum_unitary};
 
-use ::enum_unitary;
-
-use ::channel;
-use ::Message;
-use ::session;
+use ::{channel, session, Message};
 
 ///////////////////////////////////////////////////////////////////////////////
 //  submodules
@@ -311,7 +304,7 @@ pub trait Process <CTX, RES> where
       let endpoints = self.take_endpoints();
       let mut unhandled_count = 0;
       for (cid, endpoint) in endpoints.iter() {
-        use num::FromPrimitive;
+        use self::num::FromPrimitive;
         let channel_id = CTX::CID::from_usize (cid).unwrap();
         loop {
           match endpoint.try_recv() {
@@ -363,7 +356,7 @@ pub trait Process <CTX, RES> where
     Self : Sized,
     CTX  : 'static
   {
-    use num::FromPrimitive;
+    use self::num::FromPrimitive;
     use colored::Colorize;
 
     self.inner_mut().handle_event (inner::EventParams::Run{}.into()).unwrap();
@@ -1067,7 +1060,7 @@ where
   // loop) until "empty" or "disconnected" is encountered
   let mut open_index = 0;
   'poll_outer: for (cid, endpoint) in endpoints.iter() {
-    use num::FromPrimitive;
+    use self::num::FromPrimitive;
     let channel_id = CTX::CID::from_usize (cid).unwrap();
     let channel_open = &mut open_channels[open_index];
     open_index += 1;
