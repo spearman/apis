@@ -36,6 +36,7 @@ pub extern crate num_traits;
 #[doc(hidden)]
 pub extern crate vec_map;
 
+#[cfg_attr(any(feature = "test", test), macro_use)]
 #[macro_reexport(enum_unitary, macro_attr, macro_attr_impl,
   enum_derive_util, IterVariants, NextVariant, PrevVariant)]
 #[doc(hidden)]

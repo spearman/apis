@@ -6,7 +6,7 @@ use ::{channel, message, process};
 //  submodules
 ///////////////////////////////////////////////////////////////////////////////
 
-mod macro_def;
+#[macro_use] mod macro_def;
 
 ///////////////////////////////////////////////////////////////////////////////
 //  structs
@@ -730,4 +730,68 @@ pub fn report_sizes <CTX : Context> () {
   println!("  size of Session: {}", std::mem::size_of::<Session <CTX>>());
   println!("  size of session::Def: {}", std::mem::size_of::<Def <CTX>>());
   println!("...session report sizes");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//  test mock                                                                //
+///////////////////////////////////////////////////////////////////////////////
+
+#[cfg(any(feature = "test", test))]
+pub mod mock {
+  def_session! {
+    context Mycontext {
+      PROCESSES where
+        let process    = self,
+        let message_in = message_in
+      [
+        process A () {
+          kind           { ::process::Kind::isochronous_default() }
+          sourcepoints   []
+          endpoints      []
+          handle_message { ::process::ControlFlow::Break }
+          update         { ::process::ControlFlow::Break }
+        }
+        process B () {
+          kind           { ::process::Kind::isochronous_default() }
+          sourcepoints   []
+          endpoints      []
+          handle_message { ::process::ControlFlow::Break }
+          update         { ::process::ControlFlow::Break }
+        }
+        process C () {
+          kind           { ::process::Kind::isochronous_default() }
+          sourcepoints   []
+          endpoints      []
+          handle_message { ::process::ControlFlow::Break }
+          update         { ::process::ControlFlow::Break }
+        }
+        process D () {
+          kind           { ::process::Kind::isochronous_default() }
+          sourcepoints   []
+          endpoints      []
+          handle_message { ::process::ControlFlow::Break }
+          update         { ::process::ControlFlow::Break }
+        }
+      ]
+      CHANNELS  [
+        channel X <T> (Simplex) {
+          producers [A]
+          consumers [B]
+        }
+        channel Y <U> (Source) {
+          producers [A]
+          consumers [B]
+        }
+        channel Z <V> (Sink) {
+          producers [A]
+          consumers [B]
+        }
+      ]
+      MESSAGES [
+        message T {}
+        message U {}
+        message V {}
+      ]
+    }
+  }
 }

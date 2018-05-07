@@ -315,3 +315,13 @@ DOT files for these examples.
 
 Most of these examples will potentially or intentionally generate warnings, see
 the doc comments in individual examples for specifics.
+
+
+## Running tests
+
+Process and channel definition doctests need to be run with `--features "test"`
+to compile successfully:
+
+    $ cargo test --features "test"
+
+(see <https://github.com/rust-lang/rust/issues/45599>).

@@ -1,6 +1,6 @@
 [package]
 name = "apis"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Shane Pearman <spearman@github.com>"]
 license = "MPL-2.0"
 description = "Reactive, session-oriented, asynchronous process-calculus framework"
@@ -26,9 +26,12 @@ unbounded-spsc = "0.1.*"
 
 # dev dependencies
 [dev-dependencies]
-mock = { version = "0.1.0", path = "./mock/" }
-
-glium = "0.20.*"
+glium = "0.21.*"
 rand = "0.4.*"
 simplelog = "0.5.*"
 unwrap = "1.*"
+
+[features]
+# The reason we do this is because doctests don't get cfg(test) See:
+# https://github.com/rust-lang/rust/issues/45599
+test = []

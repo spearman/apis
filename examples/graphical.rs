@@ -38,15 +38,15 @@ use glium::glutin;
 ///////////////////////////////////////////////////////////////////////////////
 
 //  Off, Error, Warn, Info, Debug, Trace
-pub const LOG_LEVEL
-  : simplelog::LevelFilter = simplelog::LevelFilter::Info;
+pub const LOG_LEVEL : simplelog::LevelFilter =
+  simplelog::LevelFilter::Info;
 
 ///////////////////////////////////////////////////////////////////////////////
 //  statics                                                                  //
 ///////////////////////////////////////////////////////////////////////////////
 
-pub static CONTEXT_ALIVE
-  : std::sync::atomic::AtomicBool = std::sync::atomic::ATOMIC_BOOL_INIT;
+pub static CONTEXT_ALIVE : std::sync::atomic::AtomicBool =
+  std::sync::atomic::ATOMIC_BOOL_INIT;
 
 ///////////////////////////////////////////////////////////////////////////////
 //  datatypes                                                                //
@@ -141,17 +141,12 @@ def_program! {
 ///////////////////////////////////////////////////////////////////////////////
 
 pub mod bgr {
-  use ::std;
-
-  use ::glium;
+  use ::{std, glium};
   use ::glium::glutin;
 
   use ::apis;
 
-  use ::GlutinGliumContext;
-  use ::ModeControl;
-
-  use ::CONTEXT_ALIVE;
+  use ::{CONTEXT_ALIVE, GlutinGliumContext, ModeControl};
 
   def_session! {
     context Bgr {
@@ -263,15 +258,12 @@ pub mod bgr {
 ///////////////////////////////////////////////////////////////////////////////
 
 pub mod cym {
-  use ::std;
-
   //use ::glium;
   use ::glium::glutin;
 
   use ::apis;
 
-  use ::GlutinGliumContext;
-  use ::ModeControl;
+  use ::{GlutinGliumContext, ModeControl};
 
   def_session! {
     context Cym {
@@ -371,15 +363,12 @@ pub mod cym {
 ///////////////////////////////////////////////////////////////////////////////
 
 pub mod wsk {
-  use ::std;
-
   //use ::glium;
   use ::glium::glutin;
 
   use ::apis;
 
-  use ::GlutinGliumContext;
-  use ::ModeControl;
+  use ::{GlutinGliumContext, ModeControl};
 
   def_session! {
     context Wsk {

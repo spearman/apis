@@ -731,9 +731,8 @@ impl <CTX : session::Context> Def <CTX> {
   ///
   /// ```
   /// # extern crate apis;
-  /// # extern crate mock;
   /// # use apis::{channel,message,process};
-  /// # use mock::*;
+  /// # use apis::session::mock::*;
   /// # fn main() {
   /// let result = process::Def::<Mycontext>::define (
   ///   ProcessId::A,
@@ -749,9 +748,8 @@ impl <CTX : session::Context> Def <CTX> {
   ///
   /// ```
   /// # extern crate apis;
-  /// # extern crate mock;
   /// # use apis::{channel,message,process};
-  /// # use mock::*;
+  /// # use apis::session::mock::*;
   /// # fn main() {
   /// let result = process::Def::<Mycontext>::define (
   ///   ProcessId::A,
@@ -767,9 +765,8 @@ impl <CTX : session::Context> Def <CTX> {
   ///
   /// ```
   /// # extern crate apis;
-  /// # extern crate mock;
   /// # use apis::{channel,message,process};
-  /// # use mock::*;
+  /// # use apis::session::mock::*;
   /// # fn main() {
   /// let result = process::Def::<Mycontext>::define (
   ///   ProcessId::A,
@@ -785,10 +782,9 @@ impl <CTX : session::Context> Def <CTX> {
   ///
   /// ```
   /// # extern crate apis;
-  /// # extern crate mock;
   /// # use apis::{channel,message,process};
+  /// # use apis::session::mock::*;
   /// # use channel::Id;
-  /// # use mock::*;
   /// # fn main() {
   /// let result = process::Def::<Mycontext>::define (
   ///   ProcessId::A,
@@ -805,10 +801,9 @@ impl <CTX : session::Context> Def <CTX> {
   ///
   /// ```
   /// # extern crate apis;
-  /// # extern crate mock;
   /// # use apis::{channel,message,process};
+  /// # use apis::session::mock::*;
   /// # use channel::Id;
-  /// # use mock::*;
   /// # fn main() {
   /// let result = process::Def::<Mycontext>::define (
   ///   ProcessId::A,

@@ -346,7 +346,7 @@ macro_rules! def_session {
         $update
       }
     }
-    impl std::convert::TryFrom <GlobalProcess> for $process {
+    impl ::std::convert::TryFrom <GlobalProcess> for $process {
       type Error = String;
       fn try_from (global_process : GlobalProcess) -> Result <Self, Self::Error> {
         #[allow(unreachable_patterns)]
@@ -405,12 +405,12 @@ macro_rules! def_session {
       }
 
       fn spawn (inner : $crate::process::Inner <$context>)
-        -> std::thread::JoinHandle <Option <()>>
+        -> ::std::thread::JoinHandle <Option <()>>
       {
         use $crate::Process;
         match *inner.as_ref().def.id() {
           $(ProcessId::$process => {
-            std::thread::Builder::new()
+            ::std::thread::Builder::new()
               .name (stringify!($process).to_string())
               .spawn (||{
                 let process = $process::new (inner);
@@ -489,7 +489,7 @@ macro_rules! def_session {
     //
     $(
     impl $crate::Message <$context> for $message_type {}
-    impl std::convert::TryFrom <GlobalMessage> for $message_type {
+    impl ::std::convert::TryFrom <GlobalMessage> for $message_type {
       type Error = String;
       fn try_from (global_message : GlobalMessage) -> Result <Self, Self::Error> {
         #[allow(unreachable_patterns)]

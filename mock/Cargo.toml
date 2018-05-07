@@ -1,7 +1,0 @@
-[package]
-name = "mock"
-version = "0.1.0"
-authors = ["Shane Pearman <spearman@github.com>"]
-
-[dependencies]
-apis = { path = "../" }

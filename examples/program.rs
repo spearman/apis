@@ -85,7 +85,6 @@ def_program! {
 ///////////////////////////////////////////////////////////////////////////////
 
 pub mod chargen_upcase {
-  use ::std;
   use ::apis;
 
   def_session! {
@@ -194,10 +193,7 @@ pub mod chargen_upcase {
 ///////////////////////////////////////////////////////////////////////////////
 
 pub mod rand_source {
-  use ::std;
-  use ::rand;
-
-  use ::apis;
+  use ::{apis, rand};
 
   def_session!{
     //

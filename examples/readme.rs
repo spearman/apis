@@ -28,7 +28,7 @@ extern crate macro_machines;
 ///////////////////////////////////////////////////////////////////////////////
 
 pub mod int_source {
-  use ::{std, apis};
+  use ::apis;
 
   const MAX_UPDATES : u64 = 10;
 
@@ -127,7 +127,7 @@ pub mod int_source {
 }
 
 pub mod char_sink {
-  use ::{std, apis};
+  use ::apis;
 
   const MAX_UPDATES : u64 = 10;
 
