@@ -3,6 +3,9 @@ name = "apis"
 version = "0.2.1"
 authors = ["Shane Pearman <spearman@github.com>"]
 license = "MPL-2.0"
+description = "Reactive, session-oriented, asynchronous process-calculus framework"
+repository = "https://github.com/spearman/apis"
+readme = "README.md"
 
 [lib]
 name = "apis"
