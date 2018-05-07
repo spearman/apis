@@ -293,7 +293,7 @@ simplelog = "0.5.*"
 
 Using a `TermLogger` to display log messages in the terminal:
 
-```rs
+```rust
 extern crate simplelog;
 fn main() {
   simplelog::TermLogger::init (
