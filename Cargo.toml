@@ -23,7 +23,7 @@ unbounded-spsc = "0.1.*"
 
 # dev dependencies
 [dev-dependencies]
-mock = { path = "./mock/" }
+mock = { version = "0.1.0", path = "./mock/" }
 
 glium = "0.20.*"
 rand = "0.4.*"
