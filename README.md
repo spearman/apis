@@ -35,7 +35,9 @@ processes of one mode to the next.
 **Current limitations**
 
 - Process and channel definitions are local to a particular session definition;
-  they cannot be re-used
+  they cannot be re-used. One way to partly mitigate this limitation is to
+  create a context type that encapsulates the intended 'role' and re-use that
+  in multiple processes.
 - Passing state between sessions is implemented in a *continuation-passing
   style* and the Rust compiler cannot not optimize away the tail recursion in
   this case; note this only occurs if state is explicitly transferred between
@@ -65,11 +67,8 @@ alternatively to two peers which sum the received values and return a final sum
 in the *session result*:
 
 ```rust
-#![feature(const_fn)]
-#![feature(try_from)]
-
 pub mod int_source {
-  use ::{std, apis};
+  use ::apis;
 
   const MAX_UPDATES : u64 = 10;
 
