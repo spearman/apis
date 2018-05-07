@@ -258,11 +258,14 @@ fn main() {
 }
 ```
 
-Note that it is necessary to introduce the `result` variable used here to
-access the result of a completed `session.run()` call in the 'transition choice
-blocks' associated to each mode. Here the transition is always the same,
-however the results can be used to nondeterministically choose any transition
-with a source matching the completed session.
+Note that it is necessary to introduce the `result` identifier here to access
+the result of a `session.run()` call within the (optional) 'transition
+choice block' associated to a mode, in this case 'IntSource'. Here the
+transition is always the same, however the contents of the session result can
+be used to nondeterministically choose any transition with a source matching
+the finished session. If no transition choice block is defined (as is the case
+with 'CharSink' above), or if a transition choice block evaluates to 'None',
+then the program will exit and not transition to any other session.
 
 For examples of programs that transfer state from processes of one session to
 the next, see `program.rs`, `interactive.rs`, or `graphical.rs` in the
@@ -307,20 +310,20 @@ fn main() {
 ## Examples
 
 A number of example programs are given in `./examples/`. Non-interactive
-examples can be run by the `./run-examples.sh` script which will also build
+examples can be run by the `./run-examples.sh` script which will also builds
 images from generated DOT files. The `graphical.rs` and `interactive.rs`
 examples are interactive, requiring user input. These can be run with the
 `./run-interactive.sh` script which will also produce images from the generated
 DOT files for these examples.
 
-Most of these examples will potentially or intentionally generate warnings, see
-the doc comments in individual examples for specifics.
+Most of these examples will intentionally generate warnings, see the doc
+comments of individual examples for specifics.
 
 
 ## Running tests
 
-Process and channel definition doctests need to be run with `--features "test"`
-to compile successfully:
+Doctests of process and channel definitions need to be run with `--features
+"test"` to compile successfully:
 
     $ cargo test --features "test"
 
