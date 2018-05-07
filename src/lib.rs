@@ -1,4 +1,4 @@
-//! # Apis <IMG STYLE="vertical-align: middle" SRC="https://raw.githubusercontent.com/spearman/apis/master/apis.png">
+//! # Apis <IMG STYLE="vertical-align: middle" SRC="https://raw.githubusercontent.com/spearman/apis/master/doc/apis.png">
 //!
 //! *Reactive, session-oriented, asynchronous process-calculus framework.*
 //!
