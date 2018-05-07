@@ -307,11 +307,11 @@ fn main() {
 ## Examples
 
 A number of example programs are given in `./examples/`. Non-interactive
-examples can be run by the `./run-examples.sh` script which will also generate
-image files from generated DOT files. The `graphical.rs` and `interactive.rs`
+examples can be run by the `./run-examples.sh` script which will also build
+images from generated DOT files. The `graphical.rs` and `interactive.rs`
 examples are interactive, requiring user input. These can be run with the
-`./run-interactive.sh` script which will also generate image files from the
-generate DOT files for these examples.
+`./run-interactive.sh` script which will also produce images from the generated
+DOT files for these examples.
 
 Most of these examples will potentially or intentionally generate warnings, see
 the doc comments in individual examples for specifics.
