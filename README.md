@@ -4,12 +4,12 @@
 
 [Documentation](https://spearman.github.io/apis/apis/)
 
-This crate provides a macro and traits for defining *sessions* of reactive
-threads ("*processes*" in the sense of 'process calculus'), able to communicate
-messages over a fixed topology of *channels*. It also provides a macro for
-defining a "*program*" as a state transition systems on session nodes, called
-"*modes*", in which thread-local state may be passed from processes of one mode
-to the next.
+This crate provides traits and a macro interface for defining *sessions* of
+reactive threads ("*processes*" in the sense of 'process calculus'),
+communicating messages over a fixed topology of *channels*. It also provides a
+macro for defining a "*program*" as a state transition system on session
+nodes, called "*modes*", in which thread-local state may be passed from
+processes of one mode to the next.
 
 
 **Current features**
