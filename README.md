@@ -21,7 +21,7 @@ to the next.
     * 'Simplex' -- a one-way SPSC stream
     * 'Sink' -- a standard MPSC channel
     * 'Source' -- an SPMC unicast channel
-- Four kinds of process with varying receive and update behavior, roughly
+- Four kinds of processes with varying receive and update behavior, roughly
   divided into two classes by receive mechanism:
     * "asynchronous" -- block-waiting receives for a single endpoint
       ('Asynchronous')

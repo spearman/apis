@@ -1,7 +1,6 @@
 - dotfile pretty print session defaults
-- make dotfile into a trait function
-- deriving debug was removed for processes and sessions, although it
-  would be nice to manually request this if possible
+- deriving debug was removed for processes and sessions, although it would be
+  nice to manually request this if possible
 - program trait
 - more trace! log messages in process run loops
 - finer time granularity (microseconds?)
