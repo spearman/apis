@@ -60,6 +60,8 @@ rely on two unstable features, `const_fn` and `try_from`:
 ```rust
 #![feature(const_fn)]
 #![feature(try_from)]
+
+#[macro_use] extern crate apis;
 ```
 
 Define a session 'IntSource' in which a source thread sends `u64` values
@@ -219,6 +221,8 @@ features, `core_intrinsics` and `fnbox`, are required:
 #![feature(core_intrinsics)]
 #![feature(fnbox)]
 #![feature(try_from)]
+
+#[macro_use] extern crate apis;
 ```
 
 Define another session `CharSink` in module `char_sink` with different behavior
