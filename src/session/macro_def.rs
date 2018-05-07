@@ -263,7 +263,14 @@ macro_rules! def_session {
       fn process_result_defaults() -> Vec <&'static str> {
         let mut v = Vec::new();
         $(
-        v.push (stringify!($($($presult_default)*)*));
+        v.push ({
+          let default_expr = stringify!($($($presult_default)*)*);
+          if !default_expr.is_empty() {
+            default_expr
+          } else {
+            concat!(stringify!($($presult_type)*), "::default()")
+          }
+        });
         )+
         v
       }

@@ -412,17 +412,18 @@ impl <CTX : Context> Def <CTX> {
     channels
   }
 
-  /// Generate a graphviz diagram for the defined session
+  /// Generate a graphviz DOT file of the data flow diagram for the defined
+  /// session
   #[inline]
   pub fn dotfile (&self) -> String {
-    self.session_dotfile (false)
+    self.session_dotfile (true)
   }
 
-  /// Generate a graphviz diagram for the defined session with default
-  /// expressions hidden
+  /// Generate a graphviz diagram of the data flow diagram for the defined
+  /// session with default expressions shown
   #[inline]
-  pub fn dotfile_hide_defaults (&self) -> String {
-    self.session_dotfile (true)
+  pub fn dotfile_show_defaults (&self) -> String {
+    self.session_dotfile (false)
   }
 
   //

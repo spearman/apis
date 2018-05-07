@@ -264,14 +264,12 @@ fn main() {
   // write session dotfiles
   use apis::session::Context;
   let mut f = std::fs::File::create ("charsink.dot").unwrap();
-  f.write_all (
-    char_sink::CharSink::def().unwrap().dotfile_hide_defaults().as_bytes()
-  ).unwrap();
+  f.write_all (char_sink::CharSink::def().unwrap().dotfile().as_bytes())
+    .unwrap();
   drop (f);
   let mut f = std::fs::File::create ("intsource.dot").unwrap();
-  f.write_all (
-    int_source::IntSource::def().unwrap().dotfile_hide_defaults().as_bytes()
-  ).unwrap();
+  f.write_all (int_source::IntSource::def().unwrap().dotfile().as_bytes())
+    .unwrap();
   drop (f);
   // write program state machine dotfile
   use macro_machines::MachineDotfile;

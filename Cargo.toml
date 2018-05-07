@@ -1,6 +1,6 @@
 [package]
 name = "apis"
-version = "0.2.4"
+version = "0.3.0"
 authors = ["Shane Pearman <spearman@github.com>"]
 license = "MPL-2.0"
 description = "Reactive, session-oriented, asynchronous process-calculus framework"

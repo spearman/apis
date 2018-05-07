@@ -247,7 +247,7 @@ fn main() {
   let session_def = unwrap!(ChargenUpcaseSink::def());
   // create a dotfile for the session
   let mut f = unwrap!(std::fs::File::create (format!("{}.dot", example_name)));
-  unwrap!(f.write_all (session_def.dotfile().as_bytes()));
+  unwrap!(f.write_all (session_def.dotfile_show_defaults().as_bytes()));
   drop (f);
   // create the session from the definition
   let mut session : apis::session::Session <ChargenUpcaseSink>
