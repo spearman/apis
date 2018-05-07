@@ -2,6 +2,8 @@
 //!
 //! *Reactive, session-oriented, asynchronous process-calculus framework.*
 //!
+//! [Repository](https://github.com/spearman/apis)
+//!
 //! Processes are "reactive" threads with specified message handling and update
 //! behavior.
 //!
