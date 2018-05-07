@@ -331,3 +331,8 @@ Doctests of process and channel definitions need to be run with `--features
     $ cargo test --features "test"
 
 (see <https://github.com/rust-lang/rust/issues/45599>).
+
+
+## Dependencies
+
+![](dependencies.png)
