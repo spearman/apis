@@ -517,8 +517,12 @@ impl <CTX : Context> Def <CTX> {
   }
 
   fn session_dotfile (&self, hide_defaults : bool) -> String {
-    use escapade::Escapable;
-
+    /// Escape HTML special characters
+    #[inline]
+    fn escape (s : String) -> String {
+      use marksman_escape::Escape;
+      String::from_utf8 (Escape::new (s.bytes()).collect()).unwrap()
+    }
     let mut s = String::new();
 
     // begin graph
@@ -591,14 +595,14 @@ impl <CTX : Context> Def <CTX> {
             .collect();
 
           if !hide_defaults {
-            field_string.push_str (format!(
+            field_string.push_str (escape (format!(
               "{}{} : {}{} = {}",
               f, spacer1, process_field_types[i], spacer2, process_field_defaults[i]
-            ).escape().into_inner().as_str());
+            )).as_str());
           } else {
-            field_string.push_str (format!(
+            field_string.push_str (escape (format!(
               "{}{} : {}", f, spacer1, process_field_types[i]
-            ).escape().into_inner().as_str());
+            )).as_str());
           }
           field_string.push_str (format!("{}", separator).as_str());
         }
@@ -619,13 +623,11 @@ impl <CTX : Context> Def <CTX> {
         }
         let result_default = process_result_defaults[pid];
         if !hide_defaults {
-          s.push_str (format!(
+          s.push_str (escape (format!(
             "-> {} = {}", result_type, result_default
-          ).escape().into_inner().as_str());
+          )).as_str());
         } else {
-          s.push_str (format!(
-            "-> {}", result_type
-          ).escape().into_inner().as_str());
+          s.push_str (escape (format!("-> {}", result_type)).as_str());
         }
       }
 
@@ -653,8 +655,7 @@ impl <CTX : Context> Def <CTX> {
       let consumers      = channel_def.consumers();
       let kind           = channel_def.kind();
       let local_type     = channel_local_types[cid];
-      let channel_string = format!("{:?} <{}>", channel_id, local_type)
-        .as_str().escape().into_inner();
+      let channel_string = escape (format!("{:?} <{}>", channel_id, local_type));
       match *kind {
         channel::Kind::Simplex => {
           debug_assert_eq!(producers.len(), 1);

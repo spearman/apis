@@ -25,7 +25,7 @@
 #[macro_reexport(log, trace, debug, info, warn, error)]
 extern crate log;
 
-extern crate escapade;
+extern crate marksman_escape;
 extern crate smallvec;
 extern crate unbounded_spsc;
 
