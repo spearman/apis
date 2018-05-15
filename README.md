@@ -2,7 +2,7 @@
 
 > Reactive, session-oriented, asynchronous process-calculus framework
 
-[Documentation](https://spearman.github.io/apis/apis/)
+[Documentation](https://docs.rs/apis/)
 
 This crate provides traits and a macro interface for defining *sessions* of
 reactive threads ("*processes*" in the sense of 'process calculus'),
