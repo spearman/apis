@@ -1,8 +1,6 @@
-use ::{std};
-
-use ::enum_unitary;
-
-use ::session;
+use std;
+use enum_unitary;
+use session;
 
 // NOTE: Currently Global only refers to CTX::MID and Message only refers to
 // CTX::GMSG and CTX::MID through the GMSG parameter. It would seem that we

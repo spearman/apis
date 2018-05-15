@@ -1,8 +1,6 @@
-use ::{std, vec_map};
-
-use ::enum_unitary;
-
-use ::{session, Message};
+use {std, vec_map};
+use enum_unitary;
+use {session, Message};
 
 ///////////////////////////////////////////////////////////////////////////////
 //  submodules

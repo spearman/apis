@@ -54,7 +54,7 @@ macro_rules! def_program {
     impl $crate::Program for $program {
       /// Run the program to completion.
       fn run (&mut self) {
-        use $crate::colored::Colorize;
+        use $crate::Colorize;
         info!("program[{}]: {}", stringify!($program), "run...".cyan().bold());
         // TODO: create program ready/ended states and transitions
         debug_assert_eq!(self.state.id, StateId::$initial_mode);
@@ -66,10 +66,10 @@ macro_rules! def_program {
         $(
         struct $mode_context {
           pub channels :
-            Option <$crate::vec_map::VecMap
+            Option <$crate::VecMap
               <$crate::Channel <$mode_mod::$mode_context>>>,
           pub process_handles :
-            Option <$crate::vec_map::VecMap
+            Option <$crate::VecMap
               <$crate::process::Handle <$mode_mod::$mode_context>>>,
           pub main_process :
             Option <Box <
@@ -99,7 +99,7 @@ macro_rules! def_program {
               let mut $result = session.run_with (
                 $mode_mod.channels.take().unwrap(),
                 $mode_mod.process_handles.take().unwrap_or_else (
-                  || $crate::vec_map::VecMap::new()),
+                  || $crate::VecMap::new()),
                 $mode_mod.main_process.take()
               );
               def_program!(@option_transition_choice $($transition_choice)*)
@@ -133,7 +133,7 @@ macro_rules! def_program {
                     let target_session_def
                       = $target_mod::$target_context::def().unwrap();
                     let mut channels = target_session_def.create_channels();
-                    let mut process_handles = $crate::vec_map::VecMap::new();
+                    let mut process_handles = $crate::VecMap::new();
 
                     // handle continuations
                     $($({
@@ -175,15 +175,15 @@ macro_rules! def_program {
 
                       // peer channels
                       let mut sourcepoints
-                        : $crate::vec_map::VecMap <Box
+                        : $crate::VecMap <Box
                           <$crate::channel::Sourcepoint
                             <$target_mod::$target_context>>>
-                        = $crate::vec_map::VecMap::new();
+                        = $crate::VecMap::new();
                       let mut endpoints
-                        : $crate::vec_map::VecMap <Box
+                        : $crate::VecMap <Box
                           <$crate::channel::Endpoint
                             <$target_mod::$target_context>>>
-                        = $crate::vec_map::VecMap::new();
+                        = $crate::VecMap::new();
                       for (cid, channel) in channels.iter_mut() {
                         if let Some (sourcepoint)
                           = channel.sourcepoints.remove (next_pid)
@@ -273,7 +273,7 @@ macro_rules! def_program {
                         // create the next process handle
                         $crate::process::Handle {
                           result_rx, continuation_tx,
-                          join_or_continue: $crate::either::Either::Right (None)
+                          join_or_continue: $crate::Either::Right (None)
                         }
                       } else {
                         // create a continuation function
@@ -298,7 +298,7 @@ macro_rules! def_program {
                         let join_handle = prev_process_handle.join_or_continue
                           .left().unwrap();
                         prev_process_handle.join_or_continue
-                          = $crate::either::Either::Right (Some (continuation));
+                          = $crate::Either::Right (Some (continuation));
                         assert!{
                           _session.as_mut().process_handles.insert (
                             prev_pid, prev_process_handle).is_none()
@@ -307,7 +307,7 @@ macro_rules! def_program {
                         // create the next process handle
                         $crate::process::Handle {
                           result_rx, continuation_tx,
-                          join_or_continue: $crate::either::Either::Left (join_handle)
+                          join_or_continue: $crate::Either::Left (join_handle)
                         }
                       };
                       assert!{

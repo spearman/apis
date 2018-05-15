@@ -141,12 +141,9 @@ def_program! {
 ///////////////////////////////////////////////////////////////////////////////
 
 pub mod bgr {
-  use ::{std, glium};
-  use ::glium::glutin;
-
-  use ::apis;
-
-  use ::{CONTEXT_ALIVE, GlutinGliumContext, ModeControl};
+  use {std, glium, glium::glutin};
+  use apis;
+  use {CONTEXT_ALIVE, GlutinGliumContext, ModeControl};
 
   def_session! {
     context Bgr {
@@ -258,12 +255,9 @@ pub mod bgr {
 ///////////////////////////////////////////////////////////////////////////////
 
 pub mod cym {
-  //use ::glium;
-  use ::glium::glutin;
-
-  use ::apis;
-
-  use ::{GlutinGliumContext, ModeControl};
+  use glium::glutin;
+  use apis;
+  use {GlutinGliumContext, ModeControl};
 
   def_session! {
     context Cym {
@@ -363,12 +357,9 @@ pub mod cym {
 ///////////////////////////////////////////////////////////////////////////////
 
 pub mod wsk {
-  //use ::glium;
-  use ::glium::glutin;
-
-  use ::apis;
-
-  use ::{GlutinGliumContext, ModeControl};
+  use glium::glutin;
+  use apis;
+  use {GlutinGliumContext, ModeControl};
 
   def_session! {
     context Wsk {

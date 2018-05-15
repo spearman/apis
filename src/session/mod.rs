@@ -1,6 +1,7 @@
-use ::{std, either, vec_map,
+use {std, either, vec_map,
   num_traits as num};
-use ::{channel, message, process};
+use macro_machines::*;
+use {channel, message, process};
 
 ///////////////////////////////////////////////////////////////////////////////
 //  submodules

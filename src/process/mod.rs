@@ -1,9 +1,11 @@
-use ::{std, either, smallvec, vec_map,
+use {std, either, smallvec, vec_map,
   num_traits as num};
 
-use ::{enum_unitary};
+use {enum_unitary};
 
-use ::{channel, session, Message};
+use macro_machines::*;
+
+use {channel, session, Message};
 
 ///////////////////////////////////////////////////////////////////////////////
 //  submodules

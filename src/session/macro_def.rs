@@ -295,7 +295,7 @@ macro_rules! def_session {
           $($field_name: def_session!(@expr_default $($field_default)*)),*
         }
       }
-      fn extract_result (session_results : &mut $crate::vec_map::VecMap <GlobalPresult>)
+      fn extract_result (session_results : &mut $crate::VecMap <GlobalPresult>)
         -> Result <($($presult_type)*), String>
       {
         let pid = ProcessId::$process as usize;

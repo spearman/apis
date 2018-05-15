@@ -193,7 +193,8 @@ pub mod chargen_upcase {
 ///////////////////////////////////////////////////////////////////////////////
 
 pub mod rand_source {
-  use ::{apis, rand};
+  use rand;
+  use apis;
 
   def_session!{
     //
@@ -219,7 +220,7 @@ pub mod rand_source {
           handle_message { unreachable!() }
           update {
             use rand::Rng;
-            use apis::num::FromPrimitive;
+            use apis::FromPrimitive;
             let mut rng = rand::thread_rng();
             let rand_id = ProcessId::from_u64 (rng.gen_range::<u64> (1, 5))
               .unwrap();

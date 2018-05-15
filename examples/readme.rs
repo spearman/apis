@@ -1,8 +1,9 @@
 //! Example program presented in README.md
 //!
-//! Note this program generates an 'unhandled message' warning in the second
-//! mode (session) as both producers send 'Quit' messages, but the receiver
-//! hangs up after the first is received.
+//! Note this program either generates an 'unhandled message' warning (both
+//! producers send 'Quit' messages, but the receiver hangs up after the first is
+//! received), or else a 'receiver disconnected' warning in case the receiver
+//! hangs up before the second process has a chance to send the 'Quit' message.
 //!
 //! Running this example will produce a DOT file 'myprogram.dot' representing
 //! the program state transition diagram, and two DOT files 'charsink.dot' and
@@ -78,7 +79,7 @@ pub mod int_source {
   impl IntGen {
     pub fn int_gen_update (&mut self) -> apis::process::ControlFlow {
       use apis::Process;
-      use apis::num::FromPrimitive;
+      use apis::FromPrimitive;
       let to_id = (self.update_count % 2) + 1;
       let anint = self.update_count;
       let mut result = self.send_to (

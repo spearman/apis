@@ -20,35 +20,33 @@
 #![feature(core_intrinsics)]
 #![feature(fnbox)]
 #![feature(try_from)]
-#![feature(macro_reexport)]
+#![feature(use_extern_macros)]
 
-#[macro_reexport(log, trace, debug, info, warn, error)]
 extern crate log;
-
+extern crate colored;
+extern crate either;
 extern crate marksman_escape;
+extern crate num_traits;
 extern crate smallvec;
 extern crate unbounded_spsc;
+extern crate vec_map;
 
-#[doc(hidden)]
-pub extern crate colored;
-#[doc(hidden)]
-pub extern crate either;
-#[doc(nidden)]
-pub extern crate num_traits;
-#[doc(hidden)]
-pub extern crate vec_map;
-
+extern crate macro_machines;
 #[cfg_attr(any(feature = "test", test), macro_use)]
-#[macro_reexport(enum_unitary, macro_attr, macro_attr_impl,
-  enum_derive_util, IterVariants, NextVariant, PrevVariant)]
-#[doc(hidden)]
-pub extern crate enum_unitary;
+extern crate enum_unitary;
 
-#[macro_reexport(def_machine)]
-#[macro_use] extern crate macro_machines;
+// NOTE: macro documentation not currently hidden (Rust 1.27.0):
+// <https://github.com/rust-lang/rust/issues/50647>
+#[doc(hidden)] pub use colored::Colorize;
+#[doc(hidden)] pub use either::Either;
+#[doc(hidden)] pub use log::{log, trace, debug, info, warn, error};
+#[doc(hidden)] pub use num_traits::FromPrimitive;
+#[doc(hidden)] pub use vec_map::VecMap;
 
-#[doc(hidden)]
-pub use num_traits as num;
+#[doc(hidden)] pub use enum_unitary::{
+  EnumUnitary, enum_unitary, macro_attr, macro_attr_impl, enum_derive_util,
+  IterVariants, NextVariant, PrevVariant};
+#[doc(hidden)] pub use macro_machines::def_machine;
 
 ///////////////////////////////////////////////////////////////////////////////
 //  modules
