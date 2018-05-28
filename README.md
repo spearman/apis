@@ -176,7 +176,7 @@ fn main() {
   // verifies the validity of the session definition
   let session_def = IntSource::def().unwrap();
   // create the session in the 'Ready' state
-  let mut session : apis::session::Session <IntSource> = session_def.into();
+  let mut session : apis::Session <IntSource> = session_def.into();
   // run the session and collect results
   let results = session.run();
   println!("results: {:?}", results);
@@ -198,7 +198,7 @@ write to file:
   let session_def = IntSource::def().unwrap();
   use std::io::Write;
   let mut f = std::fs::File::create ("intsource.dot").unwrap();
-  f.write_all (session_def.dotfile_hide_defaults().as_bytes()).unwrap();
+  f.write_all (session_def.dotfile().as_bytes()).unwrap();
   drop (f);
 ```
 
@@ -238,8 +238,8 @@ def_program! {
     MODES [
       mode int_source::IntSource {
         use apis::Process;
-        let sum1 = int_source::Sum1::extractresult (&mut result).unwrap();
-        let sum2 = int_source::Sum2::extractresult (&mut result).unwrap();
+        let sum1 = int_source::Sum1::extract_result (&mut result).unwrap();
+        let sum2 = int_source::Sum2::extract_result (&mut result).unwrap();
         println!("combined sums: {}", sum1 + sum2);
         Some (EventId::ToCharSink)
       }
@@ -280,7 +280,7 @@ generated showing the program state transition system:
 ```rust
   use std::io::Write;
   let mut f = std::fs::File::create ("myprogram.dot").unwrap();
-  f.write_all (Myprogram::dotfile_hide_defaults().as_bytes()).unwrap();
+  f.write_all (Myprogram::dotfile().as_bytes()).unwrap();
   drop (f);
 ```
 

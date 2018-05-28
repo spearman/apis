@@ -200,7 +200,7 @@ fn main() {
   unwrap!(f.write_all (session_def.dotfile_show_defaults().as_bytes()));
   drop (f);
   // create the session from the definition
-  let mut session : apis::session::Session <ChargenUpcase> = session_def.into();
+  let mut session : apis::Session <ChargenUpcase> = session_def.into();
   // run to completion
   let results = session.run();
   println!("results: {:?}", results);

@@ -153,12 +153,12 @@ pub mod readline_echoup {
   }
 
   impl Readline {
-    fn readline_handle_message (&mut self, _message : GlobalMessage)
+    fn readline_handle_message (&mut self, message : GlobalMessage)
       -> apis::process::ControlFlow
     {
       //use colored::Colorize;
       trace!("readline handle message...");
-      match _message {
+      match message {
         GlobalMessage::FromechoMsg (FromechoMsg::Echo (echo)) => {
           info!("Readline: received echo \"{}\"", echo);
         },
@@ -315,12 +315,12 @@ pub mod readline_echorev {
   }
 
   impl Readline {
-    fn readline_handle_message (&mut self, _message : GlobalMessage)
+    fn readline_handle_message (&mut self, message : GlobalMessage)
       -> apis::process::ControlFlow
     {
       //use colored::Colorize;
       trace!("readline handle message...");
-      match _message {
+      match message {
         GlobalMessage::FromechoMsg (FromechoMsg::Echo (echo)) => {
           info!("Readline: received echo \"{}\"", echo);
         },

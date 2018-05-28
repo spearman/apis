@@ -121,8 +121,8 @@ fn main() {
   unwrap!(f.write_all (session_def.dotfile().as_bytes()));
   drop (f);
   // create the session from the definition
-  let mut session : apis::session::Session <DisconnectReceiverSource>
-    = session_def.into();
+  let mut session : apis::Session <DisconnectReceiverSource> =
+    session_def.into();
   // run to completion
   let results = session.run();
   println!("results: {:?}", results);

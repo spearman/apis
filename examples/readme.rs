@@ -238,12 +238,12 @@ pub mod char_sink {
 ///////////////////////////////////////////////////////////////////////////////
 
 def_program! {
-  program Myprogram where let _result = session.run() {
+  program Myprogram where let result = session.run() {
     MODES [
       mode int_source::IntSource {
         use apis::Process;
-        let sum1 = int_source::Sum1::extract_result (&mut _result).unwrap();
-        let sum2 = int_source::Sum2::extract_result (&mut _result).unwrap();
+        let sum1 = int_source::Sum1::extract_result (&mut result).unwrap();
+        let sum2 = int_source::Sum2::extract_result (&mut result).unwrap();
         println!("combined sums: {}", sum1 + sum2);
         Some (EventId::ToCharSink)
       }
