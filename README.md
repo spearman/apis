@@ -39,8 +39,8 @@ processes of one mode to the next.
   create a context type that encapsulates the intended 'role' and re-use that
   in multiple processes.
 - Passing state between sessions is implemented in a *continuation-passing
-  style* and the Rust compiler cannot not optimize away the tail recursion in
-  this case; note this only occurs if state is explicitly transferred between
+  style* and the Rust compiler cannot optimize away the tail recursion in this
+  case; note this only occurs if state is explicitly transferred between
   sessions, otherwise unaffected threads will join back with the main thread
   and no tail recursion will take place.
 
