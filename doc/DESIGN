@@ -526,3 +526,32 @@ may be modified as follows to include the new process kind:
     timed-absolute      Isochronous
     timed-rate limited  Mesochronous
     untimed             Anisochronous       Asynchronous
+
+
+# Apis v0.2.2 - publish {#v0.2.2}
+
+Version published to github and crates.io.
+
+
+**Issues**
+
+The following issues from v0.0.11 have been *resolved*:
+
+- *Control flow mechanisms*: these were left unchanged, but the run loop
+  implementations of synchronous (polling) processes were modified to track
+  'open channels' to prevent attempting to receive on a closed channel while
+  other channels have not yet closed; see the section on
+  [control flow mechanisms](#control-flow-mechanisms) for details
+
+The following implementation issues from v0.0.11 have been *resolved*:
+
+- *Session dotfile functions*: instead of generating dotfile functions in the
+  `def_session!` macro definition, helper functions are implemented and the
+  dotfile function becomes a normal trait function of `Session`.
+
+The following issues *remain* from v0.0.11:
+
+- [*Reusable processes*](#reusable-processes)
+- *Program coherence*
+- *State machine usage*
+- *Session typed program control channels*
