@@ -20,7 +20,6 @@
 #![feature(core_intrinsics)]
 #![feature(fnbox)]
 #![feature(try_from)]
-#![feature(use_extern_macros)]
 
 extern crate log;
 extern crate colored;

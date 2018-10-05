@@ -199,13 +199,13 @@ macro_rules! def_program {
 
                       // session control channels
                       let (result_tx, result_rx)
-                        = std::sync::mpsc::channel::
+                        = ::std::sync::mpsc::channel::
                           <<$target_mod::$target_context
                             as $crate::session::Context>::GPRES>();
                       let (continuation_tx, continuation_rx)
-                        = std::sync::mpsc::channel::<
+                        = ::std::sync::mpsc::channel::<
                             Box <
-                              std::boxed::FnBox
+                              ::std::boxed::FnBox
                                 (<$target_mod::$target_context
                                   as $crate::session::Context>::GPROC
                                 ) -> Option <()>
@@ -234,7 +234,7 @@ macro_rules! def_program {
                             Some (next_process_id.def()),
                             Some (session_handle),
                             Some (sourcepoints),
-                            Some (std::cell::RefCell::new (Some (endpoints)))
+                            Some (::std::cell::RefCell::new (Some (endpoints)))
                           ).unwrap()
                         );
                         #[allow(unused_variables)]
