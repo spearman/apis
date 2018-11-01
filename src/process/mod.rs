@@ -1,29 +1,20 @@
-use {std, either, smallvec, vec_map,
-  num_traits as num};
-
+use {std, either, smallvec, num_traits as num};
 use {enum_unitary};
-
-use macro_machines::*;
-
 use {channel, session, Message};
 
-///////////////////////////////////////////////////////////////////////////////
-//  submodules
-///////////////////////////////////////////////////////////////////////////////
+use std::{boxed, sync::mpsc, time};
+use vec_map::VecMap;
+use macro_machines::*;
 
 pub mod inner;
 pub mod presult;
 
-///////////////////////////////////////////////////////////////////////////////
-//  reexports
-///////////////////////////////////////////////////////////////////////////////
-
 pub use self::inner::Inner;
 pub use self::presult::Presult;
 
-///////////////////////////////////////////////////////////////////////////////
-//  structs
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  structs                                                                   //
+////////////////////////////////////////////////////////////////////////////////
 
 /// Process definition.
 #[derive(Clone,Debug,Eq,PartialEq)]
@@ -36,22 +27,22 @@ pub struct Def <CTX : session::Context> {
 
 /// Handle to a process held by the session.
 pub struct Handle <CTX : session::Context> {
-  pub result_rx        : std::sync::mpsc::Receiver <CTX::GPRES>,
-  pub continuation_tx  : std::sync::mpsc::Sender <
-    Box <std::boxed::FnBox (CTX::GPROC) -> Option <()> + Send>
+  pub result_rx        : mpsc::Receiver <CTX::GPRES>,
+  pub continuation_tx  : mpsc::Sender <
+    Box <boxed::FnBox (CTX::GPROC) -> Option <()> + Send>
   >,
   /// When the session drops, the `finish` method will either join or send
   /// a continuation depending on the contents of this field.
   pub join_or_continue :
     either::Either <
       std::thread::JoinHandle <Option <()>>,
-      Option <Box <std::boxed::FnBox (CTX::GPROC) -> Option <()> + Send>>
+      Option <Box <boxed::FnBox (CTX::GPROC) -> Option <()> + Send>>
     >
 }
 
-///////////////////////////////////////////////////////////////////////////////
-//  enums
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  enums                                                                     //
+////////////////////////////////////////////////////////////////////////////////
 
 /// Specifies the loop behavior of a process.
 ///
@@ -127,9 +118,9 @@ pub enum DefineError {
   AsynchronousMultipleEndpoints
 }
 
-///////////////////////////////////////////////////////////////////////////////
-//  traits
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  traits                                                                    //
+////////////////////////////////////////////////////////////////////////////////
 
 /// Main process trait.
 pub trait Process <CTX, RES> where
@@ -146,7 +137,7 @@ pub trait Process <CTX, RES> where
   fn result_ref     (&self)                          -> &RES;
   fn result_mut     (&mut self)                      -> &mut RES;
   fn global_result  (&mut self)                      -> CTX::GPRES;
-  fn extract_result (session_results : &mut vec_map::VecMap <CTX::GPRES>)
+  fn extract_result (session_results : &mut VecMap <CTX::GPRES>)
     -> Result <RES, String>;
   fn handle_message (&mut self, message : CTX::GMSG) -> ControlFlow;
   fn update         (&mut self)                      -> ControlFlow;
@@ -180,15 +171,13 @@ pub trait Process <CTX, RES> where
   }
 
   #[inline]
-  fn sourcepoints (&self)
-    -> &vec_map::VecMap <Box <channel::Sourcepoint <CTX>>>
-  {
+  fn sourcepoints (&self) -> &VecMap <Box <channel::Sourcepoint <CTX>>> {
     &self.inner_ref().extended_state().sourcepoints
   }
 
   #[inline]
   fn sourcepoints_mut (&mut self)
-    -> &mut vec_map::VecMap <Box <channel::Sourcepoint <CTX>>>
+    -> &mut VecMap <Box <channel::Sourcepoint <CTX>>>
   {
     &mut self.inner_mut().extended_state_mut().sourcepoints
   }
@@ -200,7 +189,7 @@ pub trait Process <CTX, RES> where
   /// or `initialize`, either before or after the run loop, respectively.
   #[inline]
   fn endpoints (&self)
-    -> std::cell::Ref <Option <vec_map::VecMap <Box <channel::Endpoint <CTX>>>>>
+    -> std::cell::Ref <Option <VecMap <Box <channel::Endpoint <CTX>>>>>
   {
     self.inner_ref().extended_state().endpoints.borrow()
   }
@@ -212,7 +201,7 @@ pub trait Process <CTX, RES> where
   /// or `initialize`, either before or after the run loop, respectively.
   #[inline]
   fn endpoints_mut (&mut self) -> std::cell::RefMut
-    <Option <vec_map::VecMap <Box <channel::Endpoint <CTX>>>>>
+    <Option <VecMap <Box <channel::Endpoint <CTX>>>>>
   {
     self.inner_ref().extended_state().endpoints.borrow_mut()
   }
@@ -226,7 +215,7 @@ pub trait Process <CTX, RES> where
   /// Taking twice is a fatal error.
   // TODO: error doctest
   #[inline]
-  fn take_endpoints (&self) -> vec_map::VecMap <Box <channel::Endpoint <CTX>>> {
+  fn take_endpoints (&self) -> VecMap <Box <channel::Endpoint <CTX>>> {
     self.inner_ref().extended_state().endpoints.borrow_mut().take().unwrap()
   }
 
@@ -234,9 +223,7 @@ pub trait Process <CTX, RES> where
   ///
   /// Error if current endpoints are not `None`.
   #[inline]
-  fn put_endpoints (&self,
-    endpoints : vec_map::VecMap <Box <channel::Endpoint <CTX>>>)
-  {
+  fn put_endpoints (&self, endpoints : VecMap <Box <channel::Endpoint <CTX>>>) {
     *self.inner_ref().extended_state().endpoints.borrow_mut()
       = Some (endpoints);
   }
@@ -343,8 +330,7 @@ pub trait Process <CTX, RES> where
     CTX  : 'static
   {
     self.run();
-    let continuation : Box <std::boxed::FnBox (CTX::GPROC) -> Option <()> + Send>
-    = {
+    let continuation : Box <boxed::FnBox (CTX::GPROC) -> Option <()> + Send> = {
       let session_handle = &self.inner_ref().as_ref().session_handle;
       session_handle.continuation_rx.recv().unwrap()
     };
@@ -363,7 +349,7 @@ pub trait Process <CTX, RES> where
 
     self.inner_mut().handle_event (inner::EventParams::Run{}.into()).unwrap();
 
-    let t_start = std::time::SystemTime::now();
+    let t_start = time::Instant::now();
     debug!("process[{:?}] start time: {}",
       self.id(), format!("{:?}", t_start).cyan().bold());
 
@@ -456,7 +442,7 @@ pub trait Process <CTX, RES> where
 
     self.inner_mut().handle_event (inner::EventParams::Run{}.into()).unwrap();
 
-    let t_start = std::time::SystemTime::now();
+    let t_start = time::Instant::now();
     debug!("process[{:?}] start time: {}",
       self.id(), format!("{:?}", t_start).cyan().bold());
     let (tick_ms, ticks_per_update) = {
@@ -469,7 +455,7 @@ pub trait Process <CTX, RES> where
     };
     debug_assert!(1 <= tick_ms);
     debug_assert!(1 <= ticks_per_update);
-    let tick_dur = std::time::Duration::from_millis (tick_ms as u64);
+    let tick_dur = time::Duration::from_millis (tick_ms as u64);
     let mut t_last             = t_start - tick_dur;
     let mut t_next             = t_start;
     let mut ticks_since_update = 0;
@@ -486,7 +472,7 @@ pub trait Process <CTX, RES> where
       v
     });
     'run_loop: while self.state_id() == inner::StateId::Running {
-      let t_now = std::time::SystemTime::now();
+      let t_now = time::Instant::now();
       if cfg!(debug_assertions) {
         let t_since = t_now.duration_since (t_next);
         trace!("process[{:?}] tick[{}] t_since: {:?}",
@@ -525,11 +511,11 @@ pub trait Process <CTX, RES> where
           self.id(), tick_count, "tick too early".yellow().bold());
       }
 
-      let t_after = std::time::SystemTime::now();
+      let t_after = time::Instant::now();
       if t_after < t_next {
         // must be positive
-        let t_until = t_next.duration_since (t_after).unwrap();
-        std::thread::sleep (std::time::Duration::from_millis (
+        let t_until = t_next.duration_since (t_after);
+        std::thread::sleep (time::Duration::from_millis (
           1 +  // add 1ms to avoid too-early update
           t_until.as_secs()*1000 +
           t_until.subsec_nanos() as u64/1_000_000))
@@ -562,7 +548,7 @@ pub trait Process <CTX, RES> where
 
     self.inner_mut().handle_event (inner::EventParams::Run{}.into()).unwrap();
 
-    let t_start = std::time::SystemTime::now();
+    let t_start = time::Instant::now();
     debug!("process[{:?}] start time: {}",
       self.id(), format!("{:?}", t_start).cyan().bold());
     let (tick_ms, ticks_per_update) = {
@@ -575,7 +561,7 @@ pub trait Process <CTX, RES> where
     };
     debug_assert!(1 <= tick_ms);
     debug_assert!(1 <= ticks_per_update);
-    let tick_dur = std::time::Duration::from_millis (tick_ms as u64);
+    let tick_dur = time::Duration::from_millis (tick_ms as u64);
     let mut _t_last            = t_start - tick_dur;
     let mut t_next             = t_start;
     let mut ticks_since_update = 0;
@@ -591,7 +577,7 @@ pub trait Process <CTX, RES> where
       v
     });
     'run_loop: while self.state_id() == inner::StateId::Running {
-      let t_now = std::time::SystemTime::now();
+      let t_now = time::Instant::now();
       if cfg!(debug_assertions) {
         let t_since = t_now.duration_since (t_next);
         trace!("process[{:?}] tick[{}] t_since: {:?}",
@@ -630,11 +616,11 @@ pub trait Process <CTX, RES> where
           self.id(), tick_count, "tick too early".yellow().bold());
       }
 
-      let t_after = std::time::SystemTime::now();
+      let t_after = time::Instant::now();
       if t_after < t_next {
         // must be positive
-        let t_until = t_next.duration_since (t_after).unwrap();
-        std::thread::sleep (std::time::Duration::from_millis (
+        let t_until = t_next.duration_since (t_after);
+        std::thread::sleep (time::Duration::from_millis (
           1 +  // add 1ms to avoid too-early update
           t_until.as_secs()*1000 +
           t_until.subsec_nanos() as u64/1_000_000))
@@ -656,7 +642,7 @@ pub trait Process <CTX, RES> where
 
     self.inner_mut().handle_event (inner::EventParams::Run{}.into()).unwrap();
 
-    let t_start = std::time::SystemTime::now();
+    let t_start = time::Instant::now();
     debug!("process[{:?}] start time: {}",
       self.id(), format!("{:?}", t_start).cyan().bold());
     debug_assert_eq!(Kind::Anisochronous, *self.kind());
@@ -717,9 +703,9 @@ pub trait Global <CTX> where
   //fn run_continue (mut self) -> Option <()>;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-//  impls
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  impls                                                                     //
+////////////////////////////////////////////////////////////////////////////////
 
 impl <CTX : session::Context> Def <CTX> {
   /// The only method to create a valid process def struct. Checks for
@@ -1007,9 +993,9 @@ impl <M> From <Result <(), channel::SendError <M>>> for ControlFlow {
   }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-//  functions
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  functions                                                                 //
+////////////////////////////////////////////////////////////////////////////////
 
 //
 //  public
@@ -1035,7 +1021,7 @@ pub fn report_sizes <CTX : session::Context> () where
 #[inline]
 fn poll_messages <CTX, P, RES> (
   process           : &mut P,
-  endpoints         : &vec_map::VecMap <Box <channel::Endpoint <CTX>>>,
+  endpoints         : &VecMap <Box <channel::Endpoint <CTX>>>,
   open_channels     : &mut smallvec::SmallVec <[bool; 8]>,
   num_open_channels : &mut usize,
   message_count     : &mut usize)
