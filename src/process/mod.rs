@@ -474,9 +474,15 @@ pub trait Process <CTX, RES> where
     'run_loop: while self.state_id() == inner::StateId::Running {
       let t_now = time::Instant::now();
       if cfg!(debug_assertions) {
-        let t_since = t_now.duration_since (t_next);
-        trace!("process[{:?}] tick[{}] t_since: {:?}",
-          self.id(), tick_count, t_since);
+        if t_now > t_next {
+          let t_since = t_now.duration_since (t_next);
+          trace!("process[{:?}] tick[{}] t_since: {:?}",
+            self.id(), tick_count, t_since);
+        } else {
+          let t_until = t_next.duration_since (t_now);
+          trace!("process[{:?}] tick[{}] t_until: {:?}",
+            self.id(), tick_count, t_until);
+        }
       }
       if t_next < t_now {
         t_last += tick_dur;
@@ -579,9 +585,15 @@ pub trait Process <CTX, RES> where
     'run_loop: while self.state_id() == inner::StateId::Running {
       let t_now = time::Instant::now();
       if cfg!(debug_assertions) {
-        let t_since = t_now.duration_since (t_next);
-        trace!("process[{:?}] tick[{}] t_since: {:?}",
-          self.id(), tick_count, t_since);
+        if t_now > t_next {
+          let t_since = t_now.duration_since (t_next);
+          trace!("process[{:?}] tick[{}] t_since: {:?}",
+            self.id(), tick_count, t_since);
+        } else {
+          let t_until = t_next.duration_since (t_now);
+          trace!("process[{:?}] tick[{}] t_until: {:?}",
+            self.id(), tick_count, t_until);
+        }
       }
       if t_next < t_now {
         _t_last = t_now;
