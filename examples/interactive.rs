@@ -443,6 +443,7 @@ fn main() {
   Interactive::report_sizes();
 
   // create a program in the initial mode
+  println!(":quit to quit");
   use apis::Program;
   let mut myprogram = Interactive::initial();
   //debug!("myprogram: {:#?}", myprogram);

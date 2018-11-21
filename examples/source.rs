@@ -57,9 +57,9 @@ def_session! {
           use rand::Rng;
           use apis::FromPrimitive;
           let mut rng = rand::thread_rng();
-          let rand_id = ProcessId::from_u64 (rng.gen_range::<u64> (1, 5))
+          let rand_id = ProcessId::from_u64 (rng.gen_range (1, 5))
             .unwrap();
-          let rand_int = rng.gen_range::<i64> (1,100);
+          let rand_int = rng.gen_range (1,100);
           let send_result = process.send_to (
             ChannelId::Randints, rand_id, Randintsmessage::Anint (rand_int));
           process.update_count += 1;

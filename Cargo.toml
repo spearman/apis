@@ -26,8 +26,9 @@ unbounded-spsc = "0.1.*"
 
 # dev dependencies
 [dev-dependencies]
-glium = "0.22.*"
-rand = "0.5.*"
+# bump glutin -> 0.18
+glium = { version = "0.23.*", git = "git://github.com/Lycowolf/glium.git" }
+rand = "0.6.*"
 simplelog = "0.5.*"
 unwrap = "1.*"
 
