@@ -1,7 +1,8 @@
-use {std, either, vec_map,
-  num_traits as num};
-use macro_machines::*;
-use {channel, message, process};
+//! Main session datatype.
+
+use {std, either, vec_map, num_traits as num};
+use macro_machines::def_machine_nodefault;
+use crate::{channel, message, process};
 
 ///////////////////////////////////////////////////////////////////////////////
 //  submodules
@@ -16,7 +17,6 @@ use {channel, message, process};
 //
 //  struct Session
 //
-/// Main session datatype.
 def_machine_nodefault! {
   Session <CTX : { Context }> (
     def             : Def <CTX>,
@@ -56,7 +56,7 @@ pub struct Def <CTX : Context> {
 pub struct Handle <CTX : Context> {
   pub result_tx       : std::sync::mpsc::Sender <CTX::GPRES>,
   pub continuation_rx : std::sync::mpsc::Receiver <
-    Box <std::boxed::FnBox (CTX::GPROC) -> Option <()> + Send>
+    Box <dyn FnOnce (CTX::GPROC) -> Option <()> + Send>
   >
 }
 
@@ -313,9 +313,11 @@ impl <CTX : Context> Session <CTX> {
       for (pid, process_def) in extended_state.def.process_def.iter() {
         let process_handle = process_handles.remove (pid).unwrap_or_else (||{
           // peer channels
-          let mut sourcepoints : vec_map::VecMap <Box <channel::Sourcepoint <CTX>>>
+          let mut sourcepoints
+            : vec_map::VecMap <Box <dyn channel::Sourcepoint <CTX>>>
             = vec_map::VecMap::new();
-          let mut endpoints    : vec_map::VecMap <Box <channel::Endpoint <CTX>>>
+          let mut endpoints
+            : vec_map::VecMap <Box <dyn channel::Endpoint <CTX>>>
             = vec_map::VecMap::new();
           for (cid, channel) in channels.iter_mut() {
             if let Some (sourcepoint) = channel.sourcepoints.remove (pid) {
@@ -329,7 +331,7 @@ impl <CTX : Context> Session <CTX> {
           let (result_tx, result_rx) = std::sync::mpsc::channel::<CTX::GPRES>();
           let (continuation_tx, continuation_rx)
             = std::sync::mpsc::channel::<
-                Box <std::boxed::FnBox (CTX::GPROC) -> Option <()> + Send>
+                Box <dyn FnOnce (CTX::GPROC) -> Option <()> + Send>
               >();
           // create the process
           let session_handle = Handle::<CTX> { result_tx, continuation_rx };
@@ -370,7 +372,7 @@ impl <CTX : Context> Session <CTX> {
     } // end spawn all processes not found in input process handles
     self.handle_event (EventParams::Run{}.into()).unwrap();
 
-    debug!("session[{:?}]: {}", self, "started...".cyan().bold());
+    log::debug!("session[{:?}]: {}", self, "started...".cyan().bold());
   }
 
   /// Send continuations and wait until terminated threads have joined.
@@ -391,7 +393,7 @@ impl <CTX : Context> Session <CTX> {
         either::Either::Right (None) => { /* do nothing */ }
       }
     }
-    debug!("session[{:?}]: {}", self, "...finished".cyan().bold());
+    log::debug!("session[{:?}]: {}", self, "...finished".cyan().bold());
   }
 } // end impl Session
 
@@ -475,12 +477,12 @@ impl <CTX : Context> Def <CTX> {
       for producer_id in channel_def.producers().iter() {
         let pid          = producer_id.clone().into();
         let sourcepoints = &mut sourcepoints_from_channels[pid];
-        sourcepoints.push (channel_id);
+        sourcepoints.push (channel_id.clone());
       }
       for consumer_id in channel_def.consumers().iter() {
         let pid       = consumer_id.clone().into();
         let endpoints = &mut endpoints_from_channels[pid];
-        endpoints.push (channel_id);
+        endpoints.push (channel_id.clone());
       }
     }
 
@@ -741,6 +743,7 @@ pub fn report_sizes <CTX : Context> () {
 
 #[cfg(any(feature = "test", test))]
 pub mod mock {
+  use crate::{def_session, process};
   def_session! {
     context Mycontext {
       PROCESSES where
@@ -748,32 +751,32 @@ pub mod mock {
         let message_in = message_in
       [
         process A () {
-          kind           { ::process::Kind::isochronous_default() }
+          kind           { process::Kind::isochronous_default() }
           sourcepoints   []
           endpoints      []
-          handle_message { ::process::ControlFlow::Break }
-          update         { ::process::ControlFlow::Break }
+          handle_message { process::ControlFlow::Break }
+          update         { process::ControlFlow::Break }
         }
         process B () {
-          kind           { ::process::Kind::isochronous_default() }
+          kind           { process::Kind::isochronous_default() }
           sourcepoints   []
           endpoints      []
-          handle_message { ::process::ControlFlow::Break }
-          update         { ::process::ControlFlow::Break }
+          handle_message { process::ControlFlow::Break }
+          update         { process::ControlFlow::Break }
         }
         process C () {
-          kind           { ::process::Kind::isochronous_default() }
+          kind           { process::Kind::isochronous_default() }
           sourcepoints   []
           endpoints      []
-          handle_message { ::process::ControlFlow::Break }
-          update         { ::process::ControlFlow::Break }
+          handle_message { process::ControlFlow::Break }
+          update         { process::ControlFlow::Break }
         }
         process D () {
-          kind           { ::process::Kind::isochronous_default() }
+          kind           { process::Kind::isochronous_default() }
           sourcepoints   []
           endpoints      []
-          handle_message { ::process::ControlFlow::Break }
-          update         { ::process::ControlFlow::Break }
+          handle_message { process::ControlFlow::Break }
+          update         { process::ControlFlow::Break }
         }
       ]
       CHANNELS  [

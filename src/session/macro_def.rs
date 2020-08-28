@@ -30,11 +30,11 @@
 /// ```
 /// #![feature(const_fn)]
 /// #![feature(try_from)]
-/// #[macro_use] extern crate apis;
+/// extern crate apis;
 ///
-/// use apis::{channel,message,process,session};
+/// use apis::{channel, message, process, session};
 ///
-/// def_session! {
+/// apis::def_session! {
 ///   context Mycontext {
 ///     PROCESSES where
 ///       let process    = self,
@@ -113,9 +113,9 @@ macro_rules! def_session {
 
   ) => {
 
-    ///////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
     //  structs
-    ///////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
 
     //
     //  session context
@@ -144,25 +144,28 @@ macro_rules! def_session {
     pub enum $message_type $message_variants
     )*
 
-    ///////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
     //  enums
-    ///////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
 
     //
     //  ids
     //
-    enum_unitary! {
-      pub enum ProcessId (ProcessIdVariants) {
+    $crate::enum_unitary::enum_unitary!{
+      #[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
+      pub enum ProcessId {
         $($process),+
       }
     }
-    enum_unitary! {
-      pub enum ChannelId (ChannelIdVariants) {
+    $crate::enum_unitary::enum_unitary!{
+      #[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
+      pub enum ChannelId {
         $($channel),*
       }
     }
-    enum_unitary! {
-      pub enum MessageId (MessageIdVariants) {
+    $crate::enum_unitary::enum_unitary!{
+      #[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
+      pub enum MessageId {
         $($message_type),*
       }
     }
@@ -196,9 +199,9 @@ macro_rules! def_session {
       ),*
     }
 
-    ///////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
     //  impls
-    ///////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
 
     impl $crate::session::Context for $context {
       type MID   = MessageId;
@@ -214,7 +217,7 @@ macro_rules! def_session {
 
       fn maybe_main() -> Option <Self::PID> {
         $(use self::ProcessId::$main_process;)*
-        def_session!(@expr_option $($main_process)*)
+        $crate::def_session!(@expr_option $($main_process)*)
       }
 
       fn process_field_names() -> Vec <Vec <&'static str>> {
@@ -291,18 +294,16 @@ macro_rules! def_session {
       fn new (inner : $crate::process::Inner <$context>) -> Self {
         $process {
           inner,
-          result:        def_session!(@expr_default $($($presult_default)*)*),
-          $($field_name: def_session!(@expr_default $($field_default)*)),*
+          result:        $crate::def_session!(@expr_default $($($presult_default)*)*),
+          $($field_name: $crate::def_session!(@expr_default $($field_default)*)),*
         }
       }
-      fn extract_result (session_results : &mut $crate::VecMap <GlobalPresult>)
+      fn extract_result (session_results : &mut $crate::vec_map::VecMap <GlobalPresult>)
         -> Result <($($presult_type)*), String>
       {
         let pid = ProcessId::$process as usize;
-        let global_presult = try!{
-          session_results.remove (pid)
-            .ok_or ("process result not present".to_string())
-        };
+        let global_presult = session_results.remove (pid)
+          .ok_or ("process result not present".to_string())?;
         #[allow(unreachable_patterns)]
         match global_presult {
           GlobalPresult::$process (presult) => Ok (presult),
@@ -353,7 +354,7 @@ macro_rules! def_session {
         $update
       }
     }
-    impl ::std::convert::TryFrom <GlobalProcess> for $process {
+    impl std::convert::TryFrom <GlobalProcess> for $process {
       type Error = String;
       fn try_from (global_process : GlobalProcess) -> Result <Self, Self::Error> {
         #[allow(unreachable_patterns)]
@@ -402,7 +403,7 @@ macro_rules! def_session {
         match *self {
           $(
           ProcessId::$process => $crate::process::Def::define (
-            *self,
+            self.clone(),
             $process_kind,
             vec![$(ChannelId::$sourcepoint),*],
             vec![$(ChannelId::$endpoint),*]
@@ -412,12 +413,12 @@ macro_rules! def_session {
       }
 
       fn spawn (inner : $crate::process::Inner <$context>)
-        -> ::std::thread::JoinHandle <Option <()>>
+        -> std::thread::JoinHandle <Option <()>>
       {
         use $crate::Process;
         match *inner.as_ref().def.id() {
           $(ProcessId::$process => {
-            ::std::thread::Builder::new()
+            std::thread::Builder::new()
               .name (stringify!($process).to_string())
               .spawn (||{
                 let process = $process::new (inner);
@@ -447,7 +448,7 @@ macro_rules! def_session {
           $(
           ChannelId::$channel => {
             $crate::channel::Def::define (
-              *self,
+              self.clone(),
               $crate::channel::Kind::$kind,
               vec![$(ProcessId::$producer),+],
               vec![$(ProcessId::$consumer),+]
@@ -496,7 +497,7 @@ macro_rules! def_session {
     //
     $(
     impl $crate::Message <$context> for $message_type {}
-    impl ::std::convert::TryFrom <GlobalMessage> for $message_type {
+    impl std::convert::TryFrom <GlobalMessage> for $message_type {
       type Error = String;
       fn try_from (global_message : GlobalMessage) -> Result <Self, Self::Error> {
         #[allow(unreachable_patterns)]

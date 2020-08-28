@@ -21,7 +21,6 @@
 #![allow(dead_code)]
 
 #![feature(const_fn)]
-#![feature(try_from)]
 
 #[macro_use] extern crate unwrap;
 extern crate colored;
@@ -29,17 +28,17 @@ extern crate simplelog;
 
 #[macro_use] extern crate apis;
 
-///////////////////////////////////////////////////////////////////////////////
-//  constants                                                                //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  constants                                                                 //
+////////////////////////////////////////////////////////////////////////////////
 
 //  Off, Error, Warn, Info, Debug, Trace
 pub const LOG_LEVEL
   : simplelog::LevelFilter = simplelog::LevelFilter::Info;
 
-///////////////////////////////////////////////////////////////////////////////
-//  session                                                                  //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  session                                                                   //
+////////////////////////////////////////////////////////////////////////////////
 
 def_session! {
   context ChargenUpcaseSink {
@@ -88,26 +87,26 @@ def_session! {
   }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-//  impls                                                                    //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  impls                                                                     //
+////////////////////////////////////////////////////////////////////////////////
 
 impl Chargen1 {
   fn chargen1_handle_message (&mut self, _message : GlobalMessage)
     -> apis::process::ControlFlow
   {
     //use colored::Colorize;
-    trace!("chargen1 handle message...");
+    log::trace!("chargen1 handle message...");
     // do nothing: this process will never receive a message
     unreachable!(
       "ERROR: chargen1 handle message: process should have no endpoints");
-    //trace!("...chargen1 handle message");
+    //log::trace!("...chargen1 handle message");
     //Some(())
   }
 
   fn chargen1_update (&mut self) -> apis::process::ControlFlow {
     use apis::Process;
-    trace!("chargen1 update...");
+    log::trace!("chargen1 update...");
     let mut result = apis::process::ControlFlow::Continue;
     self.update_count += 1;
     if self.update_count == 100 {
@@ -134,7 +133,7 @@ impl Chargen1 {
       let _ = self.send (ChannelId::Charstream, Charstreammessage::Quit);
       result = apis::process::ControlFlow::Break;
     }
-    trace!("...chargen1 update");
+    log::trace!("...chargen1 update");
     result
   }
 }
@@ -145,17 +144,17 @@ impl Chargen2 {
     -> apis::process::ControlFlow
   {
     //use colored::Colorize;
-    trace!("chargen2 handle message...");
+    log::trace!("chargen2 handle message...");
     // do nothing: this process will never receive a message
     unreachable!(
       "ERROR: chargen2 handle message: process should have no endpoints");
-    //trace!("...chargen2 handle message");
+    //log::trace!("...chargen2 handle message");
     //Some(())
   }
 
   fn chargen2_update (&mut self) -> apis::process::ControlFlow {
     use apis::Process;
-    trace!("chargen2 update...");
+    log::trace!("chargen2 update...");
     let mut result = apis::process::ControlFlow::Continue;
     self.update_count += 1;
     if self.update_count == 150 {
@@ -182,7 +181,7 @@ impl Chargen2 {
       let _ = self.send (ChannelId::Charstream, Charstreammessage::Quit);
       result = apis::process::ControlFlow::Break;
     }
-    trace!("...chargen2 update");
+    log::trace!("...chargen2 update");
     result
   }
 }
@@ -192,7 +191,7 @@ impl Upcase {
   fn upcase_handle_message (&mut self, message : GlobalMessage)
     -> apis::process::ControlFlow
   {
-    trace!("upcase handle message...");
+    log::trace!("upcase handle message...");
     match message {
       GlobalMessage::Charstreammessage (charstreammessage) => {
         match charstreammessage {
@@ -205,28 +204,28 @@ impl Upcase {
         }
       }
     }
-    trace!("...upcase handle message");
+    log::trace!("...upcase handle message");
     apis::process::ControlFlow::Continue
   }
 
   fn upcase_update  (&mut self) -> apis::process::ControlFlow {
     let mut result = apis::process::ControlFlow::Continue;
-    trace!("upcase update...");
+    log::trace!("upcase update...");
     if self.quit == 2 {
       println!("upcase history final: {}", self.history);
       result = apis::process::ControlFlow::Break;
     } else {
       println!("upcase history: {}", self.history);
     }
-    trace!("...upcase update");
+    log::trace!("...upcase update");
     result
   }
 }
 // end impl Upcase
 
-///////////////////////////////////////////////////////////////////////////////
-//  main                                                                     //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  main                                                                      //
+////////////////////////////////////////////////////////////////////////////////
 
 fn main() {
   use std::io::Write;
@@ -238,7 +237,14 @@ fn main() {
 
   println!("{}", format!("{} main...", example_name).green().bold());
 
-  unwrap!(simplelog::TermLogger::init (LOG_LEVEL, simplelog::Config::default()));
+  unwrap!(simplelog::TermLogger::init (
+    LOG_LEVEL,
+    simplelog::ConfigBuilder::new()
+      .set_target_level (simplelog::LevelFilter::Error) // module path
+      .set_thread_level (simplelog::LevelFilter::Off)   // no thread numbers
+      .build(),
+    simplelog::TerminalMode::Stdout
+  ));
 
   // report size information
   apis::report_sizes::<ChargenUpcaseSink>();

@@ -18,38 +18,20 @@
 #![allow(dead_code)]
 #![feature(const_fn)]
 #![feature(core_intrinsics)]
-#![feature(fnbox)]
-#![feature(try_from)]
 
-extern crate log;
-extern crate colored;
-extern crate either;
+pub extern crate colored;
+pub extern crate either;
+pub extern crate enum_unitary;
+pub extern crate log;
+pub extern crate macro_machines;
+pub extern crate vec_map;
+
 extern crate marksman_escape;
 extern crate num_traits;
 extern crate smallvec;
 extern crate unbounded_spsc;
-extern crate vec_map;
 
-extern crate macro_machines;
-#[cfg_attr(any(feature = "test", test), macro_use)]
-extern crate enum_unitary;
-
-// NOTE: macro documentation not currently hidden (Rust 1.27.0):
-// <https://github.com/rust-lang/rust/issues/50647>
-#[doc(hidden)] pub use colored::Colorize;
-#[doc(hidden)] pub use either::Either;
-#[doc(hidden)] pub use log::{log, trace, debug, info, warn, error};
-#[doc(hidden)] pub use num_traits::FromPrimitive;
-#[doc(hidden)] pub use vec_map::VecMap;
-
-#[doc(hidden)] pub use enum_unitary::{
-  EnumUnitary, enum_unitary, macro_attr, macro_attr_impl, enum_derive_util,
-  IterVariants, NextVariant, PrevVariant};
-#[doc(hidden)] pub use macro_machines::def_machine;
-
-///////////////////////////////////////////////////////////////////////////////
-//  modules
-///////////////////////////////////////////////////////////////////////////////
+pub use enum_unitary::enum_iterator;
 
 pub mod channel;
 pub mod message;
@@ -57,19 +39,11 @@ pub mod process;
 pub mod program;
 pub mod session;
 
-///////////////////////////////////////////////////////////////////////////////
-//  reexports
-///////////////////////////////////////////////////////////////////////////////
-
 pub use channel::Channel;
 pub use message::Message;
 pub use process::Process;
 pub use program::Program;
 pub use session::Session;
-
-///////////////////////////////////////////////////////////////////////////////
-//  functions
-///////////////////////////////////////////////////////////////////////////////
 
 pub fn report_sizes <CTX : session::Context + 'static> () {
   println!("apis report sizes...");

@@ -32,7 +32,7 @@ macro_rules! def_program {
     //
     //  $program state machine
     //
-    def_machine! {
+    $crate::macro_machines::def_machine! {
       $program () {
         STATES [
           $(state $mode_context (
@@ -54,8 +54,9 @@ macro_rules! def_program {
     impl $crate::Program for $program {
       /// Run the program to completion.
       fn run (&mut self) {
-        use $crate::Colorize;
-        info!("program[{}]: {}", stringify!($program), "run...".cyan().bold());
+        use $crate::colored::Colorize;
+        $crate::log::info!("program[{}]: {}", stringify!($program),
+          "run...".cyan().bold());
         // TODO: create program ready/ended states and transitions
         debug_assert_eq!(self.state.id, StateId::$initial_mode);
 
@@ -66,10 +67,10 @@ macro_rules! def_program {
         $(
         struct $mode_context {
           pub channels :
-            Option <$crate::VecMap
+            Option <$crate::vec_map::VecMap
               <$crate::Channel <$mode_mod::$mode_context>>>,
           pub process_handles :
-            Option <$crate::VecMap
+            Option <$crate::vec_map::VecMap
               <$crate::process::Handle <$mode_mod::$mode_context>>>,
           pub main_process :
             Option <Box <
@@ -99,10 +100,11 @@ macro_rules! def_program {
               let mut $result = session.run_with (
                 $mode_mod.channels.take().unwrap(),
                 $mode_mod.process_handles.take().unwrap_or_else (
-                  || $crate::VecMap::new()),
+                  || $crate::vec_map::VecMap::new()),
                 $mode_mod.main_process.take()
               );
-              def_program!(@option_transition_choice $($transition_choice)*)
+              $crate::def_program!(
+                @option_transition_choice $($transition_choice)*)
             }
             )+
           };
@@ -114,7 +116,7 @@ macro_rules! def_program {
             match transition {
 
               $(EventId::$transition => {
-                info!("mode transition[{}]: {}",
+                $crate::log::info!("mode transition[{}]: {}",
                   stringify!($transition),
                   format!("<{}> => <{}>",
                     stringify!($source_context),
@@ -133,7 +135,7 @@ macro_rules! def_program {
                     let target_session_def
                       = $target_mod::$target_context::def().unwrap();
                     let mut channels = target_session_def.create_channels();
-                    let mut process_handles = $crate::VecMap::new();
+                    let mut process_handles = $crate::vec_map::VecMap::new();
 
                     // handle continuations
                     $($({
@@ -168,22 +170,22 @@ macro_rules! def_program {
                       let prev_pid        = $source_mod::ProcessId::$source_proc
                         as usize;
                       let next_process_id = $target_mod::ProcessId::$target_proc;
-                      let next_pid        = next_process_id as usize;
-                      let mut prev_process_handle
-                        = _session.as_mut().process_handles.remove (prev_pid)
+                      let next_pid        = next_process_id.clone() as usize;
+                      let mut prev_process_handle =
+                        _session.as_mut().process_handles.remove (prev_pid)
                           .unwrap();
 
                       // peer channels
                       let mut sourcepoints
-                        : $crate::VecMap <Box
+                        : $crate::vec_map::VecMap <Box
                           <$crate::channel::Sourcepoint
                             <$target_mod::$target_context>>>
-                        = $crate::VecMap::new();
+                        = $crate::vec_map::VecMap::new();
                       let mut endpoints
-                        : $crate::VecMap <Box
+                        : $crate::vec_map::VecMap <Box
                           <$crate::channel::Endpoint
                             <$target_mod::$target_context>>>
-                        = $crate::VecMap::new();
+                        = $crate::vec_map::VecMap::new();
                       for (cid, channel) in channels.iter_mut() {
                         if let Some (sourcepoint)
                           = channel.sourcepoints.remove (next_pid)
@@ -198,31 +200,26 @@ macro_rules! def_program {
                       }
 
                       // session control channels
-                      let (result_tx, result_rx)
-                        = ::std::sync::mpsc::channel::
+                      let (result_tx, result_rx) =
+                        std::sync::mpsc::channel::
                           <<$target_mod::$target_context
                             as $crate::session::Context>::GPRES>();
-                      let (continuation_tx, continuation_rx)
-                        = ::std::sync::mpsc::channel::<
-                            Box <
-                              ::std::boxed::FnBox
-                                (<$target_mod::$target_context
-                                  as $crate::session::Context>::GPROC
-                                ) -> Option <()>
-                              + Send
-                            >
-                          >();
+                      let (continuation_tx, continuation_rx) =
+                        std::sync::mpsc::channel::<Box <
+                          FnOnce (<$target_mod::$target_context
+                            as $crate::session::Context>::GPROC) -> Option <()>
+                          + Send
+                        >>();
 
                       // session handle
-                      let session_handle
-                        = $crate::session::Handle::<$target_mod::$target_context> {
-                            result_tx, continuation_rx };
+                      let session_handle =
+                        $crate::session::Handle::<$target_mod::$target_context> {
+                          result_tx, continuation_rx };
 
                       // closure that constructs the new process from the old,
                       // calling any custom closure code
                       let mut maybe_constructor_closure = Some (move |
-                        prev_gproc :
-                          <$source_mod::$source_context
+                        prev_gproc : <$source_mod::$source_context
                           as $crate::session::Context>::GPROC
                       | {
                         use $crate::Process;
@@ -273,7 +270,7 @@ macro_rules! def_program {
                         // create the next process handle
                         $crate::process::Handle {
                           result_rx, continuation_tx,
-                          join_or_continue: $crate::Either::Right (None)
+                          join_or_continue: $crate::either::Either::Right (None)
                         }
                       } else {
                         // create a continuation function
@@ -298,7 +295,7 @@ macro_rules! def_program {
                         let join_handle = prev_process_handle.join_or_continue
                           .left().unwrap();
                         prev_process_handle.join_or_continue
-                          = $crate::Either::Right (Some (continuation));
+                          = $crate::either::Either::Right (Some (continuation));
                         assert!{
                           _session.as_mut().process_handles.insert (
                             prev_pid, prev_process_handle).is_none()
@@ -307,7 +304,7 @@ macro_rules! def_program {
                         // create the next process handle
                         $crate::process::Handle {
                           result_rx, continuation_tx,
-                          join_or_continue: $crate::Either::Left (join_handle)
+                          join_or_continue: $crate::either::Either::Left (join_handle)
                         }
                       };
                       assert!{
@@ -346,7 +343,7 @@ macro_rules! def_program {
 
             // causes the current session to drop, calling the finish
             // method which sends any continuations to processes
-            self.handle_event (Event::from_id (transition)).unwrap()
+            self.handle_event (Event::from (transition)).unwrap()
 
           } else {
             // no transition chosen, break loop
@@ -354,7 +351,8 @@ macro_rules! def_program {
           }
           // end transition or break
         } // end 'run_loop
-        info!("program[{}]: {}", stringify!($program), "...run".cyan().bold());
+        $crate::log::info!("program[{}]: {}", stringify!($program),
+          "...run".cyan().bold());
       } // end fn run
     } // end impl Program for $program
 

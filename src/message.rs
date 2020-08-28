@@ -1,6 +1,6 @@
 use std;
 use enum_unitary;
-use session;
+use crate::session;
 
 // NOTE: Currently Global only refers to CTX::MID and Message only refers to
 // CTX::GMSG and CTX::MID through the GMSG parameter. It would seem that we
@@ -18,9 +18,7 @@ use session;
 //     Message <Mycontext>
 
 /// Unique ID for each global message type used in a given session context.
-pub trait Id where
-  Self : enum_unitary::EnumUnitary
-{}
+pub trait Id : enum_unitary::EnumUnitary + Ord + std::fmt::Debug {}
 
 /// The global message type.
 pub trait Global <CTX> where
@@ -32,14 +30,13 @@ pub trait Global <CTX> where
 
 /// A local message type with partial mapping from global message type and
 /// total mapping into global message type.
-pub trait Message <CTX : session::Context> where
-  Self : Send + std::convert::TryFrom <CTX::GMSG> + Into <CTX::GMSG>
-    + std::fmt::Debug
+pub trait Message <CTX : session::Context> : Send + std::fmt::Debug
+  + std::convert::TryFrom <CTX::GMSG> + Into <CTX::GMSG>
 {}
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //  functions
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 pub fn report_sizes <_CTX : session::Context> () {
   println!("message report sizes...");

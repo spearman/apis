@@ -26,36 +26,33 @@
 
 #![feature(const_fn)]
 #![feature(core_intrinsics)]
-#![feature(fnbox)]
-#![feature(try_from)]
 
 #![feature(pattern)]
 
 #[macro_use] extern crate unwrap;
 extern crate colored;
+extern crate macro_machines;
 extern crate simplelog;
 
-extern crate macro_machines;
-#[macro_use] extern crate apis;
+extern crate apis;
 
-///////////////////////////////////////////////////////////////////////////////
-//  constants                                                                //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  constants                                                                 //
+////////////////////////////////////////////////////////////////////////////////
 
 //  Off, Error, Warn, Info, Debug, Trace
-pub const LOG_LEVEL
-  : simplelog::LevelFilter = simplelog::LevelFilter::Info;
+pub const LOG_LEVEL : simplelog::LevelFilter = simplelog::LevelFilter::Info;
 
-///////////////////////////////////////////////////////////////////////////////
-//  globals                                                                  //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  globals                                                                   //
+////////////////////////////////////////////////////////////////////////////////
 
-static THING_DROPPED
-  : std::sync::atomic::AtomicBool = std::sync::atomic::ATOMIC_BOOL_INIT;
+static THING_DROPPED : std::sync::atomic::AtomicBool =
+  std::sync::atomic::AtomicBool::new (false);
 
-///////////////////////////////////////////////////////////////////////////////
-//  datatypes                                                                //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  datatypes                                                                 //
+////////////////////////////////////////////////////////////////////////////////
 
 /// We use this to demonstrate transferring a value from a process in one
 /// session to a process in the following session.
@@ -70,11 +67,11 @@ impl Drop for Dropthing {
   }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-//  program                                                                  //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  program                                                                   //
+////////////////////////////////////////////////////////////////////////////////
 
-def_program! {
+apis::def_program! {
   program Interactive where
     let result = session.run()
   {
@@ -97,23 +94,23 @@ def_program! {
   }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-//  mode ReadlineEchoup                                                      //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  mode ReadlineEchoup                                                       //
+////////////////////////////////////////////////////////////////////////////////
 
 pub mod readline_echoup {
-  use ::std;
+  use std;
+  use apis;
+  use crate::Dropthing;
 
-  use ::apis;
-
-  def_session! {
+  apis::def_session! {
     context ReadlineEchoup {
       PROCESSES where
         let process    = self,
         let message_in = message_in
       [
         process Readline (
-          dropthing : Option <::Dropthing> = Some (Default::default())
+          dropthing : Option <Dropthing> = Some (Default::default())
         ) -> (Option <()>) {
           kind           { apis::process::Kind::Anisochronous }
           sourcepoints   [Toecho]
@@ -157,14 +154,14 @@ pub mod readline_echoup {
       -> apis::process::ControlFlow
     {
       //use colored::Colorize;
-      trace!("readline handle message...");
+      log::trace!("readline handle message...");
       match message {
         GlobalMessage::FromechoMsg (FromechoMsg::Echo (echo)) => {
-          info!("Readline: received echo \"{}\"", echo);
+          log::info!("Readline: received echo \"{}\"", echo);
         },
         _ => unreachable!()
       }
-      trace!("...readline handle message");
+      log::trace!("...readline handle message");
       apis::process::ControlFlow::Continue
     }
 
@@ -172,7 +169,7 @@ pub mod readline_echoup {
       use std::io::Write;
       use apis::Process;
 
-      trace!("readline update...");
+      log::trace!("readline update...");
 
       assert_eq!("main", std::thread::current().name().unwrap());
 
@@ -181,7 +178,7 @@ pub mod readline_echoup {
       let _     = std::io::stdout().flush();
       let mut s = String::new();
       let _     = std::io::stdin().read_line (&mut s);
-      if !s.trim_right().is_empty() {
+      if !s.trim_end().is_empty() {
         let word_ct = s.as_str().split_whitespace().count();
         #[allow(unused_assignments)]
         match word_ct {
@@ -214,7 +211,7 @@ pub mod readline_echoup {
         } // end match word count
       } // end input not empty
 
-      trace!("...readline update");
+      log::trace!("...readline update");
 
       result
     }
@@ -226,7 +223,7 @@ pub mod readline_echoup {
       -> apis::process::ControlFlow
     {
       use apis::Process;
-      trace!("echoup handle message...");
+      log::trace!("echoup handle message...");
 
       let result : apis::process::ControlFlow;
       let msg = match message {
@@ -244,14 +241,14 @@ pub mod readline_echoup {
         }
       }
 
-      trace!("...echoup handle message");
+      log::trace!("...echoup handle message");
       result
     }
 
     fn echoup_update  (&mut self) -> apis::process::ControlFlow {
-      trace!("echoup update...");
+      log::trace!("echoup update...");
       /* do nothing */
-      trace!("...echoup update");
+      log::trace!("...echoup update");
       apis::process::ControlFlow::Continue
     }
   }
@@ -259,16 +256,16 @@ pub mod readline_echoup {
 
 } // end mod readline_echoup
 
-///////////////////////////////////////////////////////////////////////////////
-//  mode ReadlineEchorev                                                     //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  mode ReadlineEchorev                                                      //
+////////////////////////////////////////////////////////////////////////////////
 
 pub mod readline_echorev {
-  use ::std;
+  use std;
+  use apis;
+  use crate::Dropthing;
 
-  use ::apis;
-
-  def_session! {
+  apis::def_session! {
     context ReadlineEchorev {
       PROCESSES where
         let process    = self,
@@ -282,7 +279,7 @@ pub mod readline_echorev {
           update         { process.echorev_update() }
         }
         process Readline (
-          dropthing : Option <::Dropthing> = None
+          dropthing : Option <Dropthing> = None
         ) -> (Option <()>) {
           kind           { apis::process::Kind::Anisochronous }
           sourcepoints   [Toecho]
@@ -319,14 +316,14 @@ pub mod readline_echorev {
       -> apis::process::ControlFlow
     {
       //use colored::Colorize;
-      trace!("readline handle message...");
+      log::trace!("readline handle message...");
       match message {
         GlobalMessage::FromechoMsg (FromechoMsg::Echo (echo)) => {
-          info!("Readline: received echo \"{}\"", echo);
+          log::info!("Readline: received echo \"{}\"", echo);
         },
         _ => unreachable!()
       }
-      trace!("...readline handle message");
+      log::trace!("...readline handle message");
       apis::process::ControlFlow::Continue
     }
 
@@ -334,7 +331,7 @@ pub mod readline_echorev {
       use std::io::Write;
       use apis::Process;
 
-      trace!("readline update...");
+      log::trace!("readline update...");
 
       assert_eq!("main", std::thread::current().name().unwrap());
 
@@ -343,7 +340,7 @@ pub mod readline_echorev {
       let _     = std::io::stdout().flush();
       let mut s = String::new();
       let _     = std::io::stdin().read_line (&mut s);
-      if !s.trim_right().is_empty() {
+      if !s.trim_end().is_empty() {
         let word_ct = s.as_str().split_whitespace().count();
         #[allow(unused_assignments)]
         match word_ct {
@@ -376,7 +373,7 @@ pub mod readline_echorev {
         } // end match word count
       } // end input not empty
 
-      trace!("...readline update");
+      log::trace!("...readline update");
 
       result
     }
@@ -389,7 +386,7 @@ pub mod readline_echorev {
     {
       use apis::Process;
 
-      trace!("echorev handle message...");
+      log::trace!("echorev handle message...");
       let result : apis::process::ControlFlow;
       let msg = match message {
         GlobalMessage::ToechoMsg (msg) => msg,
@@ -405,23 +402,23 @@ pub mod readline_echorev {
           result = apis::process::ControlFlow::Break;
         }
       }
-      trace!("...echorev handle message");
+      log::trace!("...echorev handle message");
       result
     }
 
     fn echorev_update  (&mut self) -> apis::process::ControlFlow {
-      trace!("echorev update...");
+      log::trace!("echorev update...");
       /* do nothing */
-      trace!("...echorev update");
+      log::trace!("...echorev update");
       apis::process::ControlFlow::Continue
     }
   }
   // end impl Echorev
 } // end mod readline_echorev
 
-///////////////////////////////////////////////////////////////////////////////
-//  main                                                                     //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  main                                                                      //
+////////////////////////////////////////////////////////////////////////////////
 
 fn main() {
   use colored::Colorize;
@@ -430,7 +427,14 @@ fn main() {
 
   println!("{}", format!("{} main...", example_name).green().bold());
 
-  unwrap!(simplelog::TermLogger::init (LOG_LEVEL, simplelog::Config::default()));
+  unwrap!(simplelog::TermLogger::init (
+    LOG_LEVEL,
+    simplelog::ConfigBuilder::new()
+      .set_target_level (simplelog::LevelFilter::Error) // module path
+      .set_thread_level (simplelog::LevelFilter::Off)   // no thread numbers
+      .build(),
+    simplelog::TerminalMode::Stdout
+  ));
 
   // create a dotfile for the program state machine
   use std::io::Write;

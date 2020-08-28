@@ -1,5 +1,5 @@
 use std;
-use {session, Process};
+use crate::{session, Process};
 
 // TODO: should there be a conversion constraint between these traits ?
 

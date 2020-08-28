@@ -1,5 +1,5 @@
 use {std, vec_map, unbounded_spsc};
-use {channel, session, Message};
+use crate::{channel, session, Message};
 
 ///////////////////////////////////////////////////////////////////////////////
 //  submodules
@@ -202,8 +202,8 @@ where
   fn try_from (def : channel::Def <CTX>) -> Result <Self, Self::Error> {
     match def.kind {
       channel::Kind::Simplex => {
-        let producer_id = def.producers[0];
-        let consumer_id = def.consumers[0];
+        let producer_id = def.producers[0].clone();
+        let consumer_id = def.consumers[0].clone();
         let (sourcepoint, endpoint) = unbounded_spsc::channel();
         Ok (Simplex {
           def,
@@ -223,13 +223,13 @@ impl <CTX, M> From <Simplex <CTX, M>> for channel::Channel <CTX> where
   fn from (simplex : Simplex <CTX, M>) -> Self {
     let (producer_id, sourcepoint) = simplex.producer;
     let (consumer_id, endpoint)    = simplex.consumer;
-    let mut sourcepoints : vec_map::VecMap <Box <channel::Sourcepoint <CTX>>>
+    let mut sourcepoints : vec_map::VecMap <Box <dyn channel::Sourcepoint <CTX>>>
       = vec_map::VecMap::new();
     assert!(
       sourcepoints.insert (producer_id.into(), Box::new (sourcepoint))
         .is_none()
     );
-    let mut endpoints : vec_map::VecMap <Box <channel::Endpoint <CTX>>>
+    let mut endpoints : vec_map::VecMap <Box <dyn channel::Endpoint <CTX>>>
       = vec_map::VecMap::new();
     assert!(
       endpoints.insert (consumer_id.into(), Box::new (endpoint))
@@ -265,7 +265,7 @@ where
             producers.insert (producer_id.clone().into(), sourcepoint.clone())
               .is_none());
         }
-        let consumer_id = def.consumers[0];
+        let consumer_id = def.consumers[0].clone();
         Ok (Sink {
           def,
           producers,
@@ -282,14 +282,14 @@ impl <CTX, M> From <Sink <CTX, M>> for channel::Channel <CTX> where
   M   : Message <CTX> + 'static
 {
   fn from (sink : Sink <CTX, M>) -> Self {
-    let mut sourcepoints : vec_map::VecMap <Box <channel::Sourcepoint <CTX>>>
+    let mut sourcepoints : vec_map::VecMap <Box <dyn channel::Sourcepoint <CTX>>>
       = vec_map::VecMap::new();
     for (producer_id, sourcepoint) in sink.producers.into_iter() {
       assert!(sourcepoints.insert (producer_id, Box::new (sourcepoint))
         .is_none());
     }
     let (consumer_id, endpoint) = sink.consumer;
-    let mut endpoints : vec_map::VecMap <Box <channel::Endpoint <CTX>>>
+    let mut endpoints : vec_map::VecMap <Box <dyn channel::Endpoint <CTX>>>
       = vec_map::VecMap::new();
     assert!(
       endpoints.insert (consumer_id.into(), Box::new (endpoint))
@@ -317,7 +317,7 @@ where
   fn try_from (def : channel::Def <CTX>) -> Result <Self, Self::Error> {
     match def.kind {
       channel::Kind::Source => {
-        let producer_id = def.producers[0];
+        let producer_id = def.producers[0].clone();
         let mut sourcepoints = vec_map::VecMap::new();
         let mut consumers = vec_map::VecMap::new();
         for consumer_id in def.consumers.iter() {
@@ -344,14 +344,14 @@ impl <CTX, M> From <Source <CTX, M>> for channel::Channel <CTX> where
   M   : Message <CTX> + 'static
 {
   fn from (source : Source <CTX, M>) -> Self {
-    let mut sourcepoints : vec_map::VecMap <Box <channel::Sourcepoint <CTX>>>
+    let mut sourcepoints : vec_map::VecMap <Box <dyn channel::Sourcepoint <CTX>>>
       = vec_map::VecMap::new();
     let (producer_id, sourcepoint) = source.producer;
     assert!(
       sourcepoints.insert (
         producer_id.into(), Box::new (sourcepoint)
       ).is_none());
-    let mut endpoints : vec_map::VecMap <Box <channel::Endpoint <CTX>>>
+    let mut endpoints : vec_map::VecMap <Box <dyn channel::Endpoint <CTX>>>
       = vec_map::VecMap::new();
     for (consumer_id, endpoint) in source.consumers.into_iter() {
       assert!(endpoints.insert (consumer_id, Box::new (endpoint)).is_none());

@@ -20,28 +20,27 @@
 #![allow(dead_code)]
 
 #![feature(const_fn)]
-#![feature(try_from)]
 
-#[macro_use] extern crate unwrap;
 extern crate colored;
-extern crate simplelog;
-
 extern crate macro_machines;
-#[macro_use] extern crate apis;
+extern crate simplelog;
+extern crate unwrap;
+use unwrap::unwrap;
+
+extern crate apis;
 
 ///////////////////////////////////////////////////////////////////////////////
 //  constants                                                                //
 ///////////////////////////////////////////////////////////////////////////////
 
 //  Off, Error, Warn, Info, Debug, Trace
-pub const LOG_LEVEL
-  : simplelog::LevelFilter = simplelog::LevelFilter::Info;
+pub const LOG_LEVEL : simplelog::LevelFilter = simplelog::LevelFilter::Info;
 
 ///////////////////////////////////////////////////////////////////////////////
 //  session                                                                  //
 ///////////////////////////////////////////////////////////////////////////////
 
-def_session! {
+apis::def_session! {
   context ChargenUpcase {
     PROCESSES where
       let process    = self,
@@ -88,17 +87,17 @@ impl Chargen {
     -> apis::process::ControlFlow
   {
     //use colored::Colorize;
-    trace!("chargen handle message...");
+    log::trace!("chargen handle message...");
     // do nothing: this process will never receive a message
     unreachable!(
       "ERROR: chargen handle message: process should have no endpoints");
-    //trace!("...chargen handle message");
+    //log::trace!("...chargen handle message");
     //Some(())
   }
 
   fn chargen_update (&mut self) -> apis::process::ControlFlow {
     use apis::Process;
-    trace!("chargen update...");
+    log::trace!("chargen update...");
     let mut result = apis::process::ControlFlow::Continue;
     self.update_count += 1;
     if self.update_count == 100 {
@@ -125,7 +124,7 @@ impl Chargen {
       let _ = self.send (ChannelId::Charstream, Charstreammessage::Quit);
       result = apis::process::ControlFlow::Break;
     }
-    trace!("...chargen update");
+    log::trace!("...chargen update");
     result
   }
 }
@@ -135,7 +134,7 @@ impl Upcase {
   fn upcase_handle_message (&mut self, message : GlobalMessage)
     -> apis::process::ControlFlow
   {
-    trace!("upcase handle message...");
+    log::trace!("upcase handle message...");
     let mut result = apis::process::ControlFlow::Continue;
     match message {
       GlobalMessage::Charstreammessage (charstreammessage) => {
@@ -149,18 +148,18 @@ impl Upcase {
         }
       }
     }
-    trace!("...upcase handle message");
+    log::trace!("...upcase handle message");
     result
   }
 
   fn upcase_update  (&mut self) -> apis::process::ControlFlow {
-    trace!("upcase update...");
+    log::trace!("upcase update...");
     if *self.inner.state().id() == apis::process::inner::StateId::Ended {
       println!("upcase history final: {}", self.history);
     } else {
       println!("upcase history: {}", self.history);
     }
-    trace!("...upcase update");
+    log::trace!("...upcase update");
     apis::process::ControlFlow::Continue
   }
 }
@@ -178,7 +177,14 @@ fn main() {
 
   println!("{}", format!("{} main...", example_name).green().bold());
 
-  unwrap!(simplelog::TermLogger::init (LOG_LEVEL, simplelog::Config::default()));
+  unwrap!(simplelog::TermLogger::init (
+    LOG_LEVEL,
+    simplelog::ConfigBuilder::new()
+      .set_target_level (simplelog::LevelFilter::Error) // module path
+      .set_thread_level (simplelog::LevelFilter::Off)   // no thread numbers
+      .build(),
+    simplelog::TerminalMode::Stdout
+  ));
 
   apis::report_sizes::<ChargenUpcase>();
 

@@ -4,3 +4,7 @@
 - program trait
 - more trace! log messages in process run loops
 - finer time granularity (microseconds?)
+- link to sessions in program dotfile output
+    - program dotfile is a state machine dotfile from macro-machines-- this may
+      need to be modified or else link by parsing and modifying the dotfile
+      output itself

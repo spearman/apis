@@ -2,7 +2,7 @@
 //! sessions and passes a state token between them.
 //!
 //! Running this example will produce a DOT file representing the program state
-//! transition diagram. To create a PNG image from the generated DOT file:
+//! transition diagram. To create an SVG image from the generated DOT file:
 //!
 //! ```bash
 //! make -f MakefileDot program
@@ -10,35 +10,32 @@
 
 #![feature(const_fn)]
 #![feature(core_intrinsics)]
-#![feature(fnbox)]
-#![feature(try_from)]
 
 #[macro_use] extern crate unwrap;
 extern crate colored;
+extern crate macro_machines;
 extern crate rand;
 extern crate simplelog;
 
-extern crate macro_machines;
-#[macro_use] extern crate apis;
+extern crate apis;
 
-///////////////////////////////////////////////////////////////////////////////
-//  constants                                                                //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  constants                                                                 //
+////////////////////////////////////////////////////////////////////////////////
 
 // Off, Error, Warn, Info, Debug, Trace
-pub const LOG_LEVEL
-  : simplelog::LevelFilter = simplelog::LevelFilter::Info;
+pub const LOG_LEVEL : simplelog::LevelFilter = simplelog::LevelFilter::Info;
 
-///////////////////////////////////////////////////////////////////////////////
-//  globals                                                                  //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  globals                                                                   //
+////////////////////////////////////////////////////////////////////////////////
 
-static THING_DROPPED
-  : std::sync::atomic::AtomicBool = std::sync::atomic::ATOMIC_BOOL_INIT;
+static THING_DROPPED : std::sync::atomic::AtomicBool =
+  std::sync::atomic::AtomicBool::new (false);
 
-///////////////////////////////////////////////////////////////////////////////
-//  datatypes                                                                //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  datatypes                                                                 //
+////////////////////////////////////////////////////////////////////////////////
 
 /// We use this to demonstrate transferring a value from a process in one
 /// session to a process in the following session.
@@ -53,11 +50,11 @@ impl Drop for Dropthing {
   }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-//  program                                                                  //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  program                                                                   //
+////////////////////////////////////////////////////////////////////////////////
 
-def_program! {
+apis::def_program! {
   program Myprogram where
     let result = session.run()
   {
@@ -80,14 +77,15 @@ def_program! {
   }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-//  mode ChargenUpcase                                                       //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  mode ChargenUpcase                                                        //
+////////////////////////////////////////////////////////////////////////////////
 
 pub mod chargen_upcase {
-  use ::apis;
+  use apis;
+  use crate::Dropthing;
 
-  def_session! {
+  apis::def_session! {
     //
     //  context ChargenUpcase
     //
@@ -141,7 +139,7 @@ pub mod chargen_upcase {
         //
         process Upcase (
           history   : String,
-          dropthing : Option <::Dropthing> = Some (Default::default())
+          dropthing : Option <Dropthing> = Some (Default::default())
         ) {
           kind           { apis::process::Kind::asynchronous_default() }
           sourcepoints   []
@@ -188,15 +186,16 @@ pub mod chargen_upcase {
 
 } // end context ChargenUpcase
 
-///////////////////////////////////////////////////////////////////////////////
-//  mode RandSource                                                          //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  mode RandSource                                                           //
+////////////////////////////////////////////////////////////////////////////////
 
 pub mod rand_source {
   use rand;
   use apis;
+  use crate::Dropthing;
 
-  def_session!{
+  apis::def_session! {
     //
     //  context RandSource
     //
@@ -210,7 +209,7 @@ pub mod rand_source {
         //
         process RandGen (
           update_count : u64,
-          dropthing    : Option <::Dropthing> = None
+          dropthing    : Option <Dropthing> = None
         ) {
           kind {
             apis::process::Kind::Isochronous { tick_ms: 20, ticks_per_update: 1 }
@@ -220,7 +219,7 @@ pub mod rand_source {
           handle_message { unreachable!() }
           update {
             use rand::Rng;
-            use apis::FromPrimitive;
+            use apis::enum_unitary::FromPrimitive;
             let mut rng = rand::thread_rng();
             let rand_id = ProcessId::from_u64 (rng.gen_range (1, 5))
               .unwrap();
@@ -380,9 +379,9 @@ pub mod rand_source {
   } // end context RandSource
 }
 
-///////////////////////////////////////////////////////////////////////////////
-//  main                                                                     //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  main                                                                      //
+////////////////////////////////////////////////////////////////////////////////
 
 fn main() {
   use colored::Colorize;
@@ -391,7 +390,14 @@ fn main() {
     .file_name().unwrap().to_str().unwrap().to_string();
   println!("{}", format!("{} main...", example_name).green().bold());
 
-  unwrap!(simplelog::TermLogger::init (LOG_LEVEL, simplelog::Config::default()));
+  unwrap!(simplelog::TermLogger::init (
+    LOG_LEVEL,
+    simplelog::ConfigBuilder::new()
+      .set_target_level (simplelog::LevelFilter::Error) // module path
+      .set_thread_level (simplelog::LevelFilter::Off)   // no thread numbers
+      .build(),
+    simplelog::TerminalMode::Stdout
+  ));
 
   // create a dotfile for the program state machine
   use std::io::Write;

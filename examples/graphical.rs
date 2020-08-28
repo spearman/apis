@@ -20,8 +20,6 @@
 
 #![feature(const_fn)]
 #![feature(core_intrinsics)]
-#![feature(fnbox)]
-#![feature(try_from)]
 
 #[macro_use] extern crate unwrap;
 extern crate colored;
@@ -29,31 +27,31 @@ extern crate glium;
 extern crate simplelog;
 
 extern crate macro_machines;
-#[macro_use] extern crate apis;
+extern crate apis;
 
 use glium::glutin;
 
-///////////////////////////////////////////////////////////////////////////////
-//  constants                                                                //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  constants                                                                 //
+////////////////////////////////////////////////////////////////////////////////
 
 //  Off, Error, Warn, Info, Debug, Trace
 pub const LOG_LEVEL : simplelog::LevelFilter =
   simplelog::LevelFilter::Info;
 
-///////////////////////////////////////////////////////////////////////////////
-//  statics                                                                  //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  statics                                                                   //
+////////////////////////////////////////////////////////////////////////////////
 
 pub static CONTEXT_ALIVE : std::sync::atomic::AtomicBool =
-  std::sync::atomic::ATOMIC_BOOL_INIT;
+  std::sync::atomic::AtomicBool::new (false);
 
-///////////////////////////////////////////////////////////////////////////////
-//  datatypes                                                                //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  datatypes                                                                 //
+////////////////////////////////////////////////////////////////////////////////
 
 pub struct GlutinGliumContext {
-  pub events_loop   : glutin::EventsLoop,
+  pub event_loop   : glutin::event_loop::EventLoop <()>,
   pub glium_display : glium::Display
 }
 
@@ -75,11 +73,11 @@ impl Default for ModeControl {
   }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-//  program                                                                  //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  program                                                                   //
+////////////////////////////////////////////////////////////////////////////////
 
-def_program! {
+apis::def_program! {
   program Graphical where
     let results = session.run()
   {
@@ -136,16 +134,16 @@ def_program! {
   }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-//  mode Bgr                                                                 //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  mode Bgr                                                                  //
+////////////////////////////////////////////////////////////////////////////////
 
 pub mod bgr {
   use {std, glium, glium::glutin};
   use apis;
-  use {CONTEXT_ALIVE, GlutinGliumContext, ModeControl};
+  use crate::{CONTEXT_ALIVE, GlutinGliumContext, ModeControl};
 
-  def_session! {
+  apis::def_session! {
     context Bgr {
       PROCESSES where
         let process    = self,
@@ -156,12 +154,12 @@ pub mod bgr {
           clear_color          : (f32, f32, f32, f32) = (0.0, 0.0, 1.0, 1.0),
           glutin_glium_context : Option <GlutinGliumContext> = {
             if !CONTEXT_ALIVE.swap (true, std::sync::atomic::Ordering::SeqCst) {
-              let events_loop = glutin::EventsLoop::new();
+              let event_loop = glutin::event_loop::EventLoop::new();
               let glium_display = glium::Display::new (
-                glutin::WindowBuilder::new(),
+                glutin::window::WindowBuilder::new(),
                 glutin::ContextBuilder::new(),
-                &events_loop).unwrap();
-              Some (GlutinGliumContext { events_loop, glium_display })
+                &event_loop).unwrap();
+              Some (GlutinGliumContext { event_loop, glium_display })
             } else {
               None
             }
@@ -183,42 +181,47 @@ pub mod bgr {
 
   impl InputRender {
     fn input_render_update (&mut self) -> apis::process::ControlFlow {
-      trace!("input_render update...");
+      log::trace!("input_render update...");
 
-      trace!("input_render frame: {}", self.frame);
+      log::trace!("input_render frame: {}", self.frame);
 
       let mut result      = apis::process::ControlFlow::Continue;
       let mut clear_color = self.clear_color;
       let mut presult = self.result.clone();
       { // glutin_glium_context scope
         use glium::Surface;
+        use glutin::platform::desktop::EventLoopExtDesktop;
 
         let glutin_glium_context = self.glutin_glium_context.as_mut().unwrap();
 
         // poll events
-        glutin_glium_context.events_loop.poll_events (|event| {
+        glutin_glium_context.event_loop.run_return (|event, _, control_flow| {
+          use glutin::event::{self, Event};
           //println!("frame[{}] event: {:?}", frame, event);
+          *control_flow = glutin::event_loop::ControlFlow::Poll;
           match event {
-            glutin::Event::DeviceEvent { event, .. } => {
+            Event::DeviceEvent { event, .. } => {
               match event {
-                glutin::DeviceEvent::Key (keyboard_input) => {
-                  if keyboard_input.state == glutin::ElementState::Pressed {
+                event::DeviceEvent::Key (keyboard_input) => {
+                  if keyboard_input.state ==
+                    event::ElementState::Pressed
+                  {
                     match keyboard_input.virtual_keycode {
-                      Some (glutin::VirtualKeyCode::Tab) => {
+                      Some (event::VirtualKeyCode::Tab) => {
                         result  = apis::process::ControlFlow::Break;
                         presult = ModeControl::Next;
                       }
-                      Some (glutin::VirtualKeyCode::Q) => {
+                      Some (event::VirtualKeyCode::Q) => {
                         result  = apis::process::ControlFlow::Break;
                         presult = ModeControl::Quit;
                       }
-                      Some (glutin::VirtualKeyCode::B) => {
+                      Some (event::VirtualKeyCode::B) => {
                         clear_color = (0.0, 0.0, 1.0, 1.0);
                       }
-                      Some (glutin::VirtualKeyCode::G) => {
+                      Some (event::VirtualKeyCode::G) => {
                         clear_color = (0.0, 1.0, 0.0, 1.0);
                       }
-                      Some (glutin::VirtualKeyCode::R) => {
+                      Some (event::VirtualKeyCode::R) => {
                         clear_color = (1.0, 0.0, 0.0, 1.0);
                       }
                       _ => {}
@@ -227,6 +230,9 @@ pub mod bgr {
                 }
                 _ => {}
               }
+            }
+            Event::MainEventsCleared => {
+              *control_flow = glutin::event_loop::ControlFlow::Exit;
             }
             _ => {}
           }
@@ -241,7 +247,7 @@ pub mod bgr {
       self.clear_color = clear_color;
       self.frame += 1;
 
-      trace!("...input_render update");
+      log::trace!("...input_render update");
 
       self.result = presult;
       result
@@ -250,16 +256,16 @@ pub mod bgr {
 
 } // end mod bgr
 
-///////////////////////////////////////////////////////////////////////////////
-//  mode Cym                                                                 //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  mode Cym                                                                  //
+////////////////////////////////////////////////////////////////////////////////
 
 pub mod cym {
   use glium::glutin;
   use apis;
-  use {GlutinGliumContext, ModeControl};
+  use crate::{GlutinGliumContext, ModeControl};
 
-  def_session! {
+  apis::def_session! {
     context Cym {
       PROCESSES where
         let process    = self,
@@ -286,42 +292,45 @@ pub mod cym {
 
   impl InputRender {
     fn input_render_update (&mut self) -> apis::process::ControlFlow {
-      trace!("input_render update...");
+      log::trace!("input_render update...");
 
-      trace!("input_render frame: {}", self.frame);
+      log::trace!("input_render frame: {}", self.frame);
 
       let mut result      = apis::process::ControlFlow::Continue;
       let mut presult     = self.result.clone();
       let mut clear_color = self.clear_color;
       { // glutin_glium_context scope
         use glium::Surface;
+        use glutin::platform::desktop::EventLoopExtDesktop;
 
         let glutin_glium_context = self.glutin_glium_context.as_mut().unwrap();
 
         // poll events
-        glutin_glium_context.events_loop.poll_events (|event| {
+        glutin_glium_context.event_loop.run_return (|event, _, control_flow| {
+          use glutin::event::{self, Event};
           //println!("frame[{}] event: {:?}", frame, event);
+          *control_flow = glutin::event_loop::ControlFlow::Poll;
           match event {
-            glutin::Event::DeviceEvent { event, .. } => {
+            Event::DeviceEvent { event, .. } => {
               match event {
-                glutin::DeviceEvent::Key (keyboard_input) => {
-                  if keyboard_input.state == glutin::ElementState::Pressed {
+                event::DeviceEvent::Key (keyboard_input) => {
+                  if keyboard_input.state == event::ElementState::Pressed {
                     match keyboard_input.virtual_keycode {
-                      Some (glutin::VirtualKeyCode::Tab) => {
+                      Some (event::VirtualKeyCode::Tab) => {
                         result  = apis::process::ControlFlow::Break;
                         presult = ModeControl::Next;
                       }
-                      Some (glutin::VirtualKeyCode::Q) => {
+                      Some (event::VirtualKeyCode::Q) => {
                         result  = apis::process::ControlFlow::Break;
                         presult = ModeControl::Quit;
                       }
-                      Some (glutin::VirtualKeyCode::C) => {
+                      Some (event::VirtualKeyCode::C) => {
                         clear_color = (0.0, 1.0, 1.0, 1.0);
                       }
-                      Some (glutin::VirtualKeyCode::Y) => {
+                      Some (event::VirtualKeyCode::Y) => {
                         clear_color = (1.0, 1.0, 0.0, 1.0);
                       }
-                      Some (glutin::VirtualKeyCode::M) => {
+                      Some (event::VirtualKeyCode::M) => {
                         clear_color = (1.0, 0.0, 1.0, 1.0);
                       }
                       _ => {}
@@ -330,6 +339,9 @@ pub mod cym {
                 }
                 _ => {}
               }
+            }
+            Event::MainEventsCleared => {
+              *control_flow = glutin::event_loop::ControlFlow::Exit;
             }
             _ => {}
           }
@@ -344,7 +356,7 @@ pub mod cym {
       self.clear_color = clear_color;
       self.frame += 1;
 
-      trace!("...input_render update");
+      log::trace!("...input_render update");
 
       self.result = presult;
       result
@@ -352,16 +364,16 @@ pub mod cym {
   } // end impl InputRender
 } // end mod cym
 
-///////////////////////////////////////////////////////////////////////////////
-//  mode Wsk                                                                 //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  mode Wsk                                                                  //
+////////////////////////////////////////////////////////////////////////////////
 
 pub mod wsk {
   use glium::glutin;
   use apis;
-  use {GlutinGliumContext, ModeControl};
+  use crate::{GlutinGliumContext, ModeControl};
 
-  def_session! {
+  apis::def_session! {
     context Wsk {
       PROCESSES where
         let process    = self,
@@ -389,42 +401,45 @@ pub mod wsk {
 
   impl InputRender {
     fn input_render_update (&mut self) -> apis::process::ControlFlow {
-      trace!("input_render update...");
+      log::trace!("input_render update...");
 
-      trace!("input_render frame: {}", self.frame);
+      log::trace!("input_render frame: {}", self.frame);
 
       let mut result      = apis::process::ControlFlow::Continue;
       let mut presult     = self.result.clone();
       let mut clear_color = self.clear_color;
       { // glutin_glium_context scope
         use glium::Surface;
+        use glutin::platform::desktop::EventLoopExtDesktop;
 
         let glutin_glium_context = self.glutin_glium_context.as_mut().unwrap();
 
         // poll events
-        glutin_glium_context.events_loop.poll_events (|event| {
+        glutin_glium_context.event_loop.run_return (|event, _, control_flow| {
+          use glutin::event::{self, Event};
           //println!("frame[{}] event: {:?}", frame, event);
+          *control_flow = glutin::event_loop::ControlFlow::Poll;
           match event {
-            glutin::Event::DeviceEvent { event, .. } => {
+            Event::DeviceEvent { event, .. } => {
               match event {
-                glutin::DeviceEvent::Key (keyboard_input) => {
-                  if keyboard_input.state == glutin::ElementState::Pressed {
+                event::DeviceEvent::Key (keyboard_input) => {
+                  if keyboard_input.state == event::ElementState::Pressed {
                     match keyboard_input.virtual_keycode {
-                      Some (glutin::VirtualKeyCode::Tab) => {
+                      Some (event::VirtualKeyCode::Tab) => {
                         result  = apis::process::ControlFlow::Break;
                         presult = ModeControl::Next;
                       }
-                      Some (glutin::VirtualKeyCode::Q) => {
+                      Some (event::VirtualKeyCode::Q) => {
                         result  = apis::process::ControlFlow::Break;
                         presult = ModeControl::Quit;
                       }
-                      Some (glutin::VirtualKeyCode::W) => {
+                      Some (event::VirtualKeyCode::W) => {
                         clear_color = (1.0, 1.0, 1.0, 1.0);
                       }
-                      Some (glutin::VirtualKeyCode::S) => {
+                      Some (event::VirtualKeyCode::S) => {
                         clear_color = (0.5, 0.5, 0.5, 1.0);
                       }
-                      Some (glutin::VirtualKeyCode::K) => {
+                      Some (event::VirtualKeyCode::K) => {
                         clear_color = (0.0, 0.0, 0.0, 1.0);
                       }
                       _ => {}
@@ -433,6 +448,9 @@ pub mod wsk {
                 }
                 _ => {}
               }
+            }
+            Event::MainEventsCleared => {
+              *control_flow = glutin::event_loop::ControlFlow::Exit;
             }
             _ => {}
           }
@@ -447,7 +465,7 @@ pub mod wsk {
       self.clear_color = clear_color;
       self.frame += 1;
 
-      trace!("...input_render update");
+      log::trace!("...input_render update");
 
       self.result = presult;
       result
@@ -455,9 +473,9 @@ pub mod wsk {
   } // end impl InputRender
 } // end mod wsk
 
-///////////////////////////////////////////////////////////////////////////////
-//  main                                                                     //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  main                                                                      //
+////////////////////////////////////////////////////////////////////////////////
 
 fn main() {
   use colored::Colorize;
@@ -467,7 +485,14 @@ fn main() {
 
   println!("{}", format!("{} main...", example_name).green().bold());
 
-  unwrap!(simplelog::TermLogger::init (LOG_LEVEL, simplelog::Config::default()));
+  unwrap!(simplelog::TermLogger::init (
+    LOG_LEVEL,
+    simplelog::ConfigBuilder::new()
+      .set_target_level (simplelog::LevelFilter::Error) // module path
+      .set_thread_level (simplelog::LevelFilter::Off)   // no thread numbers
+      .build(),
+    simplelog::TerminalMode::Stdout
+  ));
 
   // create a dotfile for the program state machine
   use std::io::Write;
@@ -482,7 +507,7 @@ fn main() {
   // create a program in the initial mode
   use apis::Program;
   let mut myprogram = Graphical::initial();
-  //debug!("myprogram: {:#?}", myprogram);
+  //log::debug!("myprogram: {:#?}", myprogram);
   // run to completion
   myprogram.run();
 

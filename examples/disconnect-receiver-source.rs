@@ -16,27 +16,26 @@
 #![allow(dead_code)]
 
 #![feature(const_fn)]
-#![feature(try_from)]
 
-#[macro_use] extern crate unwrap;
 extern crate colored;
 extern crate simplelog;
+extern crate unwrap;
+use unwrap::unwrap;
 
-#[macro_use] extern crate apis;
+extern crate apis;
 
-///////////////////////////////////////////////////////////////////////////////
-//  constants                                                                //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  constants                                                                 //
+////////////////////////////////////////////////////////////////////////////////
 
 //  Off, Error, Warn, Info, Debug, Trace
-pub const LOG_LEVEL
-  : simplelog::LevelFilter = simplelog::LevelFilter::Info;
+pub const LOG_LEVEL : simplelog::LevelFilter = simplelog::LevelFilter::Info;
 
-///////////////////////////////////////////////////////////////////////////////
-//  session                                                                  //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  session                                                                   //
+////////////////////////////////////////////////////////////////////////////////
 
-def_session! {
+apis::def_session! {
   context DisconnectReceiverSource {
     PROCESSES where
       let process    = self,
@@ -95,9 +94,9 @@ def_session! {
   }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-//  main                                                                     //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  main                                                                      //
+////////////////////////////////////////////////////////////////////////////////
 
 fn main() {
   use std::io::Write;
@@ -109,7 +108,14 @@ fn main() {
 
   println!("{}", format!("{} main...", example_name).green().bold());
 
-  unwrap!(simplelog::TermLogger::init (LOG_LEVEL, simplelog::Config::default()));
+  unwrap!(simplelog::TermLogger::init (
+    LOG_LEVEL,
+    simplelog::ConfigBuilder::new()
+      .set_target_level (simplelog::LevelFilter::Error) // module path
+      .set_thread_level (simplelog::LevelFilter::Off)   // no thread numbers
+      .build(),
+    simplelog::TerminalMode::Stdout
+  ));
 
   // report size information
   apis::report_sizes::<DisconnectReceiverSource>();

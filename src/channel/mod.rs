@@ -1,6 +1,6 @@
 use {std, vec_map};
 use enum_unitary;
-use {session, Message};
+use crate::{session, Message};
 
 ///////////////////////////////////////////////////////////////////////////////
 //  submodules
@@ -15,8 +15,8 @@ pub mod backend;
 /// Main channel struct.
 pub struct Channel <CTX : session::Context> {
   pub def          : Def <CTX>,
-  pub sourcepoints : vec_map::VecMap <Box <Sourcepoint <CTX>>>,
-  pub endpoints    : vec_map::VecMap <Box <Endpoint    <CTX>>>
+  pub sourcepoints : vec_map::VecMap <Box <dyn Sourcepoint <CTX>>>,
+  pub endpoints    : vec_map::VecMap <Box <dyn Endpoint    <CTX>>>
 }
 
 /// Channel definition.
@@ -109,9 +109,8 @@ pub enum TryRecvError {
 ///////////////////////////////////////////////////////////////////////////////
 
 /// Unique identifier with a total mapping to channel infos.
-pub trait Id <CTX> where
-  Self : enum_unitary::EnumUnitary,
-  CTX  : session::Context <CID=Self>
+pub trait Id <CTX> : enum_unitary::EnumUnitary + Ord + std::fmt::Debug where
+  CTX : session::Context <CID=Self>
 {
   //
   //  required
@@ -119,8 +118,7 @@ pub trait Id <CTX> where
   fn def             (&self) -> Def <CTX>;
   fn message_type_id (&self) -> CTX::MID;
   /// Create a new channel.
-  fn create (Def <CTX>) -> Channel <CTX>;
-
+  fn create (_ : Def <CTX>) -> Channel <CTX>;
 }
 
 /// Interface for a channel sourcepoint.
@@ -397,7 +395,7 @@ impl <T> std::error::Error for SendError <T> {
   fn description (&self) -> &str {
     "sending on a closed channel"
   }
-  fn cause (&self) -> Option <&std::error::Error> {
+  fn cause (&self) -> Option <&dyn std::error::Error> {
     None
   }
 }

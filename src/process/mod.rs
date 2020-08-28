@@ -1,10 +1,9 @@
-use {std, either, smallvec, num_traits as num};
+use {std, either, log, smallvec, num_traits as num};
 use {enum_unitary};
-use {channel, session, Message};
+use crate::{channel, session, Message};
 
-use std::{boxed, sync::mpsc, time};
+use std::{sync::mpsc, time};
 use vec_map::VecMap;
-use macro_machines::*;
 
 pub mod inner;
 pub mod presult;
@@ -29,14 +28,14 @@ pub struct Def <CTX : session::Context> {
 pub struct Handle <CTX : session::Context> {
   pub result_rx        : mpsc::Receiver <CTX::GPRES>,
   pub continuation_tx  : mpsc::Sender <
-    Box <boxed::FnBox (CTX::GPROC) -> Option <()> + Send>
+    Box <dyn FnOnce (CTX::GPROC) -> Option <()> + Send>
   >,
   /// When the session drops, the `finish` method will either join or send
   /// a continuation depending on the contents of this field.
   pub join_or_continue :
     either::Either <
       std::thread::JoinHandle <Option <()>>,
-      Option <Box <boxed::FnBox (CTX::GPROC) -> Option <()> + Send>>
+      Option <Box <dyn FnOnce (CTX::GPROC) -> Option <()> + Send>>
     >
 }
 
@@ -171,13 +170,13 @@ pub trait Process <CTX, RES> where
   }
 
   #[inline]
-  fn sourcepoints (&self) -> &VecMap <Box <channel::Sourcepoint <CTX>>> {
+  fn sourcepoints (&self) -> &VecMap <Box <dyn channel::Sourcepoint <CTX>>> {
     &self.inner_ref().extended_state().sourcepoints
   }
 
   #[inline]
   fn sourcepoints_mut (&mut self)
-    -> &mut VecMap <Box <channel::Sourcepoint <CTX>>>
+    -> &mut VecMap <Box <dyn channel::Sourcepoint <CTX>>>
   {
     &mut self.inner_mut().extended_state_mut().sourcepoints
   }
@@ -189,7 +188,7 @@ pub trait Process <CTX, RES> where
   /// or `initialize`, either before or after the run loop, respectively.
   #[inline]
   fn endpoints (&self)
-    -> std::cell::Ref <Option <VecMap <Box <channel::Endpoint <CTX>>>>>
+    -> std::cell::Ref <Option <VecMap <Box <dyn channel::Endpoint <CTX>>>>>
   {
     self.inner_ref().extended_state().endpoints.borrow()
   }
@@ -201,7 +200,7 @@ pub trait Process <CTX, RES> where
   /// or `initialize`, either before or after the run loop, respectively.
   #[inline]
   fn endpoints_mut (&mut self) -> std::cell::RefMut
-    <Option <VecMap <Box <channel::Endpoint <CTX>>>>>
+    <Option <VecMap <Box <dyn channel::Endpoint <CTX>>>>>
   {
     self.inner_ref().extended_state().endpoints.borrow_mut()
   }
@@ -215,7 +214,7 @@ pub trait Process <CTX, RES> where
   /// Taking twice is a fatal error.
   // TODO: error doctest
   #[inline]
-  fn take_endpoints (&self) -> VecMap <Box <channel::Endpoint <CTX>>> {
+  fn take_endpoints (&self) -> VecMap <Box <dyn channel::Endpoint <CTX>>> {
     self.inner_ref().extended_state().endpoints.borrow_mut().take().unwrap()
   }
 
@@ -223,7 +222,7 @@ pub trait Process <CTX, RES> where
   ///
   /// Error if current endpoints are not `None`.
   #[inline]
-  fn put_endpoints (&self, endpoints : VecMap <Box <channel::Endpoint <CTX>>>) {
+  fn put_endpoints (&self, endpoints : VecMap <Box <dyn channel::Endpoint <CTX>>>) {
     *self.inner_ref().extended_state().endpoints.borrow_mut()
       = Some (endpoints);
   }
@@ -234,13 +233,12 @@ pub trait Process <CTX, RES> where
     where CTX : 'static
   {
     use colored::Colorize;
-    debug!("process[{:?}] sending on channel[{:?}]: {}",
+    log::debug!("process[{:?}] sending on channel[{:?}]: {}",
       self.id(), channel_id,
       format!("message[{:?}]", message).green().bold());
     let cid = channel_id.clone().into();
     self.sourcepoints()[cid].send (message.into()).map_err (|send_error| {
-      use colored::Colorize;
-      warn!("process[{:?}] send message[{:?}] on channel[{:?}] failed: {}",
+      log::warn!("process[{:?}] send message[{:?}] on channel[{:?}] failed: {}",
         self.id(), send_error.0, channel_id,
         "receiver disconnected".red().bold());
       send_error
@@ -253,14 +251,13 @@ pub trait Process <CTX, RES> where
     where CTX : 'static
   {
     use colored::Colorize;
-    debug!("process[{:?}] sending to process[{:?}] on channel[{:?}]: {}",
-      self.id(), recipient, channel_id,
+    log::debug!("process[{:?}] sending to process[{:?}] on channel[{:?}]: {}",
+      self.id(), recipient.clone(), channel_id.clone(),
       format!("message[{:?}]", message).green().bold());
-    let cid = channel_id.into();
-    self.sourcepoints()[cid].send_to (message.into(), recipient).map_err (
+    let cid = channel_id.clone().into();
+    self.sourcepoints()[cid].send_to (message.into(), recipient.clone()).map_err (
       |send_error| {
-        use colored::Colorize;
-        warn!("process[{:?}] send to process[{:?}] message[{:?}] \
+        log::warn!("process[{:?}] send to process[{:?}] message[{:?}] \
           on channel[{:?}] failed: {}",
             self.id(), recipient, send_error.0, channel_id,
             "receiver disconnected".red().bold());
@@ -298,7 +295,7 @@ pub trait Process <CTX, RES> where
         loop {
           match endpoint.try_recv() {
             Ok (message) => {
-              warn!("process[{:?}] unhandled message on channel[{:?}]: {}",
+              log::warn!("process[{:?}] unhandled message on channel[{:?}]: {}",
                 self.id(), channel_id,
                 format!("message[{:?}]", message).yellow().bold());
               unhandled_count += 1;
@@ -311,7 +308,7 @@ pub trait Process <CTX, RES> where
         }
       }
       if unhandled_count > 0 {
-        warn!("process[{:?}] unhandled message count: {}",
+        log::warn!("process[{:?}] unhandled message count: {}",
           self.id(), format!("{}", unhandled_count).yellow().bold());
       }
     }
@@ -330,7 +327,7 @@ pub trait Process <CTX, RES> where
     CTX  : 'static
   {
     self.run();
-    let continuation : Box <boxed::FnBox (CTX::GPROC) -> Option <()> + Send> = {
+    let continuation : Box <dyn FnOnce (CTX::GPROC) -> Option <()> + Send> = {
       let session_handle = &self.inner_ref().as_ref().session_handle;
       session_handle.continuation_rx.recv().unwrap()
     };
@@ -350,7 +347,7 @@ pub trait Process <CTX, RES> where
     self.inner_mut().handle_event (inner::EventParams::Run{}.into()).unwrap();
 
     let t_start = time::Instant::now();
-    debug!("process[{:?}] start time: {}",
+    log::debug!("process[{:?}] start time: {}",
       self.id(), format!("{:?}", t_start).cyan().bold());
 
     let messages_per_update = {
@@ -369,11 +366,11 @@ pub trait Process <CTX, RES> where
     { // create a scope here so the endpoints can be returned after this borrow
     let (cid, endpoint) = endpoints.iter().next().unwrap();
     let channel_id      = CTX::CID::from_usize (cid).unwrap();
-    'run_loop: while self.state_id() == inner::StateId::Running {
+    '_run_loop: while self.state_id() == inner::StateId::Running {
       // wait on message
       match endpoint.recv() {
         Ok (message) => {
-          debug!("process[{:?}] received on channel[{:?}]: {}",
+          log::debug!("process[{:?}] received on channel[{:?}]: {}",
             self.id(), channel_id,
             format!("message[{:?}]", message).green().bold());
           let handle_message_result = self.handle_message (message);
@@ -390,8 +387,7 @@ pub trait Process <CTX, RES> where
           messages_since_update += 1;
         }
         Err (channel::RecvError) => {
-          use colored::Colorize;
-          info!("process[{:?}] receive on channel[{:?}] failed: {}",
+          log::info!("process[{:?}] receive on channel[{:?}] failed: {}",
               self.id(), channel_id, "sender disconnected".red().bold());
           if self.state_id() == inner::StateId::Running {
             self.inner_mut().handle_event (inner::EventParams::End{}.into())
@@ -443,7 +439,7 @@ pub trait Process <CTX, RES> where
     self.inner_mut().handle_event (inner::EventParams::Run{}.into()).unwrap();
 
     let t_start = time::Instant::now();
-    debug!("process[{:?}] start time: {}",
+    log::debug!("process[{:?}] start time: {}",
       self.id(), format!("{:?}", t_start).cyan().bold());
     let (tick_ms, ticks_per_update) = {
       match *self.kind() {
@@ -471,23 +467,23 @@ pub trait Process <CTX, RES> where
       v.resize (num_open_channels, true);
       v
     });
-    'run_loop: while self.state_id() == inner::StateId::Running {
+    '_run_loop: while self.state_id() == inner::StateId::Running {
       let t_now = time::Instant::now();
       if cfg!(debug_assertions) {
         if t_now > t_next {
           let t_since = t_now.duration_since (t_next);
-          trace!("process[{:?}] tick[{}] t_since: {:?}",
+          log::trace!("process[{:?}] tick[{}] t_since: {:?}",
             self.id(), tick_count, t_since);
         } else {
           let t_until = t_next.duration_since (t_now);
-          trace!("process[{:?}] tick[{}] t_until: {:?}",
+          log::trace!("process[{:?}] tick[{}] t_until: {:?}",
             self.id(), tick_count, t_until);
         }
       }
       if t_next < t_now {
         t_last += tick_dur;
         t_next += tick_dur;
-        debug!("process[{:?}] tick[{}]: {}",
+        log::debug!("process[{:?}] tick[{}]: {}",
           self.id(), tick_count, format!("tick! @ {:?}", t_now).blue().bold());
 
         // poll messages
@@ -498,7 +494,7 @@ pub trait Process <CTX, RES> where
         ticks_since_update += 1;
         debug_assert!(ticks_since_update <= ticks_per_update);
         if ticks_since_update == ticks_per_update {
-          trace!("process[{:?}] update[{}]", self.id(), update_count);
+          log::trace!("process[{:?}] update[{}]", self.id(), update_count);
           let update_result = self.update();
           match update_result {
             ControlFlow::Continue => {}
@@ -513,7 +509,7 @@ pub trait Process <CTX, RES> where
           ticks_since_update = 0;
         }
       } else {
-        warn!("process[{:?}] tick[{}]: {}",
+        log::warn!("process[{:?}] tick[{}]: {}",
           self.id(), tick_count, "tick too early".yellow().bold());
       }
 
@@ -526,7 +522,7 @@ pub trait Process <CTX, RES> where
           t_until.as_secs()*1000 +
           t_until.subsec_nanos() as u64/1_000_000))
       } else {
-        warn!("process[{:?}] tick[{}]: {}",
+        log::warn!("process[{:?}] tick[{}]: {}",
           self.id(), tick_count, "late tick".yellow().bold());
       }
 
@@ -555,7 +551,7 @@ pub trait Process <CTX, RES> where
     self.inner_mut().handle_event (inner::EventParams::Run{}.into()).unwrap();
 
     let t_start = time::Instant::now();
-    debug!("process[{:?}] start time: {}",
+    log::debug!("process[{:?}] start time: {}",
       self.id(), format!("{:?}", t_start).cyan().bold());
     let (tick_ms, ticks_per_update) = {
       match *self.kind() {
@@ -582,23 +578,23 @@ pub trait Process <CTX, RES> where
       v.resize (num_open_channels, true);
       v
     });
-    'run_loop: while self.state_id() == inner::StateId::Running {
+    '_run_loop: while self.state_id() == inner::StateId::Running {
       let t_now = time::Instant::now();
       if cfg!(debug_assertions) {
         if t_now > t_next {
           let t_since = t_now.duration_since (t_next);
-          trace!("process[{:?}] tick[{}] t_since: {:?}",
+          log::trace!("process[{:?}] tick[{}] t_since: {:?}",
             self.id(), tick_count, t_since);
         } else {
           let t_until = t_next.duration_since (t_now);
-          trace!("process[{:?}] tick[{}] t_until: {:?}",
+          log::trace!("process[{:?}] tick[{}] t_until: {:?}",
             self.id(), tick_count, t_until);
         }
       }
       if t_next < t_now {
         _t_last = t_now;
         t_next  = t_now + tick_dur;
-        debug!("process[{:?}] tick[{}]: {}",
+        log::debug!("process[{:?}] tick[{}]: {}",
           self.id(), tick_count, format!("tick! @ {:?}", t_now).blue().bold());
 
         // poll messages
@@ -609,7 +605,7 @@ pub trait Process <CTX, RES> where
         ticks_since_update += 1;
         debug_assert!(ticks_since_update <= ticks_per_update);
         if ticks_since_update == ticks_per_update {
-          trace!("process[{:?}] update[{}]", self.id(), update_count);
+          log::trace!("process[{:?}] update[{}]", self.id(), update_count);
           let update_result = self.update();
           match update_result {
             ControlFlow::Continue => {}
@@ -624,7 +620,7 @@ pub trait Process <CTX, RES> where
           ticks_since_update = 0;
         }
       } else {
-        warn!("process[{:?}] tick[{}]: {}",
+        log::warn!("process[{:?}] tick[{}]: {}",
           self.id(), tick_count, "tick too early".yellow().bold());
       }
 
@@ -637,7 +633,7 @@ pub trait Process <CTX, RES> where
           t_until.as_secs()*1000 +
           t_until.subsec_nanos() as u64/1_000_000))
       } else {
-        warn!("process[{:?}] tick[{}]: {}",
+        log::warn!("process[{:?}] tick[{}]: {}",
           self.id(), tick_count, "late tick".yellow().bold());
       }
 
@@ -655,7 +651,7 @@ pub trait Process <CTX, RES> where
     self.inner_mut().handle_event (inner::EventParams::Run{}.into()).unwrap();
 
     let t_start = time::Instant::now();
-    debug!("process[{:?}] start time: {}",
+    log::debug!("process[{:?}] start time: {}",
       self.id(), format!("{:?}", t_start).cyan().bold());
     debug_assert_eq!(Kind::Anisochronous, *self.kind());
     let mut _message_count = 0;
@@ -668,12 +664,12 @@ pub trait Process <CTX, RES> where
       v.resize (num_open_channels, true);
       v
     });
-    'run_loop: while self.state_id() == inner::StateId::Running {
+    '_run_loop: while self.state_id() == inner::StateId::Running {
       // poll messages
       poll_messages (self, &endpoints,
         &mut open_channels, &mut num_open_channels, &mut _message_count);
       // update
-      trace!("process[{:?}] update[{}]", self.id(), _update_count);
+      log::trace!("process[{:?}] update[{}]", self.id(), _update_count);
       let update_result = self.update();
       match update_result {
         ControlFlow::Continue => {}
@@ -693,8 +689,7 @@ pub trait Process <CTX, RES> where
 } // end trait Process
 
 /// Unique identifier with a total mapping to process defs.
-pub trait Id <CTX> where
-  Self : enum_unitary::EnumUnitary,
+pub trait Id <CTX> : enum_unitary::EnumUnitary + Ord + std::fmt::Debug where
   CTX  : session::Context <PID=Self>
 {
   fn def      (&self) -> Def <CTX>;
@@ -1033,7 +1028,7 @@ pub fn report_sizes <CTX : session::Context> () where
 #[inline]
 fn poll_messages <CTX, P, RES> (
   process           : &mut P,
-  endpoints         : &VecMap <Box <channel::Endpoint <CTX>>>,
+  endpoints         : &VecMap <Box <dyn channel::Endpoint <CTX>>>,
   open_channels     : &mut smallvec::SmallVec <[bool; 8]>,
   num_open_channels : &mut usize,
   message_count     : &mut usize)
@@ -1066,7 +1061,7 @@ where
       use colored::Colorize;
       match endpoint.try_recv() {
         Ok (message) => {
-          debug!("process[{:?}] received on channel[{:?}]: {}",
+          log::debug!("process[{:?}] received on channel[{:?}]: {}",
             process.id(), channel_id,
               format!("message[{:?}]", message).green().bold());
           *message_count += 1;
@@ -1087,7 +1082,7 @@ where
         }
         Err (channel::TryRecvError::Empty) => { break 'poll_inner }
         Err (channel::TryRecvError::Disconnected) => {
-          info!("process[{:?}] try receive on channel[{:?}]: {}",
+          log::info!("process[{:?}] try receive on channel[{:?}]: {}",
             process.id(), channel_id, "sender disconnected".red().bold());
           channel_close (channel_open, num_open_channels);
           break 'poll_inner

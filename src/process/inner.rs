@@ -1,18 +1,18 @@
-use {std, vec_map};
-use macro_machines::*;
-use {channel, process, session};
+//! The `sourcepoints` field is wrapped in a `Refcell` and an `Option` so that
+//! it may be "removed" from the process with `take_endpoints` while the run
+//! loop receives messages.
 
-/// The `sourcepoints` field is wrapped in a `Refcell` and an `Option` so that
-/// it may be "removed" from the process with `take_endpoints` while the run
-/// loop receives messages.
+use {std, vec_map};
+use macro_machines::def_machine_nodefault;
+use crate::{channel, process, session};
 
 def_machine_nodefault! {
   Inner <CTX : { session::Context }> (
     def            : process::Def <CTX>,
     session_handle : session::Handle <CTX>,
-    sourcepoints   : vec_map::VecMap <Box <channel::Sourcepoint <CTX>>>,
+    sourcepoints   : vec_map::VecMap <Box <dyn channel::Sourcepoint <CTX>>>,
     endpoints      : std::cell::RefCell <Option <
-      vec_map::VecMap <Box <channel::Endpoint <CTX>>>>>
+      vec_map::VecMap <Box <dyn channel::Endpoint <CTX>>>>>
   ) @ _inner {
     STATES [
       state Ready   ()

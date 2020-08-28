@@ -16,24 +16,22 @@
 
 #![feature(const_fn)]
 #![feature(core_intrinsics)]
-#![feature(fnbox)]
-#![feature(try_from)]
-
-extern crate simplelog;
 
 extern crate macro_machines;
-#[macro_use] extern crate apis;
+extern crate simplelog;
 
-///////////////////////////////////////////////////////////////////////////////
-//  modes                                                                    //
-///////////////////////////////////////////////////////////////////////////////
+extern crate apis;
+
+////////////////////////////////////////////////////////////////////////////////
+//  modes                                                                     //
+////////////////////////////////////////////////////////////////////////////////
 
 pub mod int_source {
-  use ::apis;
+  use apis;
 
   const MAX_UPDATES : u64 = 10;
 
-  def_session!{
+  apis::def_session! {
     context IntSource {
       PROCESSES where
         let process    = self,
@@ -79,7 +77,7 @@ pub mod int_source {
   impl IntGen {
     pub fn int_gen_update (&mut self) -> apis::process::ControlFlow {
       use apis::Process;
-      use apis::FromPrimitive;
+      use apis::enum_unitary::FromPrimitive;
       let to_id = (self.update_count % 2) + 1;
       let anint = self.update_count;
       let mut result = self.send_to (
@@ -128,11 +126,11 @@ pub mod int_source {
 }
 
 pub mod char_sink {
-  use ::apis;
+  use apis;
 
   const MAX_UPDATES : u64 = 10;
 
-  def_session! {
+  apis::def_session! {
     context CharSink {
       PROCESSES where
         let process    = self,
@@ -233,11 +231,11 @@ pub mod char_sink {
   }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-//  program                                                                  //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  program                                                                   //
+////////////////////////////////////////////////////////////////////////////////
 
-def_program! {
+apis::def_program! {
   program Myprogram where let result = session.run() {
     MODES [
       mode int_source::IntSource {
@@ -258,7 +256,12 @@ def_program! {
 
 fn main() {
   simplelog::TermLogger::init (
-    simplelog::LevelFilter::Debug, simplelog::Config::default()
+    simplelog::LevelFilter::Debug,
+    simplelog::ConfigBuilder::new()
+      .set_target_level (simplelog::LevelFilter::Error) // module path
+      .set_thread_level (simplelog::LevelFilter::Off)   // no thread numbers
+      .build(),
+    simplelog::TerminalMode::Stdout
   ).unwrap();
 
   use std::io::Write;

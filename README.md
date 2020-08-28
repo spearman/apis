@@ -294,7 +294,7 @@ ignored unless a logging implementation is selected, for example `simplelog`:
 
 ```toml
 [dependencies]
-simplelog = "0.5.*"
+simplelog = "0.6.*"
 ```
 
 Using a `TermLogger` to display log messages in the terminal:
@@ -304,7 +304,8 @@ extern crate simplelog;
 fn main() {
   simplelog::TermLogger::init (
     simplelog::LevelFilter::Debug,
-    simplelog::Config::default
+    simplelog::Config::default(),
+    simplelog::TerminalMode::Stdout
   ).unwrap();
   // ...
 }
@@ -328,7 +329,9 @@ comments of individual examples for specifics.
 Doctests of process and channel definitions need to be run with `--features
 "test"` to compile successfully:
 
-    $ cargo test --features "test"
+```
+$ cargo test --features "test"
+```
 
 (see <https://github.com/rust-lang/rust/issues/45599>).
 
