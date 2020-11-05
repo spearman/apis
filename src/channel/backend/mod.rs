@@ -138,9 +138,9 @@ where
   fn send_to (&self, message : CTX::GMSG, recipient : CTX::PID)
     -> Result <(), channel::SendError <CTX::GMSG>>
   {
-    let pid    = recipient.into();
-    let sender = &self[pid];
-    std::sync::mpsc::Sender::send (sender, M::try_from(message).ok().unwrap())
+    let pid : usize = recipient.into();
+    let sender      = &self[pid];
+    std::sync::mpsc::Sender::send (sender, M::try_from (message).ok().unwrap())
       .map_err (Into::into)
   }
 }

@@ -8,3 +8,6 @@
     - program dotfile is a state machine dotfile from macro-machines-- this may
       need to be modified or else link by parsing and modifying the dotfile
       output itself
+- use crossbeam-channels
+    - replace standard library mpsc
+    - possibly add mpmc channel types

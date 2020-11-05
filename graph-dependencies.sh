@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/bin/sh
+
 set -x
 
 cargo deps --no-transitive-deps 2> /dev/null > dependencies.dot \

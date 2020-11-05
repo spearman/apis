@@ -475,13 +475,13 @@ impl <CTX : Context> Def <CTX> {
       let channel_id = CTX::CID::from_usize (cid).unwrap();
       debug_assert_eq!(channel_id, *channel_def.id());
       for producer_id in channel_def.producers().iter() {
-        let pid          = producer_id.clone().into();
+        let pid : usize  = producer_id.clone().into();
         let sourcepoints = &mut sourcepoints_from_channels[pid];
         sourcepoints.push (channel_id.clone());
       }
       for consumer_id in channel_def.consumers().iter() {
-        let pid       = consumer_id.clone().into();
-        let endpoints = &mut endpoints_from_channels[pid];
+        let pid : usize = consumer_id.clone().into();
+        let endpoints   = &mut endpoints_from_channels[pid];
         endpoints.push (channel_id.clone());
       }
     }

@@ -236,7 +236,7 @@ pub trait Process <CTX, RES> where
     log::debug!("process[{:?}] sending on channel[{:?}]: {}",
       self.id(), channel_id,
       format!("message[{:?}]", message).green().bold());
-    let cid = channel_id.clone().into();
+    let cid : usize = channel_id.clone().into();
     self.sourcepoints()[cid].send (message.into()).map_err (|send_error| {
       log::warn!("process[{:?}] send message[{:?}] on channel[{:?}] failed: {}",
         self.id(), send_error.0, channel_id,
@@ -254,7 +254,7 @@ pub trait Process <CTX, RES> where
     log::debug!("process[{:?}] sending to process[{:?}] on channel[{:?}]: {}",
       self.id(), recipient.clone(), channel_id.clone(),
       format!("message[{:?}]", message).green().bold());
-    let cid = channel_id.clone().into();
+    let cid : usize = channel_id.clone().into();
     self.sourcepoints()[cid].send_to (message.into(), recipient.clone()).map_err (
       |send_error| {
         log::warn!("process[{:?}] send to process[{:?}] message[{:?}] \
@@ -689,8 +689,8 @@ pub trait Process <CTX, RES> where
 } // end trait Process
 
 /// Unique identifier with a total mapping to process defs.
-pub trait Id <CTX> : enum_unitary::EnumUnitary + Ord + std::fmt::Debug where
-  CTX  : session::Context <PID=Self>
+pub trait Id <CTX> : Ord + std::fmt::Debug + enum_unitary::EnumUnitary where
+  CTX : session::Context <PID=Self>
 {
   fn def      (&self) -> Def <CTX>;
   /// Must initialize the concrete process type start running the initial

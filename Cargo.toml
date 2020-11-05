@@ -1,6 +1,6 @@
 [package]
 name = "apis"
-version = "0.4.4"
+version = "0.4.5"
 authors = ["Shane Pearman <spearman@github.com>"]
 license = "MPL-2.0"
 description = "Reactive, session-oriented, asynchronous process-calculus framework"
@@ -28,7 +28,7 @@ unbounded-spsc = "0.1.*"
 
 # dev dependencies
 [dev-dependencies]
-glium = "0.27.*"
+glium = "0.28.*"
 rand = "0.7.*"
 simplelog = "0.8.*"
 unwrap = "1.*"
