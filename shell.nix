@@ -6,7 +6,7 @@ mkShell {
     rust-analyzer
   ];
   # required for opengl interactive example
-  LD_LIBRARY_PATH = stdenv.lib.makeLibraryPath [
+  LD_LIBRARY_PATH = lib.makeLibraryPath [
     libglvnd
     xorg.libX11
     xorg.libXcursor
