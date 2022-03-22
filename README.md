@@ -54,21 +54,18 @@ programs, respectively.
 
 **Sessions**
 
-The `def_session!` macro expands to datatype and function implementations that
-rely on two unstable features, `const_fn` and `try_from`:
+The `def_session!` macro expands to datatype and function implementations
+defining processes, channels, and messages.
 
-```rust
-#![feature(const_fn)]
-#![feature(try_from)]
-
-#[macro_use] extern crate apis;
-```
+*Example*
 
 Define a session 'IntSource' in which a source thread sends `u64` values
 alternatively to two peers which sum the received values and return a final sum
 in the *session result*:
 
 ```rust
+#[macro_use] extern crate apis;
+
 pub mod int_source {
   use ::apis;
 
@@ -213,17 +210,7 @@ composed into "*programs*", described next.
 
 **Programs**
 
-When defining a program using the `def_program!` macro, two additional unstable
-features, `core_intrinsics` and `fnbox`, are required:
-
-```rust
-#![feature(const_fn)]
-#![feature(core_intrinsics)]
-#![feature(fnbox)]
-#![feature(try_from)]
-
-#[macro_use] extern crate apis;
-```
+*Example*
 
 Define another session `CharSink` in module `char_sink` with different behavior
 and reversed message flow (implementation omitted, see `./examples/readme.rs`):

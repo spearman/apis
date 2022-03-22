@@ -18,9 +18,6 @@
 //! make -f MakefileDot graphical
 //! ```
 
-#![feature(const_fn)]
-#![feature(core_intrinsics)]
-
 #[macro_use] extern crate unwrap;
 extern crate colored;
 extern crate glium;

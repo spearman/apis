@@ -15,8 +15,6 @@
 
 #![allow(dead_code)]
 
-#![feature(const_fn)]
-
 extern crate colored;
 extern crate simplelog;
 extern crate unwrap;

@@ -14,7 +14,7 @@ name = "apis"
 [dependencies]
 colored = "2.*"
 either = "1.*"
-enum-iterator = "0.6.*"
+enum-iterator = "0.7.*"  # required by enum-unitary
 log = "0.4.*"
 marksman_escape = "0.1.*"
 num-traits = "0.2.*"
@@ -24,7 +24,7 @@ vec_map = "0.8.*"
 # local dependencies
 enum-unitary = "0.4.*"
 macro-machines = "0.10.*"
-unbounded-spsc = "0.1.*"
+unbounded-spsc = { version = "0.1.*", git = "https://github.com/spearman/unbounded-spsc.git" }
 
 # dev dependencies
 [dev-dependencies]

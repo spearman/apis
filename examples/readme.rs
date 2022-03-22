@@ -14,9 +14,6 @@
 //! make -f MakefileDot myprogram charsink intsource
 //! ```
 
-#![feature(const_fn)]
-#![feature(core_intrinsics)]
-
 extern crate macro_machines;
 extern crate simplelog;
 

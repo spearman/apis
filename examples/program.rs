@@ -8,9 +8,6 @@
 //! make -f MakefileDot program
 //! ```
 
-#![feature(const_fn)]
-#![feature(core_intrinsics)]
-
 #[macro_use] extern crate unwrap;
 extern crate colored;
 extern crate macro_machines;

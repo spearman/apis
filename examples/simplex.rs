@@ -19,8 +19,6 @@
 
 #![allow(dead_code)]
 
-#![feature(const_fn)]
-
 extern crate colored;
 extern crate macro_machines;
 extern crate simplelog;

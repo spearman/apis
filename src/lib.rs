@@ -16,8 +16,6 @@
 //! between them.
 
 #![allow(dead_code)]
-#![feature(const_fn)]
-#![feature(core_intrinsics)]
 
 pub extern crate colored;
 pub extern crate either;

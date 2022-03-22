@@ -28,8 +28,6 @@
 /// connected by a channel sending `Charstreammessage`s:
 ///
 /// ```
-/// #![feature(const_fn)]
-/// #![feature(try_from)]
 /// extern crate apis;
 ///
 /// use apis::{channel, message, process, session};

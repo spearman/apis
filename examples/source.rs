@@ -18,8 +18,6 @@
 
 #![allow(dead_code)]
 
-#![feature(const_fn)]
-
 extern crate colored;
 extern crate rand;
 extern crate simplelog;

@@ -114,9 +114,6 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
   /// Process sourcepoints do not correspond one-to-one with channel producers:
   ///
   /// ```
-  /// #![feature(const_fn)]
-  /// #![feature(try_from)]
-  ///
   /// #[macro_use] extern crate apis;
   ///
   /// def_session! {
@@ -167,9 +164,6 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
   /// Process endpoints do not correspond one-to-one with channel consumers:
   ///
   /// ```
-  /// #![feature(const_fn)]
-  /// #![feature(try_from)]
-  ///
   /// #[macro_use] extern crate apis;
   ///
   /// def_session! {

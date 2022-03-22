@@ -24,9 +24,6 @@
 //! make -f MakefileDot interactive
 //! ```
 
-#![feature(const_fn)]
-#![feature(core_intrinsics)]
-
 #![feature(pattern)]
 
 #[macro_use] extern crate unwrap;
