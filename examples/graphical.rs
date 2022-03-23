@@ -491,7 +491,6 @@ fn main() {
 
   // create a dotfile for the program state machine
   use std::io::Write;
-  use macro_machines::MachineDotfile;
   let mut f = std::fs::File::create (format!("{}.dot", example_name)).unwrap();
   f.write_all (Graphical::dotfile().as_bytes()).unwrap();
   drop (f);

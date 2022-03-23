@@ -273,7 +273,6 @@ fn main() {
     .unwrap();
   drop (f);
   // write program state machine dotfile
-  use macro_machines::MachineDotfile;
   let mut f = std::fs::File::create ("myprogram.dot").unwrap();
   f.write_all (Myprogram::dotfile().as_bytes()).unwrap();
   drop (f);
