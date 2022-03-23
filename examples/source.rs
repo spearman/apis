@@ -21,8 +21,6 @@
 extern crate colored;
 extern crate rand;
 extern crate simplelog;
-extern crate unwrap;
-use unwrap::unwrap;
 
 extern crate apis;
 
@@ -201,23 +199,23 @@ fn main() {
 
   println!("{}", format!("{} main...", example_name).green().bold());
 
-  unwrap!(simplelog::TermLogger::init (
+  simplelog::TermLogger::init (
     LOG_LEVEL,
     simplelog::ConfigBuilder::new()
       .set_target_level (simplelog::LevelFilter::Error) // module path
       .set_thread_level (simplelog::LevelFilter::Off)   // no thread numbers
       .build(),
     simplelog::TerminalMode::Stdout
-  ));
+  ).unwrap();
 
   // report size information
   apis::report_sizes::<RandSource>();
 
   // here is where we find out if the session definition has any errors
-  let session_def = unwrap!(RandSource::def());
+  let session_def = RandSource::def().unwrap();
   // create a dotfile for the session
-  let mut f = unwrap!(std::fs::File::create (format!("{}.dot", example_name)));
-  unwrap!(f.write_all (session_def.dotfile_show_defaults().as_bytes()));
+  let mut f = std::fs::File::create (format!("{}.dot", example_name)).unwrap();
+  f.write_all (session_def.dotfile_show_defaults().as_bytes()).unwrap();
   drop (f);
   // create the session from the definition
   let mut session : apis::Session <RandSource> = session_def.into();

@@ -31,7 +31,6 @@ unbounded-spsc = { version = "0.1.*", git = "https://github.com/spearman/unbound
 glium = "0.28.*"
 rand = "0.7.*"
 simplelog = "0.8.*"
-unwrap = "1.*"
 
 [features]
 # The reason we do this is because doctests don't get cfg(test) See:

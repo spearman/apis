@@ -22,8 +22,6 @@
 extern crate colored;
 extern crate macro_machines;
 extern crate simplelog;
-extern crate unwrap;
-use unwrap::unwrap;
 
 extern crate apis;
 
@@ -175,33 +173,32 @@ fn main() {
 
   println!("{}", format!("{} main...", example_name).green().bold());
 
-  unwrap!(simplelog::TermLogger::init (
+  simplelog::TermLogger::init (
     LOG_LEVEL,
     simplelog::ConfigBuilder::new()
       .set_target_level (simplelog::LevelFilter::Error) // module path
       .set_thread_level (simplelog::LevelFilter::Off)   // no thread numbers
       .build(),
     simplelog::TerminalMode::Stdout
-  ));
+  ).unwrap();
 
   apis::report_sizes::<ChargenUpcase>();
 
   // create a dotfile for the process inner state machine
   use macro_machines::MachineDotfile;
-  let mut f = unwrap!(std::fs::File::create ("process-inner.dot"));
-  unwrap!(
-    f.write_all (apis::process::Inner::<ChargenUpcase>::dotfile_show_defaults()
-      .as_bytes())
-  );
+  let mut f = std::fs::File::create ("process-inner.dot").unwrap();
+  f.write_all (
+    apis::process::Inner::<ChargenUpcase>::dotfile_show_defaults().as_bytes()
+  ).unwrap();
   drop (f);
 
   // here is where we find out if the session definition has any errors
   use apis::session::Context;
-  let session_def = unwrap!(ChargenUpcase::def());
+  let session_def = ChargenUpcase::def().unwrap();
   // create a dotfile for the session
   use std::io::Write;
-  let mut f = unwrap!(std::fs::File::create (format!("{}.dot", example_name)));
-  unwrap!(f.write_all (session_def.dotfile_show_defaults().as_bytes()));
+  let mut f = std::fs::File::create (format!("{}.dot", example_name)).unwrap();
+  f.write_all (session_def.dotfile_show_defaults().as_bytes()).unwrap();
   drop (f);
   // create the session from the definition
   let mut session : apis::Session <ChargenUpcase> = session_def.into();

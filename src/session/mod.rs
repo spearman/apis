@@ -8,7 +8,8 @@ use crate::{channel, message, process};
 //  submodules
 ///////////////////////////////////////////////////////////////////////////////
 
-#[macro_use] mod macro_def;
+mod macro_def;
+pub use self::macro_def::*;
 
 ///////////////////////////////////////////////////////////////////////////////
 //  structs
@@ -114,9 +115,9 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
   /// Process sourcepoints do not correspond one-to-one with channel producers:
   ///
   /// ```
-  /// #[macro_use] extern crate apis;
+  /// extern crate apis;
   ///
-  /// def_session! {
+  /// apis::def_session! {
   ///   context Mycontext {
   ///     PROCESSES where
   ///       let process    = self,
@@ -164,9 +165,9 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
   /// Process endpoints do not correspond one-to-one with channel consumers:
   ///
   /// ```
-  /// #[macro_use] extern crate apis;
+  /// extern crate apis;
   ///
-  /// def_session! {
+  /// apis::def_session! {
   ///   context Mycontext {
   ///     PROCESSES where
   ///       let process    = self,

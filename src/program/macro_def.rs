@@ -54,7 +54,7 @@ macro_rules! def_program {
     impl $crate::Program for $program {
       /// Run the program to completion.
       fn run (&mut self) {
-        use $crate::colored::Colorize;
+        use $crate::Colorize;
         $crate::log::info!("program[{}]: {}", stringify!($program),
           "run...".cyan().bold());
         // TODO: create program ready/ended states and transitions

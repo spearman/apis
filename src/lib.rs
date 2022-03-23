@@ -17,18 +17,19 @@
 
 #![allow(dead_code)]
 
-pub extern crate colored;
 pub extern crate either;
 pub extern crate enum_unitary;
 pub extern crate log;
 pub extern crate macro_machines;
 pub extern crate vec_map;
 
+extern crate colored;
 extern crate marksman_escape;
 extern crate num_traits;
 extern crate smallvec;
 extern crate unbounded_spsc;
 
+pub use colored::Colorize;
 pub use enum_unitary::enum_iterator;
 
 pub mod channel;
@@ -36,6 +37,8 @@ pub mod message;
 pub mod process;
 pub mod program;
 pub mod session;
+#[cfg(doc)]
+pub mod example;
 
 pub use channel::Channel;
 pub use message::Message;

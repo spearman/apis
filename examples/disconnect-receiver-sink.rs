@@ -15,25 +15,23 @@
 
 #![allow(dead_code)]
 
-#[macro_use] extern crate unwrap;
 extern crate colored;
 extern crate simplelog;
 
-#[macro_use] extern crate apis;
+extern crate apis;
 
 ////////////////////////////////////////////////////////////////////////////////
 //  constants                                                                 //
 ////////////////////////////////////////////////////////////////////////////////
 
 //  Off, Error, Warn, Info, Debug, Trace
-pub const LOG_LEVEL
-  : simplelog::LevelFilter = simplelog::LevelFilter::Debug;
+pub const LOG_LEVEL : simplelog::LevelFilter = simplelog::LevelFilter::Debug;
 
 ////////////////////////////////////////////////////////////////////////////////
 //  session                                                                   //
 ////////////////////////////////////////////////////////////////////////////////
 
-def_session! {
+apis::def_session! {
   context DisconnectReceiverSink {
     PROCESSES where
       let process    = self,
@@ -96,26 +94,25 @@ fn main() {
   use apis::session::Context;
   let example_name = std::path::PathBuf::from (std::env::args().next().unwrap())
     .file_name().unwrap().to_str().unwrap().to_string();
-  println!("{}", format!("{} main...", example_name)
-    .green().bold());
+  println!("{}", format!("{} main...", example_name).green().bold());
 
-  unwrap!(simplelog::TermLogger::init (
+  simplelog::TermLogger::init (
     LOG_LEVEL,
     simplelog::ConfigBuilder::new()
       .set_target_level (simplelog::LevelFilter::Error) // module path
       .set_thread_level (simplelog::LevelFilter::Off)   // no thread numbers
       .build(),
     simplelog::TerminalMode::Stdout
-  ));
+  ).unwrap();
 
   // report size information
   apis::report_sizes::<DisconnectReceiverSink>();
 
   // here is where we find out if the session definition has any errors
-  let session_def = unwrap!(DisconnectReceiverSink::def());
+  let session_def = DisconnectReceiverSink::def().unwrap();
   // create a dotfile for the session
-  let mut f = unwrap!(std::fs::File::create (format!("{}.dot", example_name)));
-  unwrap!(f.write_all (session_def.dotfile().as_bytes()));
+  let mut f = std::fs::File::create (format!("{}.dot", example_name)).unwrap();
+  f.write_all (session_def.dotfile().as_bytes()).unwrap();
   drop (f);
   // create the session from the definition
   let mut session : apis::Session <DisconnectReceiverSink> = session_def.into();
@@ -123,6 +120,5 @@ fn main() {
   let results = session.run();
   println!("results: {:?}", results);
 
-  println!("{}", format!("...{} main", example_name)
-    .green().bold());
+  println!("{}", format!("...{} main", example_name).green().bold());
 }

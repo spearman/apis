@@ -64,14 +64,14 @@ alternatively to two peers which sum the received values and return a final sum
 in the *session result*:
 
 ```rust
-#[macro_use] extern crate apis;
+extern crate apis;
 
 pub mod int_source {
-  use ::apis;
+  use apis;
 
   const MAX_UPDATES : u64 = 10;
 
-  def_session!{
+  apis::def_session!{
     context IntSource {
       PROCESSES where
         let process    = self,
@@ -220,7 +220,7 @@ and reversed message flow (implementation omitted, see `./examples/readme.rs`):
 A *program* can then be defined which runs both sessions sequentially:
 
 ```rust
-def_program! {
+apis::def_program! {
   program Myprogram where let result = session.run() {
     MODES [
       mode int_source::IntSource {

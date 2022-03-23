@@ -18,7 +18,6 @@
 //! make -f MakefileDot graphical
 //! ```
 
-#[macro_use] extern crate unwrap;
 extern crate colored;
 extern crate glium;
 extern crate simplelog;
@@ -33,8 +32,7 @@ use glium::glutin;
 ////////////////////////////////////////////////////////////////////////////////
 
 //  Off, Error, Warn, Info, Debug, Trace
-pub const LOG_LEVEL : simplelog::LevelFilter =
-  simplelog::LevelFilter::Info;
+pub const LOG_LEVEL : simplelog::LevelFilter = simplelog::LevelFilter::Info;
 
 ////////////////////////////////////////////////////////////////////////////////
 //  statics                                                                   //
@@ -482,20 +480,20 @@ fn main() {
 
   println!("{}", format!("{} main...", example_name).green().bold());
 
-  unwrap!(simplelog::TermLogger::init (
+  simplelog::TermLogger::init (
     LOG_LEVEL,
     simplelog::ConfigBuilder::new()
       .set_target_level (simplelog::LevelFilter::Error) // module path
       .set_thread_level (simplelog::LevelFilter::Off)   // no thread numbers
       .build(),
     simplelog::TerminalMode::Stdout
-  ));
+  ).unwrap();
 
   // create a dotfile for the program state machine
   use std::io::Write;
   use macro_machines::MachineDotfile;
-  let mut f = unwrap!(std::fs::File::create (format!("{}.dot", example_name)));
-  unwrap!(f.write_all (Graphical::dotfile().as_bytes()));
+  let mut f = std::fs::File::create (format!("{}.dot", example_name)).unwrap();
+  f.write_all (Graphical::dotfile().as_bytes()).unwrap();
   drop (f);
 
   // report size information
