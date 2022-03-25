@@ -30,7 +30,6 @@ extern crate smallvec;
 extern crate unbounded_spsc;
 
 pub use colored::Colorize;
-pub use enum_unitary::enum_iterator;
 
 pub mod channel;
 pub mod message;

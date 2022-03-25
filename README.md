@@ -48,8 +48,16 @@ processes of one mode to the next.
 ## Usage
 
 The features of this library are implemented using two top-level macro
-definitions, `def_session!` and `def_program!`, to define sessions and
-programs, respectively.
+definitions, `def_session!` and `def_program!`, to define sessions and programs,
+respectively.
+
+Internally these macros make use of the `enum_iterator::IntoEnumIterator` derive
+macro which requires that `enum-iterator` is imported in `Cargo.toml`:
+
+```
+apis = "0.4"
+enum-iterator = "0.7"
+```
 
 
 **Sessions**
