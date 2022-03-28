@@ -19,7 +19,6 @@
 
 #![allow(dead_code)]
 
-extern crate colored;
 extern crate macro_machines;
 extern crate simplelog;
 
@@ -82,7 +81,6 @@ impl Chargen {
   fn chargen_handle_message (&mut self, _message : GlobalMessage)
     -> apis::process::ControlFlow
   {
-    //use colored::Colorize;
     log::trace!("chargen handle message...");
     // do nothing: this process will never receive a message
     unreachable!(
@@ -166,7 +164,7 @@ impl Upcase {
 ///////////////////////////////////////////////////////////////////////////////
 
 fn main() {
-  use colored::Colorize;
+  use apis::colored::Colorize;
 
   let example_name = std::path::PathBuf::from (std::env::args().next().unwrap())
     .file_name().unwrap().to_str().unwrap().to_string();

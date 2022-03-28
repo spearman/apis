@@ -20,7 +20,6 @@
 
 #![allow(dead_code)]
 
-extern crate colored;
 extern crate simplelog;
 
 extern crate apis;
@@ -91,7 +90,6 @@ impl Chargen1 {
   fn chargen1_handle_message (&mut self, _message : GlobalMessage)
     -> apis::process::ControlFlow
   {
-    //use colored::Colorize;
     log::trace!("chargen1 handle message...");
     // do nothing: this process will never receive a message
     unreachable!(
@@ -139,7 +137,6 @@ impl Chargen2 {
   fn chargen2_handle_message (&mut self, _message : GlobalMessage)
     -> apis::process::ControlFlow
   {
-    //use colored::Colorize;
     log::trace!("chargen2 handle message...");
     // do nothing: this process will never receive a message
     unreachable!(
@@ -225,7 +222,7 @@ impl Upcase {
 
 fn main() {
   use std::io::Write;
-  use colored::Colorize;
+  use apis::colored::Colorize;
   use apis::session::Context;
 
   let example_name = std::path::PathBuf::from (std::env::args().next().unwrap())

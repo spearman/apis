@@ -18,7 +18,6 @@
 //! make -f MakefileDot graphical
 //! ```
 
-extern crate colored;
 extern crate glium;
 extern crate simplelog;
 
@@ -473,7 +472,7 @@ pub mod wsk {
 ////////////////////////////////////////////////////////////////////////////////
 
 fn main() {
-  use colored::Colorize;
+  use apis::colored::Colorize;
 
   let example_name = std::path::PathBuf::from (std::env::args().next().unwrap())
     .file_name().unwrap().to_str().unwrap().to_string();

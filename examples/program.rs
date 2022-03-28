@@ -8,7 +8,6 @@
 //! make -f MakefileDot program
 //! ```
 
-extern crate colored;
 extern crate macro_machines;
 extern crate rand;
 extern crate simplelog;
@@ -380,7 +379,7 @@ pub mod rand_source {
 ////////////////////////////////////////////////////////////////////////////////
 
 fn main() {
-  use colored::Colorize;
+  use apis::colored::Colorize;
 
   let example_name = std::path::PathBuf::from (std::env::args().next().unwrap())
     .file_name().unwrap().to_str().unwrap().to_string();

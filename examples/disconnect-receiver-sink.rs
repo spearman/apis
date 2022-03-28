@@ -15,7 +15,6 @@
 
 #![allow(dead_code)]
 
-extern crate colored;
 extern crate simplelog;
 
 extern crate apis;
@@ -90,7 +89,7 @@ apis::def_session! {
 
 fn main() {
   use std::io::Write;
-  use colored::Colorize;
+  use apis::colored::Colorize;
   use apis::session::Context;
   let example_name = std::path::PathBuf::from (std::env::args().next().unwrap())
     .file_name().unwrap().to_str().unwrap().to_string();

@@ -26,7 +26,6 @@
 
 #![feature(pattern)]
 
-extern crate colored;
 extern crate macro_machines;
 extern crate simplelog;
 
@@ -149,7 +148,6 @@ pub mod readline_echoup {
     fn readline_handle_message (&mut self, message : GlobalMessage)
       -> apis::process::ControlFlow
     {
-      //use colored::Colorize;
       log::trace!("readline handle message...");
       match message {
         GlobalMessage::FromechoMsg (FromechoMsg::Echo (echo)) => {
@@ -311,7 +309,6 @@ pub mod readline_echorev {
     fn readline_handle_message (&mut self, message : GlobalMessage)
       -> apis::process::ControlFlow
     {
-      //use colored::Colorize;
       log::trace!("readline handle message...");
       match message {
         GlobalMessage::FromechoMsg (FromechoMsg::Echo (echo)) => {
@@ -417,7 +414,7 @@ pub mod readline_echorev {
 ////////////////////////////////////////////////////////////////////////////////
 
 fn main() {
-  use colored::Colorize;
+  use apis::colored::Colorize;
   let example_name = std::path::PathBuf::from (std::env::args().next().unwrap())
     .file_name().unwrap().to_str().unwrap().to_string();
 
