@@ -216,9 +216,8 @@ pub mod rand_source {
             use rand::Rng;
             use apis::enum_unitary::FromPrimitive;
             let mut rng = rand::thread_rng();
-            let rand_id = ProcessId::from_u64 (rng.gen_range (1, 5))
-              .unwrap();
-            let rand_int = rng.gen_range (1,100);
+            let rand_id = ProcessId::from_u64 (rng.gen_range (1..5)).unwrap();
+            let rand_int = rng.gen_range (1..100);
             let mut result = process.send_to (
               ChannelId::Randints, rand_id, Randintsmessage::Anint (rand_int)
             ).into();
@@ -391,7 +390,8 @@ fn main() {
       .set_target_level (simplelog::LevelFilter::Error) // module path
       .set_thread_level (simplelog::LevelFilter::Off)   // no thread numbers
       .build(),
-    simplelog::TerminalMode::Stdout
+    simplelog::TerminalMode::Stdout,
+    simplelog::ColorChoice::Auto
   ).unwrap();
 
   // create a dotfile for the program state machine

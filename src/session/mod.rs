@@ -1,19 +1,19 @@
 //! Main session datatype.
 
-use {std, either, vec_map, num_traits as num};
+use {std, either, enum_iterator, vec_map, num_traits as num};
 use macro_machines::def_machine_nodefault;
 use crate::{channel, message, process};
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //  submodules
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 mod macro_def;
 pub use self::macro_def::*;
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //  structs
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 //
 //  struct Session
@@ -46,7 +46,7 @@ def_machine_nodefault! {
 }
 
 /// Session metainformation.
-#[derive(Clone,Debug,Eq,PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Def <CTX : Context> {
   name        : &'static str,
   channel_def : vec_map::VecMap <channel::Def <CTX>>,
@@ -61,9 +61,9 @@ pub struct Handle <CTX : Context> {
   >
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //  enums
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 /// Error in `Def` definition.
 ///
@@ -76,9 +76,9 @@ pub enum DefineError {
   ConsumerEndpointMismatch
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //  traits
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 /// Trait specifying types in session context with a method to attempt to create
 /// a valid session def struct from those types.
@@ -213,21 +213,16 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
   /// ```
 
   fn def() -> Result <Def <Self>, Vec <DefineError>> {
-    use enum_unitary::EnumUnitary;
-
     let mut channel_def = vec_map::VecMap::new();
-    // no channel defs for nullary channel ids
-    if 0 < Self::CID::count_variants() {
-      for cid in Self::CID::iter_variants() {
-        assert!{
-          channel_def.insert (
-            cid.clone().into(), channel::Id::def (&cid)
-          ).is_none()
-        }
+    for cid in enum_iterator::all::<Self::CID>() {
+      assert!{
+        channel_def.insert (
+          cid.clone().into(), channel::Id::def (&cid)
+        ).is_none()
       }
     }
     let mut process_def = vec_map::VecMap::new();
-    for pid in Self::PID::iter_variants() {
+    for pid in enum_iterator::all::<Self::PID>() {
       assert!{
         process_def.insert (
           pid.clone().into(), process::Id::def (&pid)
@@ -240,9 +235,9 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
 
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //  impls
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 impl <CTX : Context> Session <CTX> {
   pub fn def (&self) -> &Def <CTX> {
@@ -270,15 +265,14 @@ impl <CTX : Context> Session <CTX> {
     process_handles : vec_map::VecMap <process::Handle <CTX>>,
     main_process    : Option <Box <CTX::GPROC>>
   ) -> vec_map::VecMap <CTX::GPRES> {
-    use enum_unitary::EnumUnitary;
     use process::Global;
 
     self.start (process_handles, channels, main_process);
     if let Some (ref mut main_gproc) = self.as_mut().main_process {
       main_gproc.run();
     }
-    let mut results
-      = vec_map::VecMap::with_capacity (CTX::PID::count_variants());
+    let mut results =
+      vec_map::VecMap::with_capacity (enum_iterator::cardinality::<CTX::PID>());
     for (pid, process_handle) in self.as_mut().process_handles.iter() {
       assert!{
         results.insert (pid, process_handle.result_rx.recv().unwrap()).is_none()
@@ -453,9 +447,8 @@ impl <CTX : Context> Def <CTX> {
     // create empty vec maps representing the sourcepoints and endpoints for
     // each process
     let mut sourcepoints_from_channels : vec_map::VecMap <Vec <CTX::CID>> = {
-      use enum_unitary::EnumUnitary;
       let mut v = vec_map::VecMap::new();
-      for pid in CTX::PID::iter_variants() {
+      for pid in enum_iterator::all::<CTX::PID>() {
         assert!(v.insert (pid.into(), Vec::new()).is_none());
       }
       v
@@ -721,9 +714,9 @@ impl <CTX : Context> From <Def <CTX>> for Session <CTX> {
   }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-//  functions                                                                //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  functions                                                                 //
+////////////////////////////////////////////////////////////////////////////////
 
 pub fn report_sizes <CTX : Context> () {
   println!("session report sizes...");
@@ -732,9 +725,9 @@ pub fn report_sizes <CTX : Context> () {
   println!("...session report sizes");
 }
 
-///////////////////////////////////////////////////////////////////////////////
-//  test mock                                                                //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  test mock                                                                 //
+////////////////////////////////////////////////////////////////////////////////
 
 #[cfg(any(feature = "test", test))]
 pub mod mock {

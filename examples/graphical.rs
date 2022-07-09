@@ -184,7 +184,7 @@ pub mod bgr {
       let mut presult = self.result.clone();
       { // glutin_glium_context scope
         use glium::Surface;
-        use glutin::platform::desktop::EventLoopExtDesktop;
+        use glutin::platform::run_return::EventLoopExtRunReturn;
 
         let glutin_glium_context = self.glutin_glium_context.as_mut().unwrap();
 
@@ -295,7 +295,7 @@ pub mod cym {
       let mut clear_color = self.clear_color;
       { // glutin_glium_context scope
         use glium::Surface;
-        use glutin::platform::desktop::EventLoopExtDesktop;
+        use glutin::platform::run_return::EventLoopExtRunReturn;
 
         let glutin_glium_context = self.glutin_glium_context.as_mut().unwrap();
 
@@ -404,7 +404,7 @@ pub mod wsk {
       let mut clear_color = self.clear_color;
       { // glutin_glium_context scope
         use glium::Surface;
-        use glutin::platform::desktop::EventLoopExtDesktop;
+        use glutin::platform::run_return::EventLoopExtRunReturn;
 
         let glutin_glium_context = self.glutin_glium_context.as_mut().unwrap();
 
@@ -485,7 +485,8 @@ fn main() {
       .set_target_level (simplelog::LevelFilter::Error) // module path
       .set_thread_level (simplelog::LevelFilter::Off)   // no thread numbers
       .build(),
-    simplelog::TerminalMode::Stdout
+    simplelog::TerminalMode::Stdout,
+    simplelog::ColorChoice::Auto
   ).unwrap();
 
   // create a dotfile for the program state machine

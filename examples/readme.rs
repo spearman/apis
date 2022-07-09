@@ -258,7 +258,8 @@ fn main() {
       .set_target_level (simplelog::LevelFilter::Error) // module path
       .set_thread_level (simplelog::LevelFilter::Off)   // no thread numbers
       .build(),
-    simplelog::TerminalMode::Stdout
+    simplelog::TerminalMode::Stdout,
+    simplelog::ColorChoice::Auto
   ).unwrap();
 
   use std::io::Write;

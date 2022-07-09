@@ -178,12 +178,12 @@ macro_rules! def_program {
                       // peer channels
                       let mut sourcepoints
                         : $crate::vec_map::VecMap <Box
-                          <$crate::channel::Sourcepoint
+                          <dyn $crate::channel::Sourcepoint
                             <$target_mod::$target_context>>>
                         = $crate::vec_map::VecMap::new();
                       let mut endpoints
                         : $crate::vec_map::VecMap <Box
-                          <$crate::channel::Endpoint
+                          <dyn $crate::channel::Endpoint
                             <$target_mod::$target_context>>>
                         = $crate::vec_map::VecMap::new();
                       for (cid, channel) in channels.iter_mut() {
@@ -206,7 +206,7 @@ macro_rules! def_program {
                             as $crate::session::Context>::GPRES>();
                       let (continuation_tx, continuation_rx) =
                         std::sync::mpsc::channel::<Box <
-                          FnOnce (<$target_mod::$target_context
+                          dyn FnOnce (<$target_mod::$target_context
                             as $crate::session::Context>::GPROC) -> Option <()>
                           + Send
                         >>();

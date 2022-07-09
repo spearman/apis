@@ -273,14 +273,13 @@ impl <CTX : session::Context> Def <CTX> {
     CTX : 'static,
     M   : Message <CTX> + 'static
   {
-    use std::convert::TryFrom;
     match self.kind {
-      Kind::Simplex =>
-        backend::Simplex::<CTX, M>::try_from (self).unwrap().into(),
-      Kind::Sink    =>
-        backend::Sink::<CTX, M>::try_from (self).unwrap().into(),
-      Kind::Source  =>
-        backend::Source::<CTX, M>::try_from (self).unwrap().into()
+      Kind::Simplex => backend::Simplex::<CTX, M>::try_from (self).unwrap()
+        .into(),
+      Kind::Sink    => backend::Sink::<CTX, M>::try_from (self).unwrap()
+        .into(),
+      Kind::Source  => backend::Source::<CTX, M>::try_from (self).unwrap()
+        .into()
     }
   }
 
