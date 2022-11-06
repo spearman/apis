@@ -1,5 +1,4 @@
-use {std, either, log, smallvec, num_traits as num};
-use {enum_unitary};
+use {std, either, log, smallvec, enum_iterator, num_traits};
 use crate::{channel, session, Message};
 
 use std::{sync::mpsc, time};
@@ -290,7 +289,7 @@ pub trait Process <CTX, RES> where
       let endpoints = self.take_endpoints();
       let mut unhandled_count = 0;
       for (cid, endpoint) in endpoints.iter() {
-        use self::num::FromPrimitive;
+        use num_traits::FromPrimitive;
         let channel_id = CTX::CID::from_usize (cid).unwrap();
         loop {
           match endpoint.try_recv() {
@@ -341,7 +340,7 @@ pub trait Process <CTX, RES> where
     Self : Sized,
     CTX  : 'static
   {
-    use self::num::FromPrimitive;
+    use num_traits::FromPrimitive;
     use colored::Colorize;
 
     self.inner_mut().handle_event (inner::EventParams::Run{}.into()).unwrap();
@@ -689,7 +688,9 @@ pub trait Process <CTX, RES> where
 } // end trait Process
 
 /// Unique identifier with a total mapping to process defs.
-pub trait Id <CTX> : Ord + std::fmt::Debug + enum_unitary::EnumUnitary where
+pub trait Id <CTX> : Clone + Ord + Into <usize> + std::fmt::Debug +
+  enum_iterator::Sequence + num_traits::FromPrimitive
+where
   CTX : session::Context <PID=Self>
 {
   fn def      (&self) -> Def <CTX>;
@@ -1050,7 +1051,7 @@ where
   // loop) until "empty" or "disconnected" is encountered
   let mut open_index = 0;
   'poll_outer: for (cid, endpoint) in endpoints.iter() {
-    use self::num::FromPrimitive;
+    use num_traits::FromPrimitive;
     let channel_id = CTX::CID::from_usize (cid).unwrap();
     let channel_open = &mut open_channels[open_index];
     open_index += 1;

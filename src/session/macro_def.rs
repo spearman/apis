@@ -149,22 +149,37 @@ macro_rules! def_session {
     //
     //  ids
     //
-    $crate::enum_unitary::enum_unitary!{
-      #[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
-      pub enum ProcessId {
-        $($process),+
+    #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd,
+      $crate::num_derive::FromPrimitive, $crate::enum_iterator::Sequence)]
+    pub enum ProcessId {
+      $($process),+
+    }
+    #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd,
+      $crate::num_derive::FromPrimitive, $crate::enum_iterator::Sequence)]
+    pub enum ChannelId {
+      $($channel),*
+    }
+    #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd,
+      $crate::num_derive::FromPrimitive, $crate::enum_iterator::Sequence)]
+    pub enum MessageId {
+      $($message_type),*
+    }
+
+    impl From <ProcessId> for usize {
+      fn from (pid : ProcessId) -> usize {
+        pid as usize
       }
     }
-    $crate::enum_unitary::enum_unitary!{
-      #[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
-      pub enum ChannelId {
-        $($channel),*
+
+    impl From <ChannelId> for usize {
+      fn from (cid : ChannelId) -> usize {
+        cid as usize
       }
     }
-    $crate::enum_unitary::enum_unitary!{
-      #[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
-      pub enum MessageId {
-        $($message_type),*
+
+    impl From <MessageId> for usize {
+      fn from (mid : MessageId) -> usize {
+        mid as usize
       }
     }
 

@@ -49,7 +49,7 @@ apis::def_session! {
         handle_message { unreachable!() }
         update {
           use rand::Rng;
-          use apis::enum_unitary::FromPrimitive;
+          use apis::num_traits::FromPrimitive;
           let mut rng = rand::thread_rng();
           let rand_id = ProcessId::from_u64 (rng.gen_range (1..5))
             .unwrap();

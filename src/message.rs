@@ -1,5 +1,6 @@
 use std;
-use enum_unitary;
+use enum_iterator;
+use num_traits;
 use crate::session;
 
 // NOTE: Currently Global only refers to CTX::MID and Message only refers to
@@ -18,7 +19,9 @@ use crate::session;
 //     Message <Mycontext>
 
 /// Unique ID for each global message type used in a given session context.
-pub trait Id : enum_unitary::EnumUnitary + Ord + std::fmt::Debug {}
+pub trait Id : Clone + Ord + Into <usize> + std::fmt::Debug +
+  enum_iterator::Sequence + num_traits::FromPrimitive
+{}
 
 /// The global message type.
 pub trait Global <CTX> where

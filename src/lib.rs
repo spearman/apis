@@ -17,15 +17,17 @@
 
 #![allow(dead_code)]
 
+// NOTE: many of these public re-exports are required for use in macros
 pub extern crate colored;
 pub extern crate either;
-pub extern crate enum_unitary;
+pub extern crate enum_iterator;
 pub extern crate log;
 pub extern crate macro_machines;
+pub extern crate num_derive;
+pub extern crate num_traits;
 pub extern crate vec_map;
 
 extern crate marksman_escape;
-extern crate num_traits;
 extern crate smallvec;
 extern crate unbounded_spsc;
 

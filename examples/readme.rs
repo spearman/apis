@@ -74,7 +74,7 @@ pub mod int_source {
   impl IntGen {
     pub fn int_gen_update (&mut self) -> apis::process::ControlFlow {
       use apis::Process;
-      use apis::enum_unitary::FromPrimitive;
+      use apis::num_traits::FromPrimitive;
       let to_id = (self.update_count % 2) + 1;
       let anint = self.update_count;
       let mut result = self.send_to (

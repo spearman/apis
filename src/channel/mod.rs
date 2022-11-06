@@ -1,5 +1,7 @@
-use {std, vec_map};
-use enum_unitary;
+use std;
+use enum_iterator;
+use num_traits;
+use vec_map;
 use crate::{session, Message};
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -109,7 +111,9 @@ pub enum TryRecvError {
 ///////////////////////////////////////////////////////////////////////////////
 
 /// Unique identifier with a total mapping to channel infos.
-pub trait Id <CTX> : enum_unitary::EnumUnitary + Ord + std::fmt::Debug where
+pub trait Id <CTX> : Clone + Ord + Into <usize> + std::fmt::Debug +
+  enum_iterator::Sequence + num_traits::FromPrimitive
+where
   CTX : session::Context <CID=Self>
 {
   //

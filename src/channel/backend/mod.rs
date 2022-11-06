@@ -117,7 +117,7 @@ where
   fn send_to (&self, message : CTX::GMSG, recipient : CTX::PID)
     -> Result <(), channel::SendError <CTX::GMSG>>
   {
-    let pid    = <CTX::PID as Into <usize>>::into (recipient);
+    let pid : usize = recipient.into();
     let sender = &self[pid];
     unbounded_spsc::Sender::send (sender, M::try_from(message).ok().unwrap())
       .map_err (Into::into)
