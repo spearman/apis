@@ -23,6 +23,8 @@ pub extern crate colored;
 pub extern crate either;
 pub extern crate log;
 pub extern crate macro_machines;
+// NOTE: strum_macros::FromRepr does not have a corresponding trait so we use
+// num_enum to derive TryFrom instead
 pub extern crate num_enum;
 pub extern crate strum_macros;
 pub extern crate vec_map;
