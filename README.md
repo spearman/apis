@@ -79,7 +79,7 @@ pub mod int_source {
 
   const MAX_UPDATES : u64 = 10;
 
-  apis::def_session!{
+  apis::def_session! {
     context IntSource {
       PROCESSES where
         let process    = self,
@@ -125,8 +125,7 @@ pub mod int_source {
   impl IntGen {
     pub fn int_gen_update (&mut self) -> apis::process::ControlFlow {
       use apis::Process;
-      use std::convert::TryFrom;
-      let to_id = (self.update_count % 2) + 1;
+      let to_id = (self.update_count % 2 + 1) as apis::process::IdReprType;
       let anint = self.update_count;
       let mut result = self.send_to (
         ChannelId::Ints,
@@ -143,7 +142,6 @@ pub mod int_source {
       result
     }
   }
-
   impl Sum1 {
     fn sum1_handle_message (&mut self, message : GlobalMessage) -> apis::process::ControlFlow {
       match message {
@@ -158,7 +156,6 @@ pub mod int_source {
       }
     }
   }
-
   impl Sum2 {
     fn sum2_handle_message (&mut self, message : GlobalMessage) -> apis::process::ControlFlow {
       match message {
