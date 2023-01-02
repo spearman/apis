@@ -49,9 +49,8 @@ apis::def_session! {
         handle_message { unreachable!() }
         update {
           use rand::Rng;
-          use apis::num_traits::FromPrimitive;
           let mut rng = rand::thread_rng();
-          let rand_id = ProcessId::from_u64 (rng.gen_range (1..5))
+          let rand_id = ProcessId::try_from (rng.gen_range (1..5))
             .unwrap();
           let rand_int = rng.gen_range (1..100);
           let send_result = process.send_to (

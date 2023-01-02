@@ -118,7 +118,7 @@ macro_rules! def_session {
     //
     //  session context
     //
-    #[derive(Clone,Debug,PartialEq)]
+    #[derive(Clone, Debug, PartialEq)]
     pub struct $context;
 
     //
@@ -150,20 +150,15 @@ macro_rules! def_session {
     //  ids
     //
     #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd,
-      $crate::num_derive::FromPrimitive, $crate::enum_iterator::Sequence)]
+      $crate::num_enum::TryFromPrimitive,
+      $crate::strum_macros::EnumCount,
+      $crate::strum_macros::EnumIter)]
+    #[repr(u16)]
     pub enum ProcessId {
       $($process),+
     }
-    #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd,
-      $crate::num_derive::FromPrimitive, $crate::enum_iterator::Sequence)]
-    pub enum ChannelId {
-      $($channel),*
-    }
-    #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd,
-      $crate::num_derive::FromPrimitive, $crate::enum_iterator::Sequence)]
-    pub enum MessageId {
-      $($message_type),*
-    }
+    $crate::def_session!(@channel_id { $($channel),* });
+    $crate::def_session!(@message_id { $($message_type),* });
 
     impl From <ProcessId> for usize {
       fn from (pid : ProcessId) -> usize {
@@ -527,6 +522,50 @@ macro_rules! def_session {
     }
     )*
 
+  };
+  // NOTE: need to special case empty enums because they don't allow repr
+  // attriute
+  (@channel_id { }) => {
+    #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd,
+      $crate::strum_macros::EnumIter)]
+    pub enum ChannelId { }
+    impl std::convert::TryFrom <$crate::channel::IdReprType> for ChannelId {
+      type Error = $crate::channel::IdReprType;
+      fn try_from (x : $crate::channel::IdReprType)
+        -> Result <ChannelId, Self::Error>
+      {
+        Err (x)
+      }
+    }
+  };
+  (@channel_id { $($channel:ident),+ }) => {
+    #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd,
+      $crate::num_enum::TryFromPrimitive, $crate::strum_macros::EnumIter)]
+    #[repr(u16)]
+    pub enum ChannelId {
+      $($channel),*
+    }
+  };
+  (@message_id { }) => {
+    #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd,
+      $crate::strum_macros::EnumIter)]
+    pub enum MessageId { }
+    impl std::convert::TryFrom <$crate::message::IdReprType> for MessageId {
+      type Error = $crate::message::IdReprType;
+      fn try_from (x : $crate::message::IdReprType)
+        -> Result <MessageId, Self::Error>
+      {
+        Err (x)
+      }
+    }
+  };
+  (@message_id { $($message_type:ident),+ }) => {
+    #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd,
+      $crate::num_enum::TryFromPrimitive, $crate::strum_macros::EnumIter)]
+    #[repr(u16)]
+    pub enum MessageId {
+      $($message_type),+
+    }
   };
 
   //

@@ -214,9 +214,8 @@ pub mod rand_source {
           handle_message { unreachable!() }
           update {
             use rand::Rng;
-            use apis::num_traits::FromPrimitive;
             let mut rng = rand::thread_rng();
-            let rand_id = ProcessId::from_u64 (rng.gen_range (1..5)).unwrap();
+            let rand_id = ProcessId::try_from (rng.gen_range (1..5)).unwrap();
             let rand_int = rng.gen_range (1..100);
             let mut result = process.send_to (
               ChannelId::Randints, rand_id, Randintsmessage::Anint (rand_int)

@@ -1,6 +1,5 @@
 use std;
-use enum_iterator;
-use num_traits;
+use strum;
 use vec_map;
 use crate::{session, Message};
 
@@ -22,7 +21,7 @@ pub struct Channel <CTX : session::Context> {
 }
 
 /// Channel definition.
-#[derive(Clone,Debug,Eq,PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Def <CTX : session::Context> {
   id              : CTX::CID,
   kind            : Kind,
@@ -32,13 +31,13 @@ pub struct Def <CTX : session::Context> {
 }
 
 /// Sender disconnected, no further messages will ever be received.
-#[derive(Clone,Copy,Debug,Eq,PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct RecvError;
 
 /// Receiver disconnected, message will never be deliverable.
 // NB: this representation may need to be changed if a channel backend is used
 // that doesn't return the message on a send error
-#[derive(Clone,Copy,Eq,PartialEq)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 pub struct SendError <M> (pub M);
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -46,7 +45,7 @@ pub struct SendError <M> (pub M);
 ///////////////////////////////////////////////////////////////////////////////
 
 /// Channel kind defines the connection topology of a channel.
-#[derive(Clone,Debug,Eq,PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Kind {
 
   /// An SPSC stream.
@@ -82,7 +81,7 @@ pub enum Kind {
 }
 
 /// Error defining `Def`.
-#[derive(Clone,Debug,Eq,PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DefineError {
   ProducerEqConsumer,
   DuplicateProducer,
@@ -94,12 +93,12 @@ pub enum DefineError {
 }
 
 /// Error creating concrete `Channel` instance from a given channel def.
-#[derive(Clone,Debug,Eq,PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum CreateError {
   KindMismatch
 }
 
-#[derive(Clone,Copy,Debug,Eq,PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TryRecvError {
   Empty,
   /// Sender disconnected, no further messages will be received.
@@ -110,15 +109,13 @@ pub enum TryRecvError {
 //  traits
 ///////////////////////////////////////////////////////////////////////////////
 
+pub type IdReprType = u16;
 /// Unique identifier with a total mapping to channel infos.
-pub trait Id <CTX> : Clone + Ord + Into <usize> + std::fmt::Debug +
-  enum_iterator::Sequence + num_traits::FromPrimitive
+pub trait Id <CTX> : Clone + Ord + Into <usize> + TryFrom <IdReprType> +
+  std::fmt::Debug + strum::IntoEnumIterator
 where
   CTX : session::Context <CID=Self>
 {
-  //
-  //  required
-  //
   fn def             (&self) -> Def <CTX>;
   fn message_type_id (&self) -> CTX::MID;
   /// Create a new channel.

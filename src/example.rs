@@ -132,7 +132,6 @@ pub mod session_b {
           endpoints      []
           handle_message { unreachable!() }
           update {
-            use num_traits::FromPrimitive;
             let id = update_count % 4;
             let mut result = process.send_to (
               ChannelId::Seqints, id, Seqintsmessage::Anint (update_count)

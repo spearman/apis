@@ -1,6 +1,6 @@
 [package]
 name = "apis"
-version = "0.5.1"
+version = "0.5.2"
 authors = ["Shane Pearman <spearman@github.com>"]
 license = "MPL-2.0"
 description = "Reactive, session-oriented, asynchronous process-calculus framework"
@@ -14,12 +14,12 @@ name = "apis"
 [dependencies]
 colored = "2.*"
 either = "1.*"
-enum-iterator = "1.*"
 log = "0.4.*"
 marksman_escape = "0.1.*"
-num-traits = "0.2.*"
-num-derive = "0.3.*"
+num_enum = "0.5.*"
 smallvec = "1.*"
+strum = "0.24.*"
+strum_macros = "0.24.*"
 vec_map = "0.8.*"
 
 # local dependencies

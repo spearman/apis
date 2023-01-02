@@ -1,7 +1,9 @@
-use {std, either, log, smallvec, enum_iterator, num_traits};
+use {std, either, log, smallvec};
 use crate::{channel, session, Message};
 
-use std::{sync::mpsc, time};
+use std::convert::TryFrom;
+use std::sync::mpsc;
+use std::time;
 use vec_map::VecMap;
 
 pub mod inner;
@@ -15,7 +17,7 @@ pub use self::presult::Presult;
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Process definition.
-#[derive(Clone,Debug,Eq,PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Def <CTX : session::Context> {
   id           : CTX::PID,
   kind         : Kind,
@@ -53,7 +55,7 @@ pub struct Handle <CTX : session::Context> {
 ///   remaining duration until the next 'tick'.
 /// - `Anisochronous` is an un-timed polling loop which always loops immediately
 ///   and always processes one update per tick.
-#[derive(Clone,Debug,Eq,PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Kind {
   /// Block waiting on one or more endpoints.
   ///
@@ -91,13 +93,13 @@ pub enum Kind {
   Anisochronous
 }
 
-#[derive(Copy,Clone,Debug,Eq,PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ControlFlow {
   Continue,
   Break
 }
 
-#[derive(Clone,Debug,Eq,PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum KindError {
   AsynchronousZeroMessagesPerUpdate,
   IsochronousZeroTickMs,
@@ -107,7 +109,7 @@ pub enum KindError {
 }
 
 /// Error in `Def`.
-#[derive(Clone,Debug,Eq,PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DefineError {
   DuplicateSourcepoint,
   DuplicateEndpoint,
@@ -124,7 +126,7 @@ pub enum DefineError {
 pub trait Process <CTX, RES> where
   CTX  : session::Context,
   RES  : Presult <CTX, Self>,
-  Self : std::convert::TryFrom <CTX::GPROC> + Into <CTX::GPROC>
+  Self : TryFrom <CTX::GPROC> + Into <CTX::GPROC>
 {
   //
   //  required
@@ -289,8 +291,11 @@ pub trait Process <CTX, RES> where
       let endpoints = self.take_endpoints();
       let mut unhandled_count = 0;
       for (cid, endpoint) in endpoints.iter() {
-        use num_traits::FromPrimitive;
-        let channel_id = CTX::CID::from_usize (cid).unwrap();
+        // NOTE: unwrap requires that err is debug
+        let channel_id = match CTX::CID::try_from (cid as channel::IdReprType) {
+          Ok  (cid) => cid,
+          Err (_)   => unreachable!()
+        };
         loop {
           match endpoint.try_recv() {
             Ok (message) => {
@@ -340,7 +345,6 @@ pub trait Process <CTX, RES> where
     Self : Sized,
     CTX  : 'static
   {
-    use num_traits::FromPrimitive;
     use colored::Colorize;
 
     self.inner_mut().handle_event (inner::EventParams::Run{}.into()).unwrap();
@@ -364,7 +368,11 @@ pub trait Process <CTX, RES> where
     let endpoints       = self.take_endpoints();
     { // create a scope here so the endpoints can be returned after this borrow
     let (cid, endpoint) = endpoints.iter().next().unwrap();
-    let channel_id      = CTX::CID::from_usize (cid).unwrap();
+    // NOTE: unwrap requires that err is debug
+    let channel_id      = match CTX::CID::try_from (cid as channel::IdReprType) {
+      Ok  (cid) => cid,
+      Err (_)   => unreachable!()
+    };
     '_run_loop: while self.state_id() == inner::StateId::Running {
       // wait on message
       match endpoint.recv() {
@@ -687,9 +695,10 @@ pub trait Process <CTX, RES> where
 
 } // end trait Process
 
+pub type IdReprType = u16;
 /// Unique identifier with a total mapping to process defs.
-pub trait Id <CTX> : Clone + Ord + Into <usize> + std::fmt::Debug +
-  enum_iterator::Sequence + num_traits::FromPrimitive
+pub trait Id <CTX> : Clone + Ord + Into <usize> + TryFrom <IdReprType> +
+  std::fmt::Debug + strum::IntoEnumIterator + strum::EnumCount
 where
   CTX : session::Context <PID=Self>
 {
@@ -1051,8 +1060,11 @@ where
   // loop) until "empty" or "disconnected" is encountered
   let mut open_index = 0;
   'poll_outer: for (cid, endpoint) in endpoints.iter() {
-    use num_traits::FromPrimitive;
-    let channel_id = CTX::CID::from_usize (cid).unwrap();
+    // NOTE: unwrap requires that err is debug
+    let channel_id = match CTX::CID::try_from (cid as u16) {
+      Ok  (cid) => cid,
+      Err (_)   => unreachable!()
+    };
     let channel_open = &mut open_channels[open_index];
     open_index += 1;
     if !*channel_open {

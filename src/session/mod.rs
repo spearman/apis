@@ -1,7 +1,9 @@
 //! Main session datatype.
 
-use {std, either, enum_iterator, vec_map, num_traits as num};
+use {std, either, vec_map};
+use std::convert::TryFrom;
 use macro_machines::def_machine_nodefault;
+use strum::{EnumCount, IntoEnumIterator};
 use crate::{channel, message, process};
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -70,7 +72,7 @@ pub struct Handle <CTX : Context> {
 /// There needs to be a one-to-one correspondence between the consumers and
 /// producers specified in the channel infos and the sourcepoints and
 /// endpoints as specified in the process infos.
-#[derive(Clone,Debug,Eq,PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DefineError {
   ProducerSourcepointMismatch,
   ConsumerEndpointMismatch
@@ -214,7 +216,7 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
 
   fn def() -> Result <Def <Self>, Vec <DefineError>> {
     let mut channel_def = vec_map::VecMap::new();
-    for cid in enum_iterator::all::<Self::CID>() {
+    for cid in Self::CID::iter() {
       assert!{
         channel_def.insert (
           cid.clone().into(), channel::Id::def (&cid)
@@ -222,7 +224,7 @@ pub trait Context where Self : Clone + PartialEq + Sized + std::fmt::Debug {
       }
     }
     let mut process_def = vec_map::VecMap::new();
-    for pid in enum_iterator::all::<Self::PID>() {
+    for pid in Self::PID::iter() {
       assert!{
         process_def.insert (
           pid.clone().into(), process::Id::def (&pid)
@@ -271,8 +273,7 @@ impl <CTX : Context> Session <CTX> {
     if let Some (ref mut main_gproc) = self.as_mut().main_process {
       main_gproc.run();
     }
-    let mut results =
-      vec_map::VecMap::with_capacity (enum_iterator::cardinality::<CTX::PID>());
+    let mut results = vec_map::VecMap::with_capacity (CTX::PID::COUNT);
     for (pid, process_handle) in self.as_mut().process_handles.iter() {
       assert!{
         results.insert (pid, process_handle.result_rx.recv().unwrap()).is_none()
@@ -448,7 +449,7 @@ impl <CTX : Context> Def <CTX> {
     // each process
     let mut sourcepoints_from_channels : vec_map::VecMap <Vec <CTX::CID>> = {
       let mut v = vec_map::VecMap::new();
-      for pid in enum_iterator::all::<CTX::PID>() {
+      for pid in CTX::PID::iter() {
         assert!(v.insert (pid.into(), Vec::new()).is_none());
       }
       v
@@ -459,8 +460,11 @@ impl <CTX : Context> Def <CTX> {
     // fill the sourcepoint and endpoint vec maps according to the channel def
     // specifications
     for (cid, channel_def) in self.channel_def.iter() {
-      use self::num::FromPrimitive;
-      let channel_id = CTX::CID::from_usize (cid).unwrap();
+      // NOTE: unwrap requires that err is debug
+      let channel_id = match CTX::CID::try_from (cid as channel::IdReprType) {
+        Ok  (cid) => cid,
+        Err (_)   => unreachable!()
+      };
       debug_assert_eq!(channel_id, *channel_def.id());
       for producer_id in channel_def.producers().iter() {
         let pid : usize  = producer_id.clone().into();

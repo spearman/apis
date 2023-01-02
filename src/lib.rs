@@ -15,20 +15,21 @@
 //! `def_program!` macro is used to define modes (Sessions) and transitions
 //! between them.
 
+#![feature(associated_type_defaults)]
 #![allow(dead_code)]
 
 // NOTE: many of these public re-exports are required for use in macros
 pub extern crate colored;
 pub extern crate either;
-pub extern crate enum_iterator;
 pub extern crate log;
 pub extern crate macro_machines;
-pub extern crate num_derive;
-pub extern crate num_traits;
+pub extern crate num_enum;
+pub extern crate strum_macros;
 pub extern crate vec_map;
 
 extern crate marksman_escape;
 extern crate smallvec;
+extern crate strum;
 extern crate unbounded_spsc;
 
 pub mod channel;
