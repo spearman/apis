@@ -150,8 +150,8 @@ macro_rules! def_session {
     //  ids
     //
     #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd,
-      $crate::strum_macros::EnumCount, $crate::strum_macros::EnumIter,
-      $crate::strum_macros::FromRepr)]
+      $crate::strum::EnumCount, $crate::strum::EnumIter,
+      $crate::strum::FromRepr)]
     #[repr(u16)]
     pub enum ProcessId {
       $($process),+
@@ -535,7 +535,7 @@ macro_rules! def_session {
   // attriute
   (@channel_id { }) => {
     #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd,
-      $crate::strum_macros::EnumIter, $crate::strum_macros::FromRepr)]
+      $crate::strum::EnumIter, $crate::strum::FromRepr)]
     pub enum ChannelId { }
     impl TryFrom <$crate::channel::IdReprType> for ChannelId {
       type Error = $crate::channel::IdReprType;
@@ -548,7 +548,7 @@ macro_rules! def_session {
   };
   (@channel_id { $($channel:ident),+ }) => {
     #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd,
-      $crate::strum_macros::EnumIter, $crate::strum_macros::FromRepr)]
+      $crate::strum::EnumIter, $crate::strum::FromRepr)]
     #[repr(u16)]
     pub enum ChannelId {
       $($channel),+
@@ -564,7 +564,7 @@ macro_rules! def_session {
   };
   (@message_id { }) => {
     #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd,
-      $crate::strum_macros::EnumIter, $crate::strum_macros::FromRepr)]
+      $crate::strum::EnumIter, $crate::strum::FromRepr)]
     pub enum MessageId { }
     impl TryFrom <$crate::message::IdReprType> for MessageId {
       type Error = $crate::message::IdReprType;
@@ -577,7 +577,7 @@ macro_rules! def_session {
   };
   (@message_id { $($message_type:ident),+ }) => {
     #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd,
-      $crate::strum_macros::EnumIter, $crate::strum_macros::FromRepr)]
+      $crate::strum::EnumIter, $crate::strum::FromRepr)]
     #[repr(u16)]
     pub enum MessageId {
       $($message_type),+

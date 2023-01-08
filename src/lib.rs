@@ -23,12 +23,11 @@ pub extern crate colored;
 pub extern crate either;
 pub extern crate log;
 pub extern crate macro_machines;
-pub extern crate strum_macros;
+pub extern crate strum;
 pub extern crate vec_map;
 
 extern crate marksman_escape;
 extern crate smallvec;
-extern crate strum;
 extern crate unbounded_spsc;
 
 pub mod channel;
