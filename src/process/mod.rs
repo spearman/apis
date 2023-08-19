@@ -123,6 +123,12 @@ pub enum DefineError {
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Main process trait.
+///
+/// Process run loop will end after either all endpoint channels have returned
+/// `ControlFlow::Break` from `handle_message()` or else if `update()` returns
+/// `ControlFlow::Break`. Note that after the last endpoint channel has closed a
+/// final `update()` will still be processed. When `update()` returns
+/// `ControlFlow::Break`, no further `handle_message()` calls will be made.
 pub trait Process <CTX, RES> where
   CTX  : session::Context,
   RES  : Presult <CTX, Self>,
@@ -223,16 +229,16 @@ pub trait Process <CTX, RES> where
   ///
   /// Error if current endpoints are not `None`.
   #[inline]
-  fn put_endpoints (&self, endpoints : VecMap <Box <dyn channel::Endpoint <CTX>>>) {
+  fn put_endpoints (&self,
+    endpoints : VecMap <Box <dyn channel::Endpoint <CTX>>>
+  ) {
     *self.inner_ref().extended_state().endpoints.borrow_mut()
       = Some (endpoints);
   }
 
-  fn send <M : Message <CTX>> (
-    &self, channel_id : CTX::CID, message : M
-  ) -> Result <(), channel::SendError <CTX::GMSG>>
-    where CTX : 'static
-  {
+  fn send <M : Message <CTX>> (&self, channel_id : CTX::CID, message : M)
+    -> Result <(), channel::SendError <CTX::GMSG>>
+  where CTX : 'static {
     use colored::Colorize;
     log::debug!("process[{:?}] sending on channel[{:?}]: {}",
       self.id(), channel_id,

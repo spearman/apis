@@ -279,6 +279,15 @@ generated showing the program state transition system:
 [<IMG SRC="myprogram.png" width="700">](myprogram.png)
 
 
+### Process control
+
+Process run loop will end after either all endpoint channels have returned
+`ControlFlow::Break` from `handle_message()` or else if `update()` returns
+`ControlFlow::Break`. Note that after the last endpoint channel has closed a
+final `update()` will still be processed. When `update()` returns
+`ControlFlow::Break`, no further `handle_message()` calls will be made.
+
+
 ### Logging
 
 The `log` crate is used to provide log messages at various levels which are
