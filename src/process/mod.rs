@@ -401,7 +401,7 @@ pub trait Process <CTX, RES> where
         }
         Err (channel::RecvError) => {
           log::info!("process[{:?}] receive on channel[{:?}] failed: {}",
-              self.id(), channel_id, "sender disconnected".red().bold());
+            self.id(), channel_id, "sender disconnected".red().bold());
           if self.state_id() == inner::StateId::Running {
             self.inner_mut().handle_event (inner::EventParams::End{}.into())
               .unwrap();
@@ -1082,14 +1082,13 @@ where
         Ok (message) => {
           log::debug!("process[{:?}] received on channel[{:?}]: {}",
             process.id(), channel_id,
-              format!("message[{:?}]", message).green().bold());
+            format!("message[{:?}]", message).green().bold());
           *message_count += 1;
           match process.handle_message (message) {
             ControlFlow::Continue => {}
             ControlFlow::Break    => {
               channel_close (channel_open, num_open_channels);
-              // only transition to "ended" if this is the last channel
-              // to close
+              // only transition to "ended" if this is the last channel to close
               if *num_open_channels == 0 {
                 process.inner_mut().handle_event (
                   inner::EventParams::End{}.into()
@@ -1104,6 +1103,10 @@ where
           log::info!("process[{:?}] try receive on channel[{:?}]: {}",
             process.id(), channel_id, "sender disconnected".red().bold());
           channel_close (channel_open, num_open_channels);
+          if *num_open_channels == 0 {
+            process.inner_mut().handle_event (inner::EventParams::End{}.into())
+              .unwrap();
+          }
           break 'poll_inner
         }
       } // end match try_recv
