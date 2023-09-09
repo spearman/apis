@@ -523,6 +523,7 @@ impl <CTX : Context> Def <CTX> {
     // begin graph
     s.push_str (
       "digraph {\
+     \n  overlap=scale\
      \n  rankdir=LR\
      \n  node [shape=hexagon, fontname=\"Sans Bold\"]\
      \n  edge [style=dashed, arrowhead=vee, fontname=\"Sans\"]\n");
