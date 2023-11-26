@@ -14,8 +14,9 @@
 //! make -f MakefileDot myprogram charsink intsource
 //! ```
 
+extern crate env_logger;
+extern crate log;
 extern crate macro_machines;
-extern crate simplelog;
 
 extern crate apis;
 
@@ -251,15 +252,10 @@ apis::def_program! {
 }
 
 fn main() {
-  simplelog::TermLogger::init (
-    simplelog::LevelFilter::Debug,
-    simplelog::ConfigBuilder::new()
-      .set_target_level (simplelog::LevelFilter::Error) // module path
-      .set_thread_level (simplelog::LevelFilter::Off)   // no thread numbers
-      .build(),
-    simplelog::TerminalMode::Stdout,
-    simplelog::ColorChoice::Auto
-  ).unwrap();
+  env_logger::Builder::new()
+    .filter_level (log::LevelFilter::Debug)
+    .parse_default_env()
+    .init();
 
   use std::io::Write;
   // write session dotfiles

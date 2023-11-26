@@ -288,30 +288,6 @@ final `update()` will still be processed. When `update()` returns
 `ControlFlow::Break`, no further `handle_message()` calls will be made.
 
 
-### Logging
-
-The `log` crate is used to provide log messages at various levels which are
-ignored unless a logging implementation is selected, for example `simplelog`:
-
-```toml
-[dependencies]
-simplelog = "0.6.*"
-```
-
-Using a `TermLogger` to display log messages in the terminal:
-
-```rust
-extern crate simplelog;
-fn main() {
-  simplelog::TermLogger::init (
-    simplelog::LevelFilter::Debug,
-    simplelog::Config::default(),
-    simplelog::TerminalMode::Stdout
-  ).unwrap();
-  // ...
-}
-```
-
 ## Examples
 
 A number of example programs are given in `./examples/`. Non-interactive

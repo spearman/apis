@@ -20,7 +20,8 @@
 
 #![allow(dead_code)]
 
-extern crate simplelog;
+extern crate env_logger;
+extern crate log;
 
 extern crate apis;
 
@@ -29,7 +30,7 @@ extern crate apis;
 ////////////////////////////////////////////////////////////////////////////////
 
 //  Off, Error, Warn, Info, Debug, Trace
-pub const LOG_LEVEL : simplelog::LevelFilter = simplelog::LevelFilter::Info;
+pub const LOG_LEVEL : log::LevelFilter = log::LevelFilter::Info;
 
 ////////////////////////////////////////////////////////////////////////////////
 //  session                                                                   //
@@ -230,15 +231,10 @@ fn main() {
 
   println!("{}", format!("{} main...", example_name).green().bold());
 
-  simplelog::TermLogger::init (
-    LOG_LEVEL,
-    simplelog::ConfigBuilder::new()
-      .set_target_level (simplelog::LevelFilter::Error) // module path
-      .set_thread_level (simplelog::LevelFilter::Off)   // no thread numbers
-      .build(),
-    simplelog::TerminalMode::Stdout,
-    simplelog::ColorChoice::Auto
-  ).unwrap();
+  env_logger::Builder::new()
+    .filter_level (log::LevelFilter::Debug)
+    .parse_default_env()
+    .init();
 
   // report size information
   apis::report_sizes::<ChargenUpcaseSink>();
