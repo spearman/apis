@@ -29,13 +29,18 @@ pub trait Global <CTX> where
   CTX  : session::Context <GMSG=Self>
 {
   fn id (&self) -> CTX::MID;
+  /// Get the message name of the inner message type
+  fn inner_name (&self) -> &str;
 }
 
 /// A local message type with partial mapping from global message type and
 /// total mapping into global message type.
 pub trait Message <CTX : session::Context> : Send + std::fmt::Debug
   + std::convert::TryFrom <CTX::GMSG> + Into <CTX::GMSG>
-{}
+{
+  /// Get the message name
+  fn name (&self) -> &'static str;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 //  functions

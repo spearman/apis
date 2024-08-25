@@ -1,6 +1,6 @@
 [package]
 name = "apis"
-version = "0.5.7"
+version = "0.5.8"
 authors = ["Shane Pearman <spearman@github.com>"]
 license = "MPL-2.0"
 description = "Reactive, session-oriented, asynchronous process-calculus framework"
@@ -14,21 +14,22 @@ name = "apis"
 [dependencies]
 colored = "2.*"
 either = "1.*"
-log = "0.4.*"
+log = { version = "0.4.*", features = ["kv"] }
 marksman_escape = "0.1.*"
 smallvec = "1.*"
 strum = { version = "0.26.*", features = ["derive"] }
 vec_map = "0.8.*"
 
 # local dependencies
-macro-machines = "0.10.*"
+#macro-machines = "0.10.*"
+macro-machines = { version = "0.10.*", path = "../macro-machines" }
 unbounded-spsc = { version = "0.1.*", git = "https://github.com/spearman/unbounded-spsc.git" }
 
 # dev dependencies
 [dev-dependencies]
 glium = "0.31.*"
 rand = "0.8.*"
-env_logger = "0.11.*"
+env_logger = { version = "0.11.*", features = ["unstable-kv"] }
 
 [features]
 # The reason we do this is because doctests don't get cfg(test) See:

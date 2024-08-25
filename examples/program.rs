@@ -8,26 +8,25 @@
 //! make -f MakefileDot program
 //! ```
 
-extern crate env_logger;
-extern crate log;
-extern crate macro_machines;
-extern crate rand;
+use std::sync::atomic;
+use env_logger;
+use log;
+//use rand;
 
-extern crate apis;
+use apis;
 
 ////////////////////////////////////////////////////////////////////////////////
 //  constants                                                                 //
 ////////////////////////////////////////////////////////////////////////////////
 
 // Off, Error, Warn, Info, Debug, Trace
-pub const LOG_LEVEL : log::LevelFilter = log::LevelFilter::Info;
+pub const LOG_LEVEL : log::LevelFilter = log::LevelFilter::Trace;
 
 ////////////////////////////////////////////////////////////////////////////////
 //  globals                                                                   //
 ////////////////////////////////////////////////////////////////////////////////
 
-static THING_DROPPED : std::sync::atomic::AtomicBool =
-  std::sync::atomic::AtomicBool::new (false);
+static THING_DROPPED : atomic::AtomicBool = atomic::AtomicBool::new (false);
 
 ////////////////////////////////////////////////////////////////////////////////
 //  datatypes                                                                 //
@@ -40,8 +39,7 @@ pub struct Dropthing;
 impl Drop for Dropthing {
   fn drop (&mut self) {
     println!("dropping...");
-    let already_dropped
-      = THING_DROPPED.swap (true, std::sync::atomic::Ordering::SeqCst);
+    let already_dropped = THING_DROPPED.swap (true, atomic::Ordering::SeqCst);
     assert!(!already_dropped);
   }
 }

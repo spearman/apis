@@ -288,8 +288,6 @@ impl <CTX : Context> Session <CTX> {
     mut channels        : vec_map::VecMap <channel::Channel <CTX>>,
     mut main_process    : Option <Box <CTX::GPROC>>
   ) {
-    use colored::Colorize;
-
     if cfg!(debug_assertions) {
       if let Some (ref gproc) = main_process {
         use process::Global;
@@ -361,12 +359,11 @@ impl <CTX : Context> Session <CTX> {
     } // end spawn all processes not found in input process handles
     self.handle_event (EventParams::Run{}.into()).unwrap();
 
-    log::debug!("session[{:?}]: {}", self, "started...".cyan().bold());
+    log::debug!(session=self.name(); "session started");
   }
 
   /// Send continuations and wait until terminated threads have joined.
   fn finish (&mut self) where Self : Sized {
-    use colored::Colorize;
     for (_, process_handle) in self.as_mut().process_handles.drain() {
       match process_handle.join_or_continue {
         either::Either::Left (join_handle) => {
@@ -382,7 +379,7 @@ impl <CTX : Context> Session <CTX> {
         either::Either::Right (None) => { /* do nothing */ }
       }
     }
-    log::debug!("session[{:?}]: {}", self, "...finished".cyan().bold());
+    log::debug!(session=self.name(); "session finished");
   }
 } // end impl Session
 

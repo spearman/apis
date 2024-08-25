@@ -502,8 +502,14 @@ macro_rules! def_session {
       fn id (&self) -> MessageId {
         #[allow(unreachable_patterns)]
         match *self {
-          $(GlobalMessage::$message_type (..) => MessageId::$message_type,)*
-          _ => unreachable!("no global message for nullary message ids")
+          $(GlobalMessage::$message_type (..) => MessageId::$message_type),*
+        }
+      }
+      /// Get the message name of the inner message type
+      fn inner_name (&self) -> &'static str {
+        use $crate::message::Message;
+        match *self {
+          $(GlobalMessage::$message_type (ref msg) => msg.name()),*
         }
       }
     }
@@ -512,7 +518,13 @@ macro_rules! def_session {
     //  local messages
     //
     $(
-    impl $crate::Message <$context> for $message_type {}
+    impl $crate::Message <$context> for $message_type {
+      /// Name of message variant
+      fn name (&self) -> &'static str {
+        $crate::def_session!(@message_discriminants
+          (self, $message_type) $message_variants)
+      }
+    }
     impl std::convert::TryFrom <GlobalMessage> for $message_type {
       type Error = String;
       fn try_from (global_message : GlobalMessage) -> Result <Self, Self::Error> {
@@ -589,6 +601,23 @@ macro_rules! def_session {
       {
         Self::from_repr (id).ok_or (id)
       }
+    }
+  };
+  (@message_discriminants ($self:expr, $message_type:ident) {}) => {
+    unreachable!("should not be able to construct a message with no variants")
+  };
+  (@message_discriminants ($self:expr, $message_type:ident)
+    { $($discriminant:ident),* }
+  ) => {
+    match $self {
+      $($message_type::$discriminant {..} => stringify!($discriminant)),*
+    }
+  };
+  (@message_discriminants ($self:expr, $message_type:ident)
+    { $($discriminant:ident $($body:tt)?),* }
+  ) => {
+    match $self {
+      $($message_type::$discriminant {..} => stringify!($discriminant)),*
     }
   };
 

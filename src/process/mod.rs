@@ -1,5 +1,5 @@
 use {std, either, log, smallvec};
-use crate::{channel, session, Message};
+use crate::{channel, message, session, Message};
 
 use std::convert::TryFrom;
 use std::sync::mpsc;
@@ -239,15 +239,13 @@ pub trait Process <CTX, RES> where
   fn send <M : Message <CTX>> (&self, channel_id : CTX::CID, message : M)
     -> Result <(), channel::SendError <CTX::GMSG>>
   where CTX : 'static {
-    use colored::Colorize;
-    log::debug!("process[{:?}] sending on channel[{:?}]: {}",
-      self.id(), channel_id,
-      format!("message[{:?}]", message).green().bold());
+    let message_name = message.name();
+    log::debug!(process:?=self.id(), channel:?=channel_id, message=message_name;
+      "process sending message");
     let cid : usize = channel_id.clone().into();
     self.sourcepoints()[cid].send (message.into()).map_err (|send_error| {
-      log::warn!("process[{:?}] send message[{:?}] on channel[{:?}] failed: {}",
-        self.id(), send_error.0, channel_id,
-        "receiver disconnected".red().bold());
+      log::warn!(pricess:?=self.id(), channel:?=channel_id, message=message_name;
+        "process send error: receiver disconnected");
       send_error
     })
   }
@@ -257,20 +255,24 @@ pub trait Process <CTX, RES> where
   ) -> Result <(), channel::SendError <CTX::GMSG>>
     where CTX : 'static
   {
-    use colored::Colorize;
-    log::debug!("process[{:?}] sending to process[{:?}] on channel[{:?}]: {}",
-      self.id(), recipient.clone(), channel_id.clone(),
-      format!("message[{:?}]", message).green().bold());
+    let message_name = message.name();
+    log::debug!(
+      process:?=self.id(),
+      channel:?=channel_id,
+      peer:?=recipient,
+      message=message_name;
+      "process sending message to peer");
     let cid : usize = channel_id.clone().into();
-    self.sourcepoints()[cid].send_to (message.into(), recipient.clone()).map_err (
-      |send_error| {
-        log::warn!("process[{:?}] send to process[{:?}] message[{:?}] \
-          on channel[{:?}] failed: {}",
-            self.id(), recipient, send_error.0, channel_id,
-            "receiver disconnected".red().bold());
+    self.sourcepoints()[cid].send_to (message.into(), recipient.clone())
+      .map_err (|send_error|{
+        log::warn!(
+          process:?=self.id(),
+          channel:?=channel_id,
+          peer:?=recipient,
+          message=message_name;
+          "process send to peer error: receiver disconnected");
         send_error
-      }
-    )
+      })
   }
 
   /// Run a process to completion and send the result on the result channel.
@@ -279,6 +281,7 @@ pub trait Process <CTX, RES> where
     Self : Sized + 'static,
     CTX  : 'static
   {
+    use message::Global;
     debug_assert_eq!(self.state_id(), inner::StateId::Ready);
     self.initialize();
     match *self.kind() {
@@ -293,7 +296,6 @@ pub trait Process <CTX, RES> where
     // sourcepoints and endpoints are dropped
     self.sourcepoints_mut().clear();
     { // warn of unhandled messages
-      use colored::Colorize;
       let endpoints = self.take_endpoints();
       let mut unhandled_count = 0;
       for (cid, endpoint) in endpoints.iter() {
@@ -305,9 +307,12 @@ pub trait Process <CTX, RES> where
         loop {
           match endpoint.try_recv() {
             Ok (message) => {
-              log::warn!("process[{:?}] unhandled message on channel[{:?}]: {}",
-                self.id(), channel_id,
-                format!("message[{:?}]", message).yellow().bold());
+              log::warn!(
+                process:?=self.id(),
+                channel:?=channel_id,
+                message=format!("{:?}({})", message.id(), message.inner_name())
+                  .as_str();
+                "process unhandled message");
               unhandled_count += 1;
             }
             Err (channel::TryRecvError::Empty) |
@@ -318,13 +323,13 @@ pub trait Process <CTX, RES> where
         }
       }
       if unhandled_count > 0 {
-        log::warn!("process[{:?}] unhandled message count: {}",
-          self.id(), format!("{}", unhandled_count).yellow().bold());
+        log::warn!(process:?=self.id(), unhandled_message_count=unhandled_count;
+          "process ended with unhandled messages");
       }
     }
     debug_assert!(self.sourcepoints().is_empty());
     debug_assert!(self.endpoints().is_none());
-    let gpresult       = self.global_result();
+    let gpresult = self.global_result();
     let session_handle = &self.inner_ref().as_ref().session_handle;
     session_handle.result_tx.send (gpresult).unwrap();
   }
@@ -351,31 +356,30 @@ pub trait Process <CTX, RES> where
     Self : Sized,
     CTX  : 'static
   {
-    use colored::Colorize;
+    use message::Global;
 
     self.inner_mut().handle_event (inner::EventParams::Run{}.into()).unwrap();
-
-    let t_start = time::Instant::now();
-    log::debug!("process[{:?}] start time: {}",
-      self.id(), format!("{:?}", t_start).cyan().bold());
 
     let messages_per_update = {
       match *self.kind() {
         Kind::Asynchronous { messages_per_update } => messages_per_update,
         _ => unreachable!(
-          "ERROR: run asynchronous: process kind does not match run function")
+          "run asynchronous: process kind does not match run function")
       }
     };
+    let _t_start = time::Instant::now();
+    log::debug!(process:?=self.id(), kind="asynchronous", messages_per_update;
+      "process start");
     debug_assert!(1 <= messages_per_update);
-    let mut _message_count         = 0;
-    let mut _update_count          = 0;
+    let mut _message_count        = 0;
+    let mut update_count          = 0;
     let mut messages_since_update = 0;
 
-    let endpoints       = self.take_endpoints();
+    let endpoints = self.take_endpoints();
     { // create a scope here so the endpoints can be returned after this borrow
     let (cid, endpoint) = endpoints.iter().next().unwrap();
     // NOTE: unwrap requires that err is debug
-    let channel_id      = match CTX::CID::try_from (cid as channel::IdReprType) {
+    let channel_id = match CTX::CID::try_from (cid as channel::IdReprType) {
       Ok  (cid) => cid,
       Err (_)   => unreachable!()
     };
@@ -383,9 +387,11 @@ pub trait Process <CTX, RES> where
       // wait on message
       match endpoint.recv() {
         Ok (message) => {
-          log::debug!("process[{:?}] received on channel[{:?}]: {}",
-            self.id(), channel_id,
-            format!("message[{:?}]", message).green().bold());
+          log::debug!(
+            process:?=self.id(),
+            channel:?=channel_id,
+            message=message.inner_name();
+            "process received message");
           let handle_message_result = self.handle_message (message);
           match handle_message_result {
             ControlFlow::Continue => {}
@@ -400,8 +406,8 @@ pub trait Process <CTX, RES> where
           messages_since_update += 1;
         }
         Err (channel::RecvError) => {
-          log::info!("process[{:?}] receive on channel[{:?}] failed: {}",
-            self.id(), channel_id, "sender disconnected".red().bold());
+          log::info!(process:?=self.id(), channel:?=channel_id;
+            "process receive failed: sender disconnected");
           if self.state_id() == inner::StateId::Running {
             self.inner_mut().handle_event (inner::EventParams::End{}.into())
               .unwrap();
@@ -410,6 +416,8 @@ pub trait Process <CTX, RES> where
       }
       if messages_per_update <= messages_since_update {
         // update
+        log::trace!(process:?=self.id(), update=update_count;
+          "process update");
         let update_result = self.update();
         match update_result {
           ControlFlow::Continue => {}
@@ -420,7 +428,7 @@ pub trait Process <CTX, RES> where
             }
           }
         }
-        _update_count += 1;
+        update_count += 1;
         messages_since_update = 0;
       }
     } // end 'run_loop
@@ -447,21 +455,20 @@ pub trait Process <CTX, RES> where
     Self : Sized,
     CTX  : 'static
   {
-    use colored::Colorize;
-
     self.inner_mut().handle_event (inner::EventParams::Run{}.into()).unwrap();
 
     let t_start = time::Instant::now();
-    log::debug!("process[{:?}] start time: {}",
-      self.id(), format!("{:?}", t_start).cyan().bold());
     let (tick_ms, ticks_per_update) = {
       match *self.kind() {
         Kind::Isochronous { tick_ms, ticks_per_update }
           => (tick_ms, ticks_per_update),
         _ => unreachable!(
-          "ERROR: run synchronous: process kind does not match run function")
+          "run synchronous: process kind does not match run function")
       }
     };
+    log::debug!(
+      process:?=self.id(), kind="isochronous", tick_ms, ticks_per_update;
+      "process start");
     debug_assert!(1 <= tick_ms);
     debug_assert!(1 <= ticks_per_update);
     let tick_dur = time::Duration::from_millis (tick_ms as u64);
@@ -482,22 +489,14 @@ pub trait Process <CTX, RES> where
     });
     '_run_loop: while self.state_id() == inner::StateId::Running {
       let t_now = time::Instant::now();
-      if cfg!(debug_assertions) {
-        if t_now > t_next {
-          let t_since = t_now.duration_since (t_next);
-          log::trace!("process[{:?}] tick[{}] t_since: {:?}",
-            self.id(), tick_count, t_since);
-        } else {
-          let t_until = t_next.duration_since (t_now);
-          log::trace!("process[{:?}] tick[{}] t_until: {:?}",
-            self.id(), tick_count, t_until);
-        }
-      }
       if t_next < t_now {
+        log::trace!(
+          process:?=self.id(),
+          tick=tick_count,
+          since_ns=t_now.duration_since (t_next).as_nanos();
+          "process tick");
         t_last += tick_dur;
         t_next += tick_dur;
-        log::debug!("process[{:?}] tick[{}]: {}",
-          self.id(), tick_count, format!("tick! @ {:?}", t_now).blue().bold());
 
         // poll messages
         poll_messages (self, &endpoints,
@@ -507,7 +506,8 @@ pub trait Process <CTX, RES> where
         ticks_since_update += 1;
         debug_assert!(ticks_since_update <= ticks_per_update);
         if ticks_since_update == ticks_per_update {
-          log::trace!("process[{:?}] update[{}]", self.id(), update_count);
+          log::trace!(process:?=self.id(), update=update_count;
+            "process update");
           let update_result = self.update();
           match update_result {
             ControlFlow::Continue => {}
@@ -522,8 +522,11 @@ pub trait Process <CTX, RES> where
           ticks_since_update = 0;
         }
       } else {
-        log::warn!("process[{:?}] tick[{}]: {}",
-          self.id(), tick_count, "tick too early".yellow().bold());
+        log::warn!(
+          process:?=self.id(),
+          tick=tick_count,
+          until_ns=t_next.duration_since (t_now).as_nanos();
+          "process tick too early");
       }
 
       let t_after = time::Instant::now();
@@ -535,8 +538,11 @@ pub trait Process <CTX, RES> where
           t_until.as_secs()*1000 +
           t_until.subsec_nanos() as u64/1_000_000))
       } else {
-        log::warn!("process[{:?}] tick[{}]: {}",
-          self.id(), tick_count, "late tick".yellow().bold());
+        log::warn!(
+          process:?=self.id(),
+          tick=tick_count,
+          after_ns=t_after.duration_since (t_next).as_nanos();
+          "process late tick");
       }
 
     } // end 'run_loop
@@ -559,21 +565,20 @@ pub trait Process <CTX, RES> where
     Self : Sized,
     CTX  : 'static
   {
-    use colored::Colorize;
-
     self.inner_mut().handle_event (inner::EventParams::Run{}.into()).unwrap();
 
     let t_start = time::Instant::now();
-    log::debug!("process[{:?}] start time: {}",
-      self.id(), format!("{:?}", t_start).cyan().bold());
     let (tick_ms, ticks_per_update) = {
       match *self.kind() {
         Kind::Mesochronous { tick_ms, ticks_per_update }
           => (tick_ms, ticks_per_update),
         _ => unreachable!(
-          "ERROR: run synchronous: process kind does not match run function")
+          "run synchronous: process kind does not match run function")
       }
     };
+    log::debug!(
+      process:?=self.id(), kind="mesochronous", tick_ms, ticks_per_update;
+      "process start");
     debug_assert!(1 <= tick_ms);
     debug_assert!(1 <= ticks_per_update);
     let tick_dur = time::Duration::from_millis (tick_ms as u64);
@@ -593,22 +598,14 @@ pub trait Process <CTX, RES> where
     });
     '_run_loop: while self.state_id() == inner::StateId::Running {
       let t_now = time::Instant::now();
-      if cfg!(debug_assertions) {
-        if t_now > t_next {
-          let t_since = t_now.duration_since (t_next);
-          log::trace!("process[{:?}] tick[{}] t_since: {:?}",
-            self.id(), tick_count, t_since);
-        } else {
-          let t_until = t_next.duration_since (t_now);
-          log::trace!("process[{:?}] tick[{}] t_until: {:?}",
-            self.id(), tick_count, t_until);
-        }
-      }
       if t_next < t_now {
+        log::trace!(
+          process:?=self.id(),
+          tick=tick_count,
+          since_ns=t_now.duration_since (t_next).as_nanos();
+          "process tick");
         _t_last = t_now;
         t_next  = t_now + tick_dur;
-        log::debug!("process[{:?}] tick[{}]: {}",
-          self.id(), tick_count, format!("tick! @ {:?}", t_now).blue().bold());
 
         // poll messages
         poll_messages (self, &endpoints,
@@ -618,7 +615,8 @@ pub trait Process <CTX, RES> where
         ticks_since_update += 1;
         debug_assert!(ticks_since_update <= ticks_per_update);
         if ticks_since_update == ticks_per_update {
-          log::trace!("process[{:?}] update[{}]", self.id(), update_count);
+          log::trace!(process:?=self.id(), update=update_count;
+            "process update");
           let update_result = self.update();
           match update_result {
             ControlFlow::Continue => {}
@@ -633,8 +631,11 @@ pub trait Process <CTX, RES> where
           ticks_since_update = 0;
         }
       } else {
-        log::warn!("process[{:?}] tick[{}]: {}",
-          self.id(), tick_count, "tick too early".yellow().bold());
+        log::warn!(
+          process:?=self.id(),
+          tick=tick_count,
+          until_ns=t_next.duration_since (t_now).as_nanos();
+          "process tick too early");
       }
 
       let t_after = time::Instant::now();
@@ -646,8 +647,11 @@ pub trait Process <CTX, RES> where
           t_until.as_secs()*1000 +
           t_until.subsec_nanos() as u64/1_000_000))
       } else {
-        log::warn!("process[{:?}] tick[{}]: {}",
-          self.id(), tick_count, "late tick".yellow().bold());
+        log::warn!(
+          process:?=self.id(),
+          tick=tick_count,
+          after_ns=t_after.duration_since (t_next).as_nanos();
+          "process late tick");
       }
 
     } // end 'run_loop
@@ -659,16 +663,13 @@ pub trait Process <CTX, RES> where
     Self : Sized,
     CTX  : 'static
   {
-    use colored::Colorize;
-
     self.inner_mut().handle_event (inner::EventParams::Run{}.into()).unwrap();
 
-    let t_start = time::Instant::now();
-    log::debug!("process[{:?}] start time: {}",
-      self.id(), format!("{:?}", t_start).cyan().bold());
+    let _t_start = time::Instant::now();
     debug_assert_eq!(Kind::Anisochronous, *self.kind());
+    log::debug!(process:?=self.id(), kind="anisochronous"; "process start");
     let mut _message_count = 0;
-    let mut _update_count  = 0;
+    let mut update_count  = 0;
 
     let endpoints = self.take_endpoints();
     let mut num_open_channels = endpoints.len();
@@ -682,7 +683,7 @@ pub trait Process <CTX, RES> where
       poll_messages (self, &endpoints,
         &mut open_channels, &mut num_open_channels, &mut _message_count);
       // update
-      log::trace!("process[{:?}] update[{}]", self.id(), _update_count);
+      log::trace!(process:?=self.id(), update=update_count; "process update");
       let update_result = self.update();
       match update_result {
         ControlFlow::Continue => {}
@@ -693,7 +694,7 @@ pub trait Process <CTX, RES> where
           }
         }
       }
-      _update_count += 1;
+      update_count += 1;
 
     } // end 'run_loop
     self.put_endpoints (endpoints);
@@ -708,7 +709,7 @@ pub trait Id <CTX> : Clone + Ord + Into <usize> + TryFrom <IdReprType> +
 where
   CTX : session::Context <PID=Self>
 {
-  fn def      (&self) -> Def <CTX>;
+  fn def (&self) -> Def <CTX>;
   /// Must initialize the concrete process type start running the initial
   /// closure.
   fn spawn (inner : Inner <CTX>) -> std::thread::JoinHandle <Option <()>>;
@@ -722,7 +723,7 @@ pub trait Global <CTX> where
   CTX  : session::Context <GPROC=Self>
 {
   fn id (&self) -> CTX::PID;
-  fn run          (&mut self);
+  fn run (&mut self);
   //fn run_continue (mut self) -> Option <()>;
 }
 
@@ -1053,7 +1054,7 @@ where
   P   : Process <CTX, RES> + Sized,
   RES : Presult <CTX, P>
 {
-
+  use message::Global;
   #[inline]
   fn channel_close (is_open : &mut bool, num_open : &mut usize) {
     debug_assert!(*is_open);
@@ -1077,12 +1078,13 @@ where
       continue 'poll_outer
     }
     'poll_inner: loop {
-      use colored::Colorize;
       match endpoint.try_recv() {
         Ok (message) => {
-          log::debug!("process[{:?}] received on channel[{:?}]: {}",
-            process.id(), channel_id,
-            format!("message[{:?}]", message).green().bold());
+          log::debug!(
+            process:?=process.id(),
+            channel:?=channel_id,
+            message=message.inner_name();
+            "process received message");
           *message_count += 1;
           match process.handle_message (message) {
             ControlFlow::Continue => {}
@@ -1100,8 +1102,8 @@ where
         }
         Err (channel::TryRecvError::Empty) => { break 'poll_inner }
         Err (channel::TryRecvError::Disconnected) => {
-          log::info!("process[{:?}] try receive on channel[{:?}]: {}",
-            process.id(), channel_id, "sender disconnected".red().bold());
+          log::info!(process:?=process.id(), channel:?=channel_id;
+            "process receive failed: sender disconnected");
           channel_close (channel_open, num_open_channels);
           if *num_open_channels == 0 {
             process.inner_mut().handle_event (inner::EventParams::End{}.into())

@@ -54,9 +54,8 @@ macro_rules! def_program {
     impl $crate::Program for $program {
       /// Run the program to completion.
       fn run (&mut self) {
-        use $crate::colored::Colorize;
-        $crate::log::info!("program[{}]: {}", stringify!($program),
-          "run...".cyan().bold());
+        $crate::program::log_program_run (
+          stringify!($program), &format!("{:?}", self.state.id));
         // TODO: create program ready/ended states and transitions
         debug_assert_eq!(self.state.id, StateId::$initial_mode);
 
@@ -116,12 +115,10 @@ macro_rules! def_program {
             match transition {
 
               $(EventId::$transition => {
-                $crate::log::info!("mode transition[{}]: {}",
-                  stringify!($transition),
-                  format!("<{}> => <{}>",
-                    stringify!($source_context),
-                    stringify!($target_context)).cyan().bold()
-                );
+                $crate::program::log_program_transition (
+                  stringify!($program), &format!("{:?}", self.state.id),
+                  stringify!($transition), stringify!($source_context),
+                  stringify!($target_context));
 
                 assert_eq!(self.state.id, StateId::$source_context,
                   "current state does not match transition source");
@@ -351,8 +348,7 @@ macro_rules! def_program {
           }
           // end transition or break
         } // end 'run_loop
-        $crate::log::info!("program[{}]: {}", stringify!($program),
-          "...run".cyan().bold());
+        $crate::program::log_program_end(stringify!($program));
       } // end fn run
     } // end impl Program for $program
 
