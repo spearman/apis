@@ -5,3 +5,4 @@ Cargo.lock
 *.png
 *.dot
 doc/*.html
+rust-analyzer.log
