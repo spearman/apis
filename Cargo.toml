@@ -1,6 +1,6 @@
 [package]
 name = "apis"
-version = "0.5.8"
+version = "0.5.9"
 authors = ["Shane Pearman <spearman@github.com>"]
 license = "MPL-2.0"
 description = "Reactive, session-oriented, asynchronous process-calculus framework"
@@ -21,8 +21,7 @@ strum = { version = "0.26.*", features = ["derive"] }
 vec_map = "0.8.*"
 
 # local dependencies
-#macro-machines = "0.10.*"
-macro-machines = { version = "0.10.*", path = "../macro-machines" }
+macro-machines = "0.10.*"
 unbounded-spsc = { version = "0.1.*", git = "https://github.com/spearman/unbounded-spsc.git" }
 
 # dev dependencies
