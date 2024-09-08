@@ -240,11 +240,13 @@ pub trait Process <CTX, RES> where
     -> Result <(), channel::SendError <CTX::GMSG>>
   where CTX : 'static {
     let message_name = message.name();
-    log::debug!(process:?=self.id(), channel:?=channel_id, message=message_name;
+    log::debug!(
+      process:?=self.id(), channel:?=channel_id, message=message_name.as_str();
       "process sending message");
     let cid : usize = channel_id.clone().into();
-    self.sourcepoints()[cid].send (message.into()).map_err (|send_error| {
-      log::warn!(pricess:?=self.id(), channel:?=channel_id, message=message_name;
+    self.sourcepoints()[cid].send (message.into()).map_err (|send_error|{
+      log::warn!(
+        process:?=self.id(), channel:?=channel_id, message=message_name.as_str();
         "process send error: receiver disconnected");
       send_error
     })
@@ -260,7 +262,7 @@ pub trait Process <CTX, RES> where
       process:?=self.id(),
       channel:?=channel_id,
       peer:?=recipient,
-      message=message_name;
+      message=message_name.as_str();
       "process sending message to peer");
     let cid : usize = channel_id.clone().into();
     self.sourcepoints()[cid].send_to (message.into(), recipient.clone())
@@ -269,7 +271,7 @@ pub trait Process <CTX, RES> where
           process:?=self.id(),
           channel:?=channel_id,
           peer:?=recipient,
-          message=message_name;
+          message=message_name.as_str();
           "process send to peer error: receiver disconnected");
         send_error
       })
@@ -390,7 +392,7 @@ pub trait Process <CTX, RES> where
           log::debug!(
             process:?=self.id(),
             channel:?=channel_id,
-            message=message.inner_name();
+            message=message.inner_name().as_str();
             "process received message");
           let handle_message_result = self.handle_message (message);
           match handle_message_result {
@@ -1083,7 +1085,7 @@ where
           log::debug!(
             process:?=process.id(),
             channel:?=channel_id,
-            message=message.inner_name();
+            message=message.inner_name().as_str();
             "process received message");
           *message_count += 1;
           match process.handle_message (message) {

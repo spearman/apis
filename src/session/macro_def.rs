@@ -138,7 +138,7 @@ macro_rules! def_session {
     //  messages
     //
     $(
-    #[derive(Debug)]
+    #[derive(Debug, $crate::strum::Display)]
     pub enum $message_type $message_variants
     )*
 
@@ -506,7 +506,7 @@ macro_rules! def_session {
         }
       }
       /// Get the message name of the inner message type
-      fn inner_name (&self) -> &'static str {
+      fn inner_name (&self) -> String {
         use $crate::message::Message;
         match *self {
           $(GlobalMessage::$message_type (ref msg) => msg.name()),*
@@ -520,9 +520,8 @@ macro_rules! def_session {
     $(
     impl $crate::Message <$context> for $message_type {
       /// Name of message variant
-      fn name (&self) -> &'static str {
-        $crate::def_session!(@message_discriminants
-          (self, $message_type) $message_variants)
+      fn name (&self) -> String {
+        self.to_string()
       }
     }
     impl std::convert::TryFrom <GlobalMessage> for $message_type {
@@ -601,23 +600,6 @@ macro_rules! def_session {
       {
         Self::from_repr (id).ok_or (id)
       }
-    }
-  };
-  (@message_discriminants ($self:expr, $message_type:ident) {}) => {
-    unreachable!("should not be able to construct a message with no variants")
-  };
-  (@message_discriminants ($self:expr, $message_type:ident)
-    { $($discriminant:ident),* }
-  ) => {
-    match $self {
-      $($message_type::$discriminant {..} => stringify!($discriminant)),*
-    }
-  };
-  (@message_discriminants ($self:expr, $message_type:ident)
-    { $($discriminant:ident $($body:tt)?),* }
-  ) => {
-    match $self {
-      $($message_type::$discriminant {..} => stringify!($discriminant)),*
     }
   };
 

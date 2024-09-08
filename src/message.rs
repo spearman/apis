@@ -30,7 +30,11 @@ pub trait Global <CTX> where
 {
   fn id (&self) -> CTX::MID;
   /// Get the message name of the inner message type
-  fn inner_name (&self) -> &str;
+  // TODO: due to difficulty in creating a match statement from the session
+  // macro definition, we are relying on the strum Display proc macro to
+  // generate a string of the message variant instead of returning a static
+  // str
+  fn inner_name (&self) -> String;
 }
 
 /// A local message type with partial mapping from global message type and
@@ -39,7 +43,11 @@ pub trait Message <CTX : session::Context> : Send + std::fmt::Debug
   + std::convert::TryFrom <CTX::GMSG> + Into <CTX::GMSG>
 {
   /// Get the message name
-  fn name (&self) -> &'static str;
+  // TODO: due to difficulty in creating a match statement from the session
+  // macro definition, we are relying on the strum Display proc macro to
+  // generate a string of the message variant instead of returning a static
+  // str
+  fn name (&self) -> String;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
