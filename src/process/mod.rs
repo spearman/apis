@@ -194,6 +194,7 @@ pub trait Process <CTX, RES> where
   /// `run_*` function. Endpoints will be present for the calls to `terminate`
   /// or `initialize`, either before or after the run loop, respectively.
   #[inline]
+  #[allow(mismatched_lifetime_syntaxes)]
   fn endpoints (&self)
     -> std::cell::Ref <Option <VecMap <Box <dyn channel::Endpoint <CTX>>>>>
   {
@@ -206,6 +207,7 @@ pub trait Process <CTX, RES> where
   /// `run_*` function. Endpoints will be present for the calls to `terminate`
   /// or `initialize`, either before or after the run loop, respectively.
   #[inline]
+  #[allow(mismatched_lifetime_syntaxes)]
   fn endpoints_mut (&mut self) -> std::cell::RefMut
     <Option <VecMap <Box <dyn channel::Endpoint <CTX>>>>>
   {

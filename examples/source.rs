@@ -50,10 +50,10 @@ apis::def_session! {
         handle_message { unreachable!() }
         update {
           use rand::Rng;
-          let mut rng = rand::thread_rng();
-          let rand_id = ProcessId::try_from (rng.gen_range (1..5))
+          let mut rng = rand::rng();
+          let rand_id = ProcessId::try_from (rng.random_range (1..5))
             .unwrap();
-          let rand_int = rng.gen_range (1..100);
+          let rand_int = rng.random_range (1..100);
           let send_result = process.send_to (
             ChannelId::Randints, rand_id, Randintsmessage::Anint (rand_int));
           process.update_count += 1;

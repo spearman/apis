@@ -1,33 +1,32 @@
 [package]
 name = "apis"
-version = "0.5.10"
+version = "0.5.11"
 authors = ["Shane Pearman <spearman@github.com>"]
 license = "MPL-2.0"
 description = "Reactive, session-oriented, asynchronous process-calculus framework"
 repository = "https://github.com/spearman/apis"
 readme = "README.md"
-edition = "2021"
+edition = "2024"
 
 [lib]
 name = "apis"
 
 [dependencies]
-colored = "2.*"
+colored = "3.*"
 either = "1.*"
 log = { version = "0.4.*", features = ["kv"] }
+macro-machines = "0.10.*"
 marksman_escape = "0.1.*"
 smallvec = "1.*"
-strum = { version = "0.26.*", features = ["derive"] }
+strum = { version = "0.27.*", features = ["derive"] }
+unbounded-spsc = "0.1.*"
 vec_map = "0.8.*"
 
-# local dependencies
-macro-machines = "0.10.*"
-unbounded-spsc = { version = "0.1.*", git = "https://github.com/spearman/unbounded-spsc.git" }
 
 # dev dependencies
 [dev-dependencies]
 glium = "0.31.*"
-rand = "0.8.*"
+rand = "0.9.*"
 env_logger = { version = "0.11.*", features = ["unstable-kv"] }
 
 [features]
