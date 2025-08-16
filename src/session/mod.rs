@@ -6,11 +6,14 @@ use macro_machines::def_machine_nodefault;
 use strum::{EnumCount, IntoEnumIterator};
 use crate::{channel, message, process};
 
+mod macro_def;
+
 ////////////////////////////////////////////////////////////////////////////////
-//  submodules
+//  typedefs
 ////////////////////////////////////////////////////////////////////////////////
 
-mod macro_def;
+pub type Continuation <CTX> =
+  Box <dyn FnOnce (<CTX as Context>::GPROC) -> Option <()> + Send>;
 
 ////////////////////////////////////////////////////////////////////////////////
 //  structs
@@ -57,9 +60,7 @@ pub struct Def <CTX : Context> {
 /// Handle to the session held by processes.
 pub struct Handle <CTX : Context> {
   pub result_tx       : std::sync::mpsc::Sender <CTX::GPRES>,
-  pub continuation_rx : std::sync::mpsc::Receiver <
-    Box <dyn FnOnce (CTX::GPROC) -> Option <()> + Send>
-  >
+  pub continuation_rx : std::sync::mpsc::Receiver <Continuation <CTX>>
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -288,11 +289,9 @@ impl <CTX : Context> Session <CTX> {
     mut channels        : vec_map::VecMap <channel::Channel <CTX>>,
     mut main_process    : Option <Box <CTX::GPROC>>
   ) {
-    if cfg!(debug_assertions) {
-      if let Some (ref gproc) = main_process {
-        use process::Global;
-        assert!(process_handles.contains_key (gproc.id().into()));
-      }
+    if cfg!(debug_assertions) && let Some (ref gproc) = main_process {
+      use process::Global;
+      assert!(process_handles.contains_key (gproc.id().into()));
     }
 
     { // spawn processes not found in input process handles
@@ -316,10 +315,8 @@ impl <CTX : Context> Session <CTX> {
           }
           // session control channels
           let (result_tx, result_rx) = std::sync::mpsc::channel::<CTX::GPRES>();
-          let (continuation_tx, continuation_rx)
-            = std::sync::mpsc::channel::<
-                Box <dyn FnOnce (CTX::GPROC) -> Option <()> + Send>
-              >();
+          let (continuation_tx, continuation_rx) =
+            std::sync::mpsc::channel::<Continuation <CTX>>();
           // create the process
           let session_handle = Handle::<CTX> { result_tx, continuation_rx };
           let inner = process::Inner::new (process::inner::ExtendedState::new (
@@ -329,17 +326,16 @@ impl <CTX : Context> Session <CTX> {
             Some (std::cell::RefCell::new (Some (endpoints)))
           ).unwrap());
           // if the process is the main process, only create it and don't spawn
-          if let Some (main_process_id) = CTX::maybe_main() {
-            if *inner.as_ref().def.id() == main_process_id {
-              // this code should only be hit when a main process was not
-              // provided as an input since it should be accompanied by a
-              // process handle
-              debug_assert!(main_process.is_none());
-              main_process = Some (Box::new (process::Id::gproc (inner)));
-              return process::Handle {
-                result_rx, continuation_tx,
-                join_or_continue: either::Either::Right (None)
-              }
+          if let Some (main_process_id) = CTX::maybe_main()
+            && *inner.as_ref().def.id() == main_process_id
+          {
+            // this code should only be hit when a main process was not provided as an
+            // input since it should be accompanied by a process handle
+            debug_assert!(main_process.is_none());
+            main_process = Some (Box::new (process::Id::gproc (inner)));
+            return process::Handle {
+              result_rx, continuation_tx,
+              join_or_continue: either::Either::Right (None)
             }
           }
           // spawn the process
@@ -350,9 +346,7 @@ impl <CTX : Context> Session <CTX> {
           }
         });
         // store the process handle
-        assert!{
-          extended_state.process_handles.insert (pid, process_handle).is_none()
-        };
+        assert!(extended_state.process_handles.insert (pid, process_handle).is_none());
       }
       // take the main process if one was created
       extended_state.main_process = main_process.take();
@@ -374,7 +368,7 @@ impl <CTX : Context> Session <CTX> {
           join_handle.join().unwrap().unwrap()
         }
         either::Either::Right (Some (continuation)) => {
-          process_handle.continuation_tx.send (continuation.into()).unwrap();
+          process_handle.continuation_tx.send (continuation).unwrap();
         }
         either::Either::Right (None) => { /* do nothing */ }
       }
@@ -528,9 +522,9 @@ impl <CTX : Context> Def <CTX> {
     debug_assert_eq!(self.name, CTX::name());
     let context_str = self.name;
     s.push_str (format!(
-      "  subgraph cluster_{} {{\n", context_str).as_str());
+      "  subgraph cluster_{context_str} {{\n").as_str());
     s.push_str (format!(
-      "    label=<{}>",context_str).as_str());
+      "    label=<{context_str}>").as_str());
     s.push_str ( "\
      \n    shape=record\
      \n    style=rounded\
@@ -549,8 +543,7 @@ impl <CTX : Context> Def <CTX> {
     for (pid, process_def) in self.process_def.iter() {
       let process_id = process_def.id();
       s.push_str (format!(
-        "    {:?} [label=<<TABLE BORDER=\"0\"><TR><TD><B>{:?}</B></TD></TR>",
-        process_id, process_id).as_str());
+        "    {process_id:?} [label=<<TABLE BORDER=\"0\"><TR><TD><B>{process_id:?}</B></TD></TR>").as_str());
 
       let process_field_names    = &process_field_names[pid];
       let process_field_types    = &process_field_types[pid];
@@ -572,19 +565,18 @@ impl <CTX : Context> Def <CTX> {
         let mut field_string = String::new();
         let separator = ",<BR ALIGN=\"LEFT\"/>";
 
-        let longest_fieldname = process_field_names.iter().fold (
-          0, |longest, ref fieldname| std::cmp::max (longest, fieldname.len()));
+        let longest_fieldname = process_field_names.iter()
+          .fold (0, |longest, fieldname| std::cmp::max (longest, fieldname.len()));
 
-        let longest_typename = process_field_types.iter().fold (
-          0, |longest, ref typename| std::cmp::max (longest, typename.len()));
+        let longest_typename = process_field_types.iter()
+          .fold (0, |longest, typename| std::cmp::max (longest, typename.len()));
 
         for (i,f) in process_field_names.iter().enumerate() {
-          let spacer1 : String = std::iter::repeat (' ')
-            .take(longest_fieldname - f.len())
+          let spacer1 : String = std::iter::repeat_n (' ', longest_fieldname - f.len())
             .collect();
-          let spacer2 : String = std::iter::repeat (' ')
-            .take(longest_typename - process_field_types[i].len())
-            .collect();
+          let spacer2 : String = std::iter::repeat_n (
+            ' ', longest_typename - process_field_types[i].len()
+          ).collect();
 
           if !hide_defaults {
             field_string.push_str (escape (format!(
@@ -596,12 +588,12 @@ impl <CTX : Context> Def <CTX> {
               "{}{} : {}", f, spacer1, process_field_types[i]
             )).as_str());
           }
-          field_string.push_str (format!("{}", separator).as_str());
+          field_string.push_str (separator.to_string().as_str());
         }
 
         let len = field_string.len();
         field_string.truncate (len - separator.len());
-        s.push_str (format!("{}", field_string).as_str());
+        s.push_str (field_string.to_string().as_str());
       } // end print line for each field
 
       let result_type = process_result_types[pid];
@@ -616,10 +608,10 @@ impl <CTX : Context> Def <CTX> {
         let result_default = process_result_defaults[pid];
         if !hide_defaults {
           s.push_str (escape (format!(
-            "-> {} = {}", result_type, result_default
+            "-> {result_type} = {result_default}"
           )).as_str());
         } else {
-          s.push_str (escape (format!("-> {}", result_type)).as_str());
+          s.push_str (escape (format!("-> {result_type}")).as_str());
         }
       }
 
@@ -647,7 +639,7 @@ impl <CTX : Context> Def <CTX> {
       let consumers      = channel_def.consumers();
       let kind           = channel_def.kind();
       let local_type     = channel_local_types[cid];
-      let channel_string = escape (format!("{:?} <{}>", channel_id, local_type));
+      let channel_string = escape (format!("{channel_id:?} <{local_type}>"));
       match *kind {
         channel::Kind::Simplex => {
           debug_assert_eq!(producers.len(), 1);
@@ -662,17 +654,16 @@ impl <CTX : Context> Def <CTX> {
           debug_assert_eq!(producers.len(), 1);
           // create a node
           s.push_str (format!(
-            "    {:?} [label=<<B>+</B>>,\
+            "    {channel_id:?} [label=<<B>+</B>>,\
            \n      shape=diamond, style=\"\",\
-           \n      xlabel=<<FONT FACE=\"Sans Italic\">{}</FONT>>]\n",
-            channel_id, channel_string).as_str());
+           \n      xlabel=<<FONT FACE=\"Sans Italic\">{channel_string}</FONT>>]\n").as_str());
           // edges
           s.push_str (format!(
             "    {:?} -> {:?} []\n", producers[0], channel_id
           ).as_str());
           for consumer in consumers.as_slice() {
             s.push_str (format!(
-              "    {:?} -> {:?} []\n", channel_id, consumer
+              "    {channel_id:?} -> {consumer:?} []\n"
             ).as_str());
           }
         }
@@ -680,17 +671,16 @@ impl <CTX : Context> Def <CTX> {
           debug_assert_eq!(consumers.len(), 1);
           // create a node
           s.push_str (format!(
-            "    {:?} [label=<<B>+</B>>,\n      \
+            "    {channel_id:?} [label=<<B>+</B>>,\n      \
                 shape=diamond, style=\"\",\n      \
-                xlabel=<<FONT FACE=\"Sans Italic\">{}</FONT>>]\n",
-            channel_id, channel_string).as_str());
+                xlabel=<<FONT FACE=\"Sans Italic\">{channel_string}</FONT>>]\n").as_str());
           // edges
           s.push_str (format!(
             "    {:?} -> {:?} []\n", channel_id, consumers[0]
           ).as_str());
           for producer in producers.as_slice() {
             s.push_str (format!(
-              "    {:?} -> {:?} []\n", producer, channel_id
+              "    {producer:?} -> {channel_id:?} []\n"
             ).as_str());
           }
         }

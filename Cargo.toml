@@ -1,6 +1,6 @@
 [package]
 name = "apis"
-version = "0.5.11"
+version = "0.5.12"
 authors = ["Shane Pearman <spearman@github.com>"]
 license = "MPL-2.0"
 description = "Reactive, session-oriented, asynchronous process-calculus framework"
@@ -33,3 +33,6 @@ env_logger = { version = "0.11.*", features = ["unstable-kv"] }
 # The reason we do this is because doctests don't get cfg(test) See:
 # https://github.com/rust-lang/rust/issues/45599
 test = []
+
+[lints.clippy]
+empty-line-after-doc-comments = "allow"

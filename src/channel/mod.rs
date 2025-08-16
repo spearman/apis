@@ -288,12 +288,12 @@ impl <CTX : session::Context> Def <CTX> {
     let mut errors = Vec::new();
 
     // zero producers
-    if self.producers.len() == 0 {
+    if self.producers.is_empty() {
       errors.push (DefineError::ZeroProducers);
     }
 
     // zero consumers
-    if self.consumers.len() == 0 {
+    if self.consumers.is_empty() {
       errors.push (DefineError::ZeroConsumers);
     }
 
@@ -341,11 +341,9 @@ impl <CTX : session::Context> Def <CTX> {
 }
 
 impl Kind {
-  /// Ensures number of producers and consumers is valid for this kind of
-  /// chennel.
+  /// Ensures number of producers and consumers is valid for this kind of channel.
   fn validate_roles <CTX : session::Context> (&self,
-    producers : &Vec <CTX::PID>,
-    consumers : &Vec <CTX::PID>
+    producers : &[CTX::PID], consumers : &[CTX::PID]
   ) -> Result <(), Vec <DefineError>> {
     let mut errors = Vec::new();
 

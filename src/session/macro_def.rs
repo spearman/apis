@@ -273,11 +273,14 @@ macro_rules! def_session {
         v
       }
       fn process_result_types() -> Vec <&'static str> {
+        /* FIXME
         let mut v = Vec::new();
         $(
         v.push (stringify!($($presult_type)*));
         )+
         v
+        */
+        vec![$(stringify!($($presult_type)*)),+]
       }
       fn process_result_defaults() -> Vec <&'static str> {
         let mut v = Vec::new();
@@ -294,11 +297,12 @@ macro_rules! def_session {
         v
       }
       fn channel_local_types() -> Vec <&'static str> {
+        /* FIXME
         let mut _v = Vec::new();
-        $(
-        _v.push (stringify!($local_type));
-        )*
+        $(_v.push (stringify!($local_type));)*
         _v
+        */
+        vec![$(stringify!($local_type)),*]
       }
     }
 

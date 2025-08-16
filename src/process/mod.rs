@@ -28,16 +28,11 @@ pub struct Def <CTX : session::Context> {
 /// Handle to a process held by the session.
 pub struct Handle <CTX : session::Context> {
   pub result_rx        : mpsc::Receiver <CTX::GPRES>,
-  pub continuation_tx  : mpsc::Sender <
-    Box <dyn FnOnce (CTX::GPROC) -> Option <()> + Send>
-  >,
+  pub continuation_tx  : mpsc::Sender <session::Continuation <CTX>>,
   /// When the session drops, the `finish` method will either join or send
   /// a continuation depending on the contents of this field.
-  pub join_or_continue :
-    either::Either <
-      std::thread::JoinHandle <Option <()>>,
-      Option <Box <dyn FnOnce (CTX::GPROC) -> Option <()> + Send>>
-    >
+  pub join_or_continue : either::Either <
+    std::thread::JoinHandle <Option <()>>, Option <session::Continuation <CTX>>>
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -246,12 +241,10 @@ pub trait Process <CTX, RES> where
       process:?=self.id(), channel:?=channel_id, message=message_name.as_str();
       "process sending message");
     let cid : usize = channel_id.clone().into();
-    self.sourcepoints()[cid].send (message.into()).map_err (|send_error|{
+    self.sourcepoints()[cid].send (message.into()).inspect_err (|_|
       log::warn!(
         process:?=self.id(), channel:?=channel_id, message=message_name.as_str();
-        "process send error: receiver disconnected");
-      send_error
-    })
+        "process send error: receiver disconnected"))
   }
 
   fn send_to <M : Message <CTX>> (
@@ -267,16 +260,13 @@ pub trait Process <CTX, RES> where
       message=message_name.as_str();
       "process sending message to peer");
     let cid : usize = channel_id.clone().into();
-    self.sourcepoints()[cid].send_to (message.into(), recipient.clone())
-      .map_err (|send_error|{
-        log::warn!(
-          process:?=self.id(),
-          channel:?=channel_id,
-          peer:?=recipient,
-          message=message_name.as_str();
-          "process send to peer error: receiver disconnected");
-        send_error
-      })
+    self.sourcepoints()[cid].send_to (message.into(), recipient.clone()).inspect_err (
+      |_| log::warn!(
+        process:?=self.id(),
+        channel:?=channel_id,
+        peer:?=recipient,
+        message=message_name.as_str();
+        "process send to peer error: receiver disconnected"))
   }
 
   /// Run a process to completion and send the result on the result channel.
@@ -289,10 +279,10 @@ pub trait Process <CTX, RES> where
     debug_assert_eq!(self.state_id(), inner::StateId::Ready);
     self.initialize();
     match *self.kind() {
-      Kind::Asynchronous  {..} => self.run_asynchronous (),
-      Kind::Isochronous   {..} => self.run_isochronous  (),
-      Kind::Mesochronous  {..} => self.run_mesochronous (),
-      Kind::Anisochronous {..} => self.run_anisochronous()
+      Kind::Asynchronous  {..} => self.run_asynchronous(),
+      Kind::Isochronous   {..} => self.run_isochronous(),
+      Kind::Mesochronous  {..} => self.run_mesochronous(),
+      Kind::Anisochronous      => self.run_anisochronous()
     };
     debug_assert_eq!(self.state_id(), inner::StateId::Ended);
     self.terminate();
@@ -308,22 +298,13 @@ pub trait Process <CTX, RES> where
           Ok  (cid) => cid,
           Err (_)   => unreachable!()
         };
-        loop {
-          match endpoint.try_recv() {
-            Ok (message) => {
-              log::warn!(
-                process:?=self.id(),
-                channel:?=channel_id,
-                message=format!("{:?}({})", message.id(), message.inner_name())
-                  .as_str();
-                "process unhandled message");
-              unhandled_count += 1;
-            }
-            Err (channel::TryRecvError::Empty) |
-            Err (channel::TryRecvError::Disconnected) => {
-              break
-            }
-          }
+        while let Ok (message) = endpoint.try_recv() {
+          log::warn!(
+            process:?=self.id(),
+            channel:?=channel_id,
+            message=format!("{:?}({})", message.id(), message.inner_name()).as_str();
+            "process unhandled message");
+          unhandled_count += 1;
         }
       }
       if unhandled_count > 0 {
@@ -346,7 +327,7 @@ pub trait Process <CTX, RES> where
     CTX  : 'static
   {
     self.run();
-    let continuation : Box <dyn FnOnce (CTX::GPROC) -> Option <()> + Send> = {
+    let continuation : session::Continuation <CTX> = {
       let session_handle = &self.inner_ref().as_ref().session_handle;
       session_handle.continuation_rx.recv().unwrap()
     };
@@ -984,15 +965,15 @@ impl Kind {
   }
 
   fn validate_role <CTX : session::Context> (&self,
-    _sourcepoints : &Vec <CTX::CID>,
-    endpoints     : &Vec <CTX::CID>
+    _sourcepoints : &[CTX::CID],
+    endpoints     : &[CTX::CID]
   ) -> Result <(), Vec <DefineError>> {
     let mut errors = Vec::new();
 
     match *self {
       Kind::Asynchronous {..} => {
         // asynchronous processes must have exactly one endpoint
-        if endpoints.len() == 0 {
+        if endpoints.is_empty() {
           errors.push (DefineError::AsynchronousZeroEndpoints)
         } else if 1 < endpoints.len() {
           errors.push (DefineError::AsynchronousMultipleEndpoints)
@@ -1000,7 +981,7 @@ impl Kind {
       }
       Kind::Isochronous   {..} => { /* no restrictions */ }
       Kind::Mesochronous  {..} => { /* no restrictions */ }
-      Kind::Anisochronous {..} => { /* no restrictions */ }
+      Kind::Anisochronous      => { /* no restrictions */ }
     }
 
     if !errors.is_empty() {
@@ -1028,9 +1009,7 @@ impl <M> From <Result <(), channel::SendError <M>>> for ControlFlow {
 //
 //  public
 //
-pub fn report_sizes <CTX : session::Context> () where
-  CTX : 'static
-{
+pub fn report_sizes <CTX : session::Context + 'static> () {
   println!("process report sizes...");
   println!("  size of process::Def: {}", std::mem::size_of::<Def <CTX>>());
   Inner::<CTX>::report_sizes();
@@ -1067,17 +1046,15 @@ where
     *num_open -= 1;
   }
 
-  // for each open channel (outer loop), poll for messages with try_recv (inner
-  // loop) until "empty" or "disconnected" is encountered
-  let mut open_index = 0;
-  'poll_outer: for (cid, endpoint) in endpoints.iter() {
+  // for each open channel (outer loop), poll for messages with try_recv (inner loop)
+  // until "empty" or "disconnected" is encountered
+  'poll_outer: for (open_index, (cid, endpoint)) in endpoints.iter().enumerate() {
     // NOTE: unwrap requires that err is debug
     let channel_id = match CTX::CID::try_from (cid as u16) {
       Ok  (cid) => cid,
       Err (_)   => unreachable!()
     };
     let channel_open = &mut open_channels[open_index];
-    open_index += 1;
     if !*channel_open {
       continue 'poll_outer
     }

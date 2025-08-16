@@ -74,7 +74,7 @@ where
   fn send (&self, message : CTX::GMSG)
     -> Result <(), channel::SendError <CTX::GMSG>>
   {
-    unbounded_spsc::Sender::send (&self, M::try_from (message).ok().unwrap())
+    unbounded_spsc::Sender::send (self, M::try_from (message).ok().unwrap())
       .map_err (Into::into)
   }
   fn send_to (&self, _message : CTX::GMSG, _recipient : CTX::PID)
@@ -93,7 +93,7 @@ where
   fn send (&self, message : CTX::GMSG)
     -> Result <(), channel::SendError <CTX::GMSG>>
   {
-    std::sync::mpsc::Sender::send (&self, M::try_from (message).ok().unwrap())
+    std::sync::mpsc::Sender::send (self, M::try_from (message).ok().unwrap())
       .map_err (Into::into)
   }
   fn send_to (&self, _message : CTX::GMSG, _recipient : CTX::PID)
@@ -157,11 +157,11 @@ where
   M   : Message <CTX>
 {
   fn recv (&self) -> Result <CTX::GMSG, channel::RecvError> {
-    unbounded_spsc::Receiver::recv (&self)
+    unbounded_spsc::Receiver::recv (self)
       .map (Into::into).map_err (Into::into)
   }
   fn try_recv (&self) -> Result <CTX::GMSG, channel::TryRecvError> {
-    unbounded_spsc::Receiver::try_recv (&self)
+    unbounded_spsc::Receiver::try_recv (self)
       .map (Into::into).map_err (Into::into)
   }
 }
@@ -173,11 +173,11 @@ where
   M   : Message <CTX>
 {
   fn recv (&self) -> Result <CTX::GMSG, channel::RecvError> {
-    std::sync::mpsc::Receiver::recv (&self)
+    std::sync::mpsc::Receiver::recv (self)
       .map (Into::into).map_err (Into::into)
   }
   fn try_recv (&self) -> Result <CTX::GMSG, channel::TryRecvError> {
-    std::sync::mpsc::Receiver::try_recv (&self)
+    std::sync::mpsc::Receiver::try_recv (self)
       .map (Into::into).map_err (Into::into)
   }
 }
