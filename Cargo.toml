@@ -27,7 +27,7 @@ vec_map = "0.8.*"
 [dev-dependencies]
 glium = "0.31.*"
 rand = "0.9.*"
-env_logger = { version = "0.11.*", features = ["unstable-kv"] }
+env_logger = { version = "0.11.*", features = ["kv"] }
 
 [features]
 # The reason we do this is because doctests don't get cfg(test) See:
