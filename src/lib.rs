@@ -16,7 +16,6 @@
 //! between them.
 
 #![feature(associated_type_defaults)]
-#![allow(dead_code)]
 
 // NOTE: many of these public re-exports are required for use in macros
 pub extern crate colored;

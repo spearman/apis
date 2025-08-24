@@ -189,7 +189,7 @@ pub trait Process <CTX, RES> where
   /// `run_*` function. Endpoints will be present for the calls to `terminate`
   /// or `initialize`, either before or after the run loop, respectively.
   #[inline]
-  #[allow(mismatched_lifetime_syntaxes)]
+  #[expect(mismatched_lifetime_syntaxes)]
   fn endpoints (&self)
     -> std::cell::Ref <Option <VecMap <Box <dyn channel::Endpoint <CTX>>>>>
   {
@@ -202,7 +202,7 @@ pub trait Process <CTX, RES> where
   /// `run_*` function. Endpoints will be present for the calls to `terminate`
   /// or `initialize`, either before or after the run loop, respectively.
   #[inline]
-  #[allow(mismatched_lifetime_syntaxes)]
+  #[expect(mismatched_lifetime_syntaxes)]
   fn endpoints_mut (&mut self) -> std::cell::RefMut
     <Option <VecMap <Box <dyn channel::Endpoint <CTX>>>>>
   {
@@ -283,7 +283,7 @@ pub trait Process <CTX, RES> where
       Kind::Isochronous   {..} => self.run_isochronous(),
       Kind::Mesochronous  {..} => self.run_mesochronous(),
       Kind::Anisochronous      => self.run_anisochronous()
-    };
+    }
     debug_assert_eq!(self.state_id(), inner::StateId::Ended);
     self.terminate();
     // at this point no further messages will be sent or processed so
@@ -293,11 +293,10 @@ pub trait Process <CTX, RES> where
       let endpoints = self.take_endpoints();
       let mut unhandled_count = 0;
       for (cid, endpoint) in endpoints.iter() {
+        #[expect(clippy::cast_possible_truncation)]
         // NOTE: unwrap requires that err is debug
-        let channel_id = match CTX::CID::try_from (cid as channel::IdReprType) {
-          Ok  (cid) => cid,
-          Err (_)   => unreachable!()
-        };
+        let Ok (channel_id) = CTX::CID::try_from (cid as channel::IdReprType)
+          else { unreachable!() };
         while let Ok (message) = endpoint.try_recv() {
           log::warn!(
             process:?=self.id(),
@@ -363,11 +362,10 @@ pub trait Process <CTX, RES> where
     let endpoints = self.take_endpoints();
     { // create a scope here so the endpoints can be returned after this borrow
     let (cid, endpoint) = endpoints.iter().next().unwrap();
+    #[expect(clippy::cast_possible_truncation)]
     // NOTE: unwrap requires that err is debug
-    let channel_id = match CTX::CID::try_from (cid as channel::IdReprType) {
-      Ok  (cid) => cid,
-      Err (_)   => unreachable!()
-    };
+    let Ok (channel_id) = CTX::CID::try_from (cid as channel::IdReprType)
+      else { unreachable!() };
     '_run_loop: while self.state_id() == inner::StateId::Running {
       // wait on message
       match endpoint.recv() {
@@ -461,8 +459,7 @@ pub trait Process <CTX, RES> where
     let mut t_next             = t_start;
     let mut ticks_since_update = 0;
     let mut tick_count         = 0;
-    #[allow(unused_variables)]
-    let mut _message_count      = 0;
+    let mut message_count      = 0;
     let mut update_count       = 0;
 
     let endpoints              = self.take_endpoints();
@@ -484,8 +481,8 @@ pub trait Process <CTX, RES> where
         t_next += tick_dur;
 
         // poll messages
-        poll_messages (self, &endpoints,
-          &mut open_channels, &mut num_open_channels, &mut _message_count);
+        poll_messages (self,
+          &endpoints, &mut open_channels, &mut num_open_channels, &mut message_count);
 
         tick_count += 1;
         ticks_since_update += 1;
@@ -571,7 +568,7 @@ pub trait Process <CTX, RES> where
     let mut t_next             = t_start;
     let mut ticks_since_update = 0;
     let mut tick_count         = 0;
-    let mut _message_count     = 0;
+    let mut message_count      = 0;
     let mut update_count       = 0;
 
     let endpoints              = self.take_endpoints();
@@ -593,8 +590,8 @@ pub trait Process <CTX, RES> where
         t_next  = t_now + tick_dur;
 
         // poll messages
-        poll_messages (self, &endpoints,
-          &mut open_channels, &mut num_open_channels, &mut _message_count);
+        poll_messages (self,
+          &endpoints, &mut open_channels, &mut num_open_channels, &mut message_count);
 
         tick_count += 1;
         ticks_since_update += 1;
@@ -653,7 +650,7 @@ pub trait Process <CTX, RES> where
     let _t_start = time::Instant::now();
     debug_assert_eq!(Kind::Anisochronous, *self.kind());
     log::debug!(process:?=self.id(), kind="anisochronous"; "process start");
-    let mut _message_count = 0;
+    let mut message_count = 0;
     let mut update_count  = 0;
 
     let endpoints = self.take_endpoints();
@@ -665,8 +662,8 @@ pub trait Process <CTX, RES> where
     });
     '_run_loop: while self.state_id() == inner::StateId::Running {
       // poll messages
-      poll_messages (self, &endpoints,
-        &mut open_channels, &mut num_open_channels, &mut _message_count);
+      poll_messages (self,
+        &endpoints, &mut open_channels, &mut num_open_channels, &mut message_count);
       // update
       log::trace!(process:?=self.id(), update=update_count; "process update");
       let update_result = self.update();
@@ -695,10 +692,9 @@ where
   CTX : session::Context <PID=Self>
 {
   fn def (&self) -> Def <CTX>;
-  /// Must initialize the concrete process type start running the initial
-  /// closure.
+  /// Must initialize the concrete process type start running the initial closure.
   fn spawn (inner : Inner <CTX>) -> std::thread::JoinHandle <Option <()>>;
-  /// Initialie the concrete proces type and return in a CTX::GPROC.
+  /// Initialize the concrete proces type and return in a `CTX::GPROC`.
   fn gproc (inner : Inner <CTX>) -> CTX::GPROC;
 }
 
@@ -826,19 +822,19 @@ impl <CTX : session::Context> Def <CTX> {
     Ok (def)
   }
 
-  pub fn id (&self) -> &CTX::PID {
+  pub const fn id (&self) -> &CTX::PID {
     &self.id
   }
 
-  pub fn kind (&self) -> &Kind {
+  pub const fn kind (&self) -> &Kind {
     &self.kind
   }
 
-  pub fn sourcepoints (&self) -> &Vec <CTX::CID> {
+  pub const fn sourcepoints (&self) -> &Vec <CTX::CID> {
     &self.sourcepoints
   }
 
-  pub fn endpoints (&self) -> &Vec <CTX::CID> {
+  pub const fn endpoints (&self) -> &Vec <CTX::CID> {
     &self.endpoints
   }
 
@@ -907,7 +903,7 @@ impl Kind {
     Kind::new_mesochronous (TICK_MS, TICKS_PER_UPDATE).unwrap()
   }
 
-  pub fn anisochronous_default() -> Self {
+  pub const fn anisochronous_default() -> Self {
     Kind::new_anisochronous()
   }
 
@@ -960,7 +956,7 @@ impl Kind {
   }
 
   #[inline]
-  pub fn new_anisochronous() -> Self {
+  pub const fn new_anisochronous() -> Self {
     Kind::Anisochronous
   }
 
@@ -979,8 +975,8 @@ impl Kind {
           errors.push (DefineError::AsynchronousMultipleEndpoints)
         }
       }
-      Kind::Isochronous   {..} => { /* no restrictions */ }
-      Kind::Mesochronous  {..} => { /* no restrictions */ }
+      Kind::Isochronous   {..} |
+      Kind::Mesochronous  {..} |
       Kind::Anisochronous      => { /* no restrictions */ }
     }
 
@@ -996,8 +992,8 @@ impl Kind {
 impl <M> From <Result <(), channel::SendError <M>>> for ControlFlow {
   fn from (send_result : Result <(), channel::SendError <M>>) -> Self {
     match send_result {
-      Ok  (_) => ControlFlow::Continue,
-      Err (_) => ControlFlow::Break
+      Ok  (()) => ControlFlow::Continue,
+      Err (_)  => ControlFlow::Break
     }
   }
 }
@@ -1049,11 +1045,9 @@ where
   // for each open channel (outer loop), poll for messages with try_recv (inner loop)
   // until "empty" or "disconnected" is encountered
   'poll_outer: for (open_index, (cid, endpoint)) in endpoints.iter().enumerate() {
+    #[expect(clippy::cast_possible_truncation)]
     // NOTE: unwrap requires that err is debug
-    let channel_id = match CTX::CID::try_from (cid as u16) {
-      Ok  (cid) => cid,
-      Err (_)   => unreachable!()
-    };
+    let Ok (channel_id) = CTX::CID::try_from (cid as u16) else { unreachable!() };
     let channel_open = &mut open_channels[open_index];
     if !*channel_open {
       continue 'poll_outer

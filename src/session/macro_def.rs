@@ -118,7 +118,7 @@ macro_rules! def_session {
     //
     //  session context
     //
-    #[derive(Clone, Debug, PartialEq)]
+    #[derive(Clone, Debug, Eq, PartialEq)]
     pub struct $context;
 
     //
@@ -273,13 +273,6 @@ macro_rules! def_session {
         v
       }
       fn process_result_types() -> Vec <&'static str> {
-        /* FIXME
-        let mut v = Vec::new();
-        $(
-        v.push (stringify!($($presult_type)*));
-        )+
-        v
-        */
         vec![$(stringify!($($presult_type)*)),+]
       }
       fn process_result_defaults() -> Vec <&'static str> {
@@ -297,11 +290,6 @@ macro_rules! def_session {
         v
       }
       fn channel_local_types() -> Vec <&'static str> {
-        /* FIXME
-        let mut _v = Vec::new();
-        $(_v.push (stringify!($local_type));)*
-        _v
-        */
         vec![$(stringify!($local_type)),*]
       }
     }
@@ -505,6 +493,7 @@ macro_rules! def_session {
     impl $crate::message::Global <$context> for GlobalMessage {
       fn id (&self) -> MessageId {
         #[allow(unreachable_patterns)]
+        #[allow(clippy::uninhabited_references)]
         match *self {
           $(GlobalMessage::$message_type (..) => MessageId::$message_type),*
         }
@@ -512,6 +501,7 @@ macro_rules! def_session {
       /// Get the message name of the inner message type
       fn inner_name (&self) -> String {
         use $crate::message::Message;
+        #[allow(clippy::uninhabited_references)]
         match *self {
           $(GlobalMessage::$message_type (ref msg) => msg.name()),*
         }

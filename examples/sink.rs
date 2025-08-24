@@ -88,7 +88,8 @@ apis::def_session! {
 ////////////////////////////////////////////////////////////////////////////////
 
 impl Chargen1 {
-  fn chargen1_handle_message (&mut self, _message : GlobalMessage)
+  #[expect(clippy::unused_self)]
+  fn chargen1_handle_message (&self, _message : GlobalMessage)
     -> apis::process::ControlFlow
   {
     log::trace!("chargen1 handle message...");
@@ -135,7 +136,8 @@ impl Chargen1 {
 // end impl Chargen1
 
 impl Chargen2 {
-  fn chargen2_handle_message (&mut self, _message : GlobalMessage)
+  #[expect(clippy::unused_self)]
+  fn chargen2_handle_message (&self, _message : GlobalMessage)
     -> apis::process::ControlFlow
   {
     log::trace!("chargen2 handle message...");
@@ -202,7 +204,7 @@ impl Upcase {
     apis::process::ControlFlow::Continue
   }
 
-  fn upcase_update  (&mut self) -> apis::process::ControlFlow {
+  fn upcase_update  (&self) -> apis::process::ControlFlow {
     let mut result = apis::process::ControlFlow::Continue;
     log::trace!("upcase update...");
     if self.quit == 2 {
@@ -229,7 +231,7 @@ fn main() {
   let example_name = std::path::PathBuf::from (std::env::args().next().unwrap())
     .file_name().unwrap().to_str().unwrap().to_string();
 
-  println!("{}", format!("{} main...", example_name).green().bold());
+  println!("{}", format!("{example_name} main...").green().bold());
 
   env_logger::Builder::new()
     .filter_level (log::LevelFilter::Debug)
@@ -242,14 +244,14 @@ fn main() {
   // here is where we find out if the session definition has any errors
   let session_def = ChargenUpcaseSink::def().unwrap();
   // create a dotfile for the session
-  let mut f = std::fs::File::create (format!("{}.dot", example_name)).unwrap();
+  let mut f = std::fs::File::create (format!("{example_name}.dot")).unwrap();
   f.write_all (session_def.dotfile_show_defaults().as_bytes()).unwrap();
   drop (f);
   // create the session from the definition
   let mut session : apis::Session <ChargenUpcaseSink> = session_def.into();
   // run to completion
   let results = session.run();
-  println!("results: {:?}", results);
+  println!("results: {results:?}");
 
-  println!("{}", format!("...{} main", example_name).green().bold());
+  println!("{}", format!("...{example_name} main").green().bold());
 }

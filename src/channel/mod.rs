@@ -254,19 +254,19 @@ impl <CTX : session::Context> Def <CTX> {
     Ok (def)
   }
 
-  pub fn id (&self) -> &CTX::CID {
+  pub const fn id (&self) -> &CTX::CID {
     &self.id
   }
 
-  pub fn kind (&self) -> &Kind {
+  pub const fn kind (&self) -> &Kind {
     &self.kind
   }
 
-  pub fn producers (&self) -> &Vec <CTX::PID> {
+  pub const fn producers (&self) -> &Vec <CTX::PID> {
     &self.producers
   }
 
-  pub fn consumers (&self) -> &Vec <CTX::PID> {
+  pub const fn consumers (&self) -> &Vec <CTX::PID> {
     &self.consumers
   }
 
@@ -275,12 +275,9 @@ impl <CTX : session::Context> Def <CTX> {
     M   : Message <CTX> + 'static
   {
     match self.kind {
-      Kind::Simplex => backend::Simplex::<CTX, M>::try_from (self).unwrap()
-        .into(),
-      Kind::Sink    => backend::Sink::<CTX, M>::try_from (self).unwrap()
-        .into(),
-      Kind::Source  => backend::Source::<CTX, M>::try_from (self).unwrap()
-        .into()
+      Kind::Simplex => backend::Simplex::<CTX, M>::try_from (self).unwrap().into(),
+      Kind::Sink    => backend::Sink::<CTX, M>::try_from (self).unwrap().into(),
+      Kind::Source  => backend::Source::<CTX, M>::try_from (self).unwrap().into()
     }
   }
 
@@ -390,7 +387,7 @@ impl <T> std::fmt::Display for SendError <T> {
 }
 
 impl <T> std::error::Error for SendError <T> {
-  fn description (&self) -> &str {
+  fn description (&self) -> &'static str {
     "sending on a closed channel"
   }
   fn cause (&self) -> Option <&dyn std::error::Error> {

@@ -92,7 +92,7 @@ fn main() {
   let example_name = std::path::PathBuf::from (std::env::args().next().unwrap())
     .file_name().unwrap().to_str().unwrap().to_string();
 
-  println!("{}", format!("{} main...", example_name)
+  println!("{}", format!("{example_name} main...")
     .green().bold());
 
   env_logger::Builder::new()
@@ -106,15 +106,15 @@ fn main() {
   // here is where we find out if the session definition has any errors
   let session_def = DisconnectSenderSource::def().unwrap();
   // create a dotfile for the session
-  let mut f = std::fs::File::create (format!("{}.dot", example_name)).unwrap();
+  let mut f = std::fs::File::create (format!("{example_name}.dot")).unwrap();
   f.write_all (session_def.dotfile().as_bytes()).unwrap();
   drop (f);
   // create the session from the definition
   let mut session : apis::Session <DisconnectSenderSource> = session_def.into();
   // run to completion
   let results = session.run();
-  println!("results: {:?}", results);
+  println!("results: {results:?}");
 
-  println!("{}", format!("...{} main", example_name)
+  println!("{}", format!("...{example_name} main")
     .green().bold());
 }

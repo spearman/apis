@@ -76,7 +76,7 @@ apis::def_program! {
     MODES [
       mode bgr::Bgr {
         use apis::Process;
-        println!("results: {:?}", results);
+        println!("results: {results:?}");
         let mode_control
           = bgr::InputRender::extract_result (&mut results).unwrap();
         match mode_control {
@@ -86,7 +86,7 @@ apis::def_program! {
       }
       mode cym::Cym {
         use apis::Process;
-        println!("results: {:?}", results);
+        println!("results: {results:?}");
         let mode_control
           = cym::InputRender::extract_result (&mut results).unwrap();
         match mode_control {
@@ -96,7 +96,7 @@ apis::def_program! {
       }
       mode wsk::Wsk {
         use apis::Process;
-        println!("results: {:?}", results);
+        println!("results: {results:?}");
         let mode_control
           = wsk::InputRender::extract_result (&mut results).unwrap();
         match mode_control {
@@ -452,7 +452,7 @@ fn main() {
   let example_name = std::path::PathBuf::from (std::env::args().next().unwrap())
     .file_name().unwrap().to_str().unwrap().to_string();
 
-  println!("{}", format!("{} main...", example_name).green().bold());
+  println!("{}", format!("{example_name} main...").green().bold());
 
   env_logger::Builder::new()
     .filter_level (LOG_LEVEL)
@@ -461,7 +461,7 @@ fn main() {
 
   // create a dotfile for the program state machine
   use std::io::Write;
-  let mut f = std::fs::File::create (format!("{}.dot", example_name)).unwrap();
+  let mut f = std::fs::File::create (format!("{example_name}.dot")).unwrap();
   f.write_all (Graphical::dotfile().as_bytes()).unwrap();
   drop (f);
 
@@ -475,5 +475,5 @@ fn main() {
   // run to completion
   myprogram.run();
 
-  println!("{}", format!("...{} main", example_name).green().bold());
+  println!("{}", format!("...{example_name} main").green().bold());
 }

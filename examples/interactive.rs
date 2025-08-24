@@ -73,7 +73,7 @@ apis::def_program! {
   {
     MODES [
       mode readline_echoup::ReadlineEchoup {
-        println!("result: {:?}", result);
+        println!("result: {result:?}");
         Some (EventId::ToReadlineEchorev)
       }
       mode readline_echorev::ReadlineEchorev
@@ -146,13 +146,14 @@ pub mod readline_echoup {
   }
 
   impl Readline {
-    fn readline_handle_message (&mut self, message : GlobalMessage)
+    #[expect(clippy::unused_self)]
+    fn readline_handle_message (&self, message : GlobalMessage)
       -> apis::process::ControlFlow
     {
       log::trace!("readline handle message...");
       match message {
         GlobalMessage::FromechoMsg (FromechoMsg::Echo (echo)) => {
-          log::info!("Readline: received echo \"{}\"", echo);
+          log::info!("Readline: received echo \"{echo}\"");
         },
         _ => unreachable!()
       }
@@ -160,7 +161,7 @@ pub mod readline_echoup {
       apis::process::ControlFlow::Continue
     }
 
-    fn readline_update (&mut self) -> apis::process::ControlFlow {
+    fn readline_update (&self) -> apis::process::ControlFlow {
       use std::io::Write;
       use apis::Process;
 
@@ -175,7 +176,6 @@ pub mod readline_echoup {
       let _     = std::io::stdin().read_line (&mut s);
       if !s.trim_end().is_empty() {
         let word_ct = s.as_str().split_whitespace().count();
-        #[allow(unused_assignments)]
         match word_ct {
           0 => unreachable!("zero words in server input readline parse"),
           _ => {
@@ -214,15 +214,12 @@ pub mod readline_echoup {
   // end impl Readline
 
   impl Echoup {
-    fn echoup_handle_message (&mut self, message : GlobalMessage)
+    fn echoup_handle_message (&self, message : GlobalMessage)
       -> apis::process::ControlFlow
     {
       use apis::Process;
       log::trace!("echoup handle message...");
-      let msg = match message {
-        GlobalMessage::ToechoMsg (msg) => msg,
-        _ => unreachable!()
-      };
+      let GlobalMessage::ToechoMsg (msg) = message else { unreachable!() };
       let result = match msg {
         ToechoMsg::Astring (string) => {
           let echo = string.as_str().to_uppercase();
@@ -234,7 +231,8 @@ pub mod readline_echoup {
       result
     }
 
-    fn echoup_update  (&mut self) -> apis::process::ControlFlow {
+    #[expect(clippy::unused_self)]
+    fn echoup_update  (&self) -> apis::process::ControlFlow {
       log::trace!("echoup update...");
       /* do nothing */
       log::trace!("...echoup update");
@@ -301,13 +299,14 @@ pub mod readline_echorev {
   }
 
   impl Readline {
-    fn readline_handle_message (&mut self, message : GlobalMessage)
+    #[expect(clippy::unused_self)]
+    fn readline_handle_message (&self, message : GlobalMessage)
       -> apis::process::ControlFlow
     {
       log::trace!("readline handle message...");
       match message {
         GlobalMessage::FromechoMsg (FromechoMsg::Echo (echo)) => {
-          log::info!("Readline: received echo \"{}\"", echo);
+          log::info!("Readline: received echo \"{echo}\"");
         },
         _ => unreachable!()
       }
@@ -315,7 +314,7 @@ pub mod readline_echorev {
       apis::process::ControlFlow::Continue
     }
 
-    fn readline_update (&mut self) -> apis::process::ControlFlow {
+    fn readline_update (&self) -> apis::process::ControlFlow {
       use std::io::Write;
       use apis::Process;
 
@@ -330,7 +329,6 @@ pub mod readline_echorev {
       let _     = std::io::stdin().read_line (&mut s);
       if !s.trim_end().is_empty() {
         let word_ct = s.as_str().split_whitespace().count();
-        #[allow(unused_assignments)]
         match word_ct {
           0 => unreachable!("zero words in server input readline parse"),
           _ => {
@@ -369,15 +367,12 @@ pub mod readline_echorev {
   // end impl Readline
 
   impl Echorev {
-    fn echorev_handle_message (&mut self, message : GlobalMessage)
+    fn echorev_handle_message (&self, message : GlobalMessage)
       -> apis::process::ControlFlow
     {
       use apis::Process;
       log::trace!("echorev handle message...");
-      let msg = match message {
-        GlobalMessage::ToechoMsg (msg) => msg,
-        _ => unreachable!()
-      };
+      let GlobalMessage::ToechoMsg (msg) = message else { unreachable!() };
       let result = match msg {
         ToechoMsg::Astring (string) => {
           let echo = string.chars().rev().collect();
@@ -389,7 +384,8 @@ pub mod readline_echorev {
       result
     }
 
-    fn echorev_update  (&mut self) -> apis::process::ControlFlow {
+    #[expect(clippy::unused_self)]
+    fn echorev_update  (&self) -> apis::process::ControlFlow {
       log::trace!("echorev update...");
       /* do nothing */
       log::trace!("...echorev update");
@@ -408,7 +404,7 @@ fn main() {
   let example_name = std::path::PathBuf::from (std::env::args().next().unwrap())
     .file_name().unwrap().to_str().unwrap().to_string();
 
-  println!("{}", format!("{} main...", example_name).green().bold());
+  println!("{}", format!("{example_name} main...").green().bold());
 
   env_logger::Builder::new()
     .filter_level (LOG_LEVEL)
@@ -417,7 +413,7 @@ fn main() {
 
   // create a dotfile for the program state machine
   use std::io::Write;
-  let mut f = std::fs::File::create (format!("{}.dot", example_name)).unwrap();
+  let mut f = std::fs::File::create (format!("{example_name}.dot")).unwrap();
   f.write_all (Interactive::dotfile().as_bytes()).unwrap();
   drop (f);
 
@@ -432,5 +428,5 @@ fn main() {
   // run to completion
   myprogram.run();
 
-  println!("{}", format!("...{} main", example_name).green().bold());
+  println!("{}", format!("...{example_name} main").green().bold());
 }

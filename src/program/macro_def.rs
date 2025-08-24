@@ -37,8 +37,8 @@ macro_rules! def_program {
         STATES [
           $(state $mode_context (
             session : $crate::Session <$mode_mod::$mode_context> =
-              <$mode_mod::$mode_context as $crate::session::Context>::def()
-                .unwrap().into()
+              <$mode_mod::$mode_context as $crate::session::Context>::def().unwrap()
+                .into()
           ))+
         ]
         EVENTS [

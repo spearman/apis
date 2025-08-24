@@ -54,7 +54,7 @@ apis::def_program! {
   {
     MODES [
       mode chargen_upcase::ChargenUpcase {
-        println!("result: {:?}", result);
+        println!("result: {result:?}");
         Some (EventId::ToRandSource)
       }
       mode rand_source::RandSource
@@ -99,6 +99,7 @@ pub mod chargen_upcase {
           endpoints      []
           handle_message { unreachable!() }
           update {
+            #[expect(clippy::useless_let_if_seq)]
             let mut result = apis::process::ControlFlow::Continue;
             if process.update_count % 5 == 0 {
               result = process.send (
@@ -380,7 +381,7 @@ fn main() {
 
   let example_name = std::path::PathBuf::from (std::env::args().next().unwrap())
     .file_name().unwrap().to_str().unwrap().to_string();
-  println!("{}", format!("{} main...", example_name).green().bold());
+  println!("{}", format!("{example_name} main...").green().bold());
 
   env_logger::Builder::new()
     .filter_level (LOG_LEVEL)
@@ -389,7 +390,7 @@ fn main() {
 
   // create a dotfile for the program state machine
   use std::io::Write;
-  let mut f = std::fs::File::create (format!("{}.dot", example_name)).unwrap();
+  let mut f = std::fs::File::create (format!("{example_name}.dot")).unwrap();
   f.write_all (Myprogram::dotfile().as_bytes()).unwrap();
   drop (f);
 
@@ -401,5 +402,5 @@ fn main() {
   // run to completion
   myprogram.run();
 
-  println!("{}", format!("...{} main", example_name).green().bold());
+  println!("{}", format!("...{example_name} main").green().bold());
 }

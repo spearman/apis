@@ -75,6 +75,7 @@ pub mod int_source {
   impl IntGen {
     pub fn int_gen_update (&mut self) -> apis::process::ControlFlow {
       use apis::Process;
+      #[expect(clippy::cast_possible_truncation)]
       let to_id = (self.update_count % 2 + 1) as apis::process::IdReprType;
       let anint = self.update_count;
       let mut result = self.send_to (
@@ -93,7 +94,9 @@ pub mod int_source {
     }
   }
   impl Sum1 {
-    fn sum1_handle_message (&mut self, message : GlobalMessage) -> apis::process::ControlFlow {
+    const fn sum1_handle_message (&mut self, message : GlobalMessage)
+      -> apis::process::ControlFlow
+    {
       match message {
         GlobalMessage::Intsmessage (Intsmessage::Anint (anint)) => {
           self.sum += anint;
@@ -107,7 +110,9 @@ pub mod int_source {
     }
   }
   impl Sum2 {
-    fn sum2_handle_message (&mut self, message : GlobalMessage) -> apis::process::ControlFlow {
+    const fn sum2_handle_message (&mut self, message : GlobalMessage)
+      -> apis::process::ControlFlow
+    {
       match message {
         GlobalMessage::Intsmessage (Intsmessage::Anint (anint)) => {
           self.sum += anint;
@@ -141,14 +146,18 @@ pub mod char_sink {
           endpoints      []
           handle_message { unreachable!() }
           update {
+            #[expect(clippy::useless_let_if_seq)]
             let mut result = apis::process::ControlFlow::Continue;
             if process.update_count % 2 == 0 {
-              result = process.send (ChannelId::Charstream, Charstreammessage::Achar ('a'))
+              result = process
+                .send (ChannelId::Charstream, Charstreammessage::Achar ('a'))
                 .into();
             }
             process.update_count += 1;
             assert!(process.update_count <= MAX_UPDATES);
-            if result == apis::process::ControlFlow::Continue && process.update_count == MAX_UPDATES {
+            if result == apis::process::ControlFlow::Continue &&
+              process.update_count == MAX_UPDATES
+            {
               let _  = process.send (ChannelId::Charstream, Charstreammessage::Quit);
               result = apis::process::ControlFlow::Break;
             }
@@ -164,14 +173,18 @@ pub mod char_sink {
           endpoints      []
           handle_message { unreachable!() }
           update {
+            #[expect(clippy::useless_let_if_seq)]
             let mut result = apis::process::ControlFlow::Continue;
             if process.update_count % 4 == 0 {
-              result = process.send (ChannelId::Charstream, Charstreammessage::Achar ('z'))
+              result = process
+                .send (ChannelId::Charstream, Charstreammessage::Achar ('z'))
                 .into();
             }
             process.update_count += 1;
             assert!(process.update_count <= MAX_UPDATES);
-            if result == apis::process::ControlFlow::Continue && process.update_count == MAX_UPDATES {
+            if result == apis::process::ControlFlow::Continue &&
+              process.update_count == MAX_UPDATES
+            {
               let _  = process.send (ChannelId::Charstream, Charstreammessage::Quit);
               result = apis::process::ControlFlow::Break;
             }

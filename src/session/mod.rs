@@ -246,6 +246,8 @@ impl <CTX : Context> Session <CTX> {
     &self.extended_state().def
   }
 
+  // MachineDotfile::name conflicts
+  #[expect(clippy::same_name_method)]
   pub fn name (&self) -> &'static str {
     self.def().name
   }
@@ -289,7 +291,7 @@ impl <CTX : Context> Session <CTX> {
     mut channels        : vec_map::VecMap <channel::Channel <CTX>>,
     mut main_process    : Option <Box <CTX::GPROC>>
   ) {
-    if cfg!(debug_assertions) && let Some (ref gproc) = main_process {
+    if cfg!(debug_assertions) && let Some (gproc) = main_process.as_ref() {
       use process::Global;
       assert!(process_handles.contains_key (gproc.id().into()));
     }
@@ -450,11 +452,10 @@ impl <CTX : Context> Def <CTX> {
     // fill the sourcepoint and endpoint vec maps according to the channel def
     // specifications
     for (cid, channel_def) in self.channel_def.iter() {
+      #[expect(clippy::cast_possible_truncation)]
       // NOTE: unwrap requires that err is debug
-      let channel_id = match CTX::CID::try_from (cid as channel::IdReprType) {
-        Ok  (cid) => cid,
-        Err (_)   => unreachable!()
-      };
+      let Ok (channel_id) = CTX::CID::try_from (cid as channel::IdReprType)
+        else { unreachable!() };
       debug_assert_eq!(channel_id, *channel_def.id());
       for producer_id in channel_def.producers().iter() {
         let pid : usize  = producer_id.clone().into();
@@ -593,7 +594,7 @@ impl <CTX : Context> Def <CTX> {
 
         let len = field_string.len();
         field_string.truncate (len - separator.len());
-        s.push_str (field_string.to_string().as_str());
+        s.push_str (field_string.as_str());
       } // end print line for each field
 
       let result_type = process_result_types[pid];
