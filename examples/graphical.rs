@@ -57,16 +57,13 @@ impl std::fmt::Debug for GlutinGliumContext {
 }
 
 #[derive(Clone, Debug)]
+#[derive(Default)]
 pub enum ModeControl {
   Next,
+  #[default]
   Quit
 }
 
-impl Default for ModeControl {
-  fn default () -> Self {
-    ModeControl::Quit
-  }
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 //  program                                                                   //
@@ -195,40 +192,31 @@ pub mod bgr {
           //println!("frame[{}] event: {:?}", frame, event);
           *control_flow = glutin::event_loop::ControlFlow::Poll;
           match event {
-            Event::DeviceEvent { event, .. } => {
-              match event {
-                event::DeviceEvent::Key (keyboard_input) => {
-                  if keyboard_input.state ==
-                    event::ElementState::Pressed
-                  {
-                    match keyboard_input.virtual_keycode {
-                      Some (event::VirtualKeyCode::Tab) => {
-                        result  = apis::process::ControlFlow::Break;
-                        presult = ModeControl::Next;
-                      }
-                      Some (event::VirtualKeyCode::Q) => {
-                        result  = apis::process::ControlFlow::Break;
-                        presult = ModeControl::Quit;
-                      }
-                      Some (event::VirtualKeyCode::B) => {
-                        clear_color = (0.0, 0.0, 1.0, 1.0);
-                      }
-                      Some (event::VirtualKeyCode::G) => {
-                        clear_color = (0.0, 1.0, 0.0, 1.0);
-                      }
-                      Some (event::VirtualKeyCode::R) => {
-                        clear_color = (1.0, 0.0, 0.0, 1.0);
-                      }
-                      _ => {}
-                    }
+            Event::DeviceEvent { event: event::DeviceEvent::Key (keyboard_input), .. } =>
+              if keyboard_input.state == event::ElementState::Pressed {
+                match keyboard_input.virtual_keycode {
+                  Some (event::VirtualKeyCode::Tab) => {
+                    result  = apis::process::ControlFlow::Break;
+                    presult = ModeControl::Next;
                   }
+                  Some (event::VirtualKeyCode::Q) => {
+                    result  = apis::process::ControlFlow::Break;
+                    presult = ModeControl::Quit;
+                  }
+                  Some (event::VirtualKeyCode::B) => {
+                    clear_color = (0.0, 0.0, 1.0, 1.0);
+                  }
+                  Some (event::VirtualKeyCode::G) => {
+                    clear_color = (0.0, 1.0, 0.0, 1.0);
+                  }
+                  Some (event::VirtualKeyCode::R) => {
+                    clear_color = (1.0, 0.0, 0.0, 1.0);
+                  }
+                  _ => {}
                 }
-                _ => {}
               }
-            }
-            Event::MainEventsCleared => {
-              *control_flow = glutin::event_loop::ControlFlow::Exit;
-            }
+            Event::MainEventsCleared =>
+              *control_flow = glutin::event_loop::ControlFlow::Exit,
             _ => {}
           }
         });
@@ -306,38 +294,31 @@ pub mod cym {
           //println!("frame[{}] event: {:?}", frame, event);
           *control_flow = glutin::event_loop::ControlFlow::Poll;
           match event {
-            Event::DeviceEvent { event, .. } => {
-              match event {
-                event::DeviceEvent::Key (keyboard_input) => {
-                  if keyboard_input.state == event::ElementState::Pressed {
-                    match keyboard_input.virtual_keycode {
-                      Some (event::VirtualKeyCode::Tab) => {
-                        result  = apis::process::ControlFlow::Break;
-                        presult = ModeControl::Next;
-                      }
-                      Some (event::VirtualKeyCode::Q) => {
-                        result  = apis::process::ControlFlow::Break;
-                        presult = ModeControl::Quit;
-                      }
-                      Some (event::VirtualKeyCode::C) => {
-                        clear_color = (0.0, 1.0, 1.0, 1.0);
-                      }
-                      Some (event::VirtualKeyCode::Y) => {
-                        clear_color = (1.0, 1.0, 0.0, 1.0);
-                      }
-                      Some (event::VirtualKeyCode::M) => {
-                        clear_color = (1.0, 0.0, 1.0, 1.0);
-                      }
-                      _ => {}
-                    }
+            Event::DeviceEvent { event: event::DeviceEvent::Key (keyboard_input), .. } =>
+              if keyboard_input.state == event::ElementState::Pressed {
+                match keyboard_input.virtual_keycode {
+                  Some (event::VirtualKeyCode::Tab) => {
+                    result  = apis::process::ControlFlow::Break;
+                    presult = ModeControl::Next;
                   }
+                  Some (event::VirtualKeyCode::Q) => {
+                    result  = apis::process::ControlFlow::Break;
+                    presult = ModeControl::Quit;
+                  }
+                  Some (event::VirtualKeyCode::C) => {
+                    clear_color = (0.0, 1.0, 1.0, 1.0);
+                  }
+                  Some (event::VirtualKeyCode::Y) => {
+                    clear_color = (1.0, 1.0, 0.0, 1.0);
+                  }
+                  Some (event::VirtualKeyCode::M) => {
+                    clear_color = (1.0, 0.0, 1.0, 1.0);
+                  }
+                  _ => {}
                 }
-                _ => {}
               }
-            }
-            Event::MainEventsCleared => {
-              *control_flow = glutin::event_loop::ControlFlow::Exit;
-            }
+            Event::MainEventsCleared =>
+              *control_flow = glutin::event_loop::ControlFlow::Exit,
             _ => {}
           }
         });
@@ -415,38 +396,31 @@ pub mod wsk {
           //println!("frame[{}] event: {:?}", frame, event);
           *control_flow = glutin::event_loop::ControlFlow::Poll;
           match event {
-            Event::DeviceEvent { event, .. } => {
-              match event {
-                event::DeviceEvent::Key (keyboard_input) => {
-                  if keyboard_input.state == event::ElementState::Pressed {
-                    match keyboard_input.virtual_keycode {
-                      Some (event::VirtualKeyCode::Tab) => {
-                        result  = apis::process::ControlFlow::Break;
-                        presult = ModeControl::Next;
-                      }
-                      Some (event::VirtualKeyCode::Q) => {
-                        result  = apis::process::ControlFlow::Break;
-                        presult = ModeControl::Quit;
-                      }
-                      Some (event::VirtualKeyCode::W) => {
-                        clear_color = (1.0, 1.0, 1.0, 1.0);
-                      }
-                      Some (event::VirtualKeyCode::S) => {
-                        clear_color = (0.5, 0.5, 0.5, 1.0);
-                      }
-                      Some (event::VirtualKeyCode::K) => {
-                        clear_color = (0.0, 0.0, 0.0, 1.0);
-                      }
-                      _ => {}
-                    }
+            Event::DeviceEvent { event: event::DeviceEvent::Key (keyboard_input), .. } =>
+              if keyboard_input.state == event::ElementState::Pressed {
+                match keyboard_input.virtual_keycode {
+                  Some (event::VirtualKeyCode::Tab) => {
+                    result  = apis::process::ControlFlow::Break;
+                    presult = ModeControl::Next;
                   }
+                  Some (event::VirtualKeyCode::Q) => {
+                    result  = apis::process::ControlFlow::Break;
+                    presult = ModeControl::Quit;
+                  }
+                  Some (event::VirtualKeyCode::W) => {
+                    clear_color = (1.0, 1.0, 1.0, 1.0);
+                  }
+                  Some (event::VirtualKeyCode::S) => {
+                    clear_color = (0.5, 0.5, 0.5, 1.0);
+                  }
+                  Some (event::VirtualKeyCode::K) => {
+                    clear_color = (0.0, 0.0, 0.0, 1.0);
+                  }
+                  _ => {}
                 }
-                _ => {}
               }
-            }
-            Event::MainEventsCleared => {
-              *control_flow = glutin::event_loop::ControlFlow::Exit;
-            }
+            Event::MainEventsCleared =>
+              *control_flow = glutin::event_loop::ControlFlow::Exit,
             _ => {}
           }
         });

@@ -182,7 +182,7 @@ pub mod readline_echoup {
             let command = {
               let mut words = s.as_str().split_whitespace();
               let mut first = words.next().unwrap().to_string();
-              if first.chars().next().unwrap() == ':' {
+              if first.starts_with (':') {
                 use std::str::pattern::Pattern;
                 debug_assert!(0 < first.len());
                 let _ = first.remove (0);
@@ -219,23 +219,17 @@ pub mod readline_echoup {
     {
       use apis::Process;
       log::trace!("echoup handle message...");
-
-      let result : apis::process::ControlFlow;
       let msg = match message {
         GlobalMessage::ToechoMsg (msg) => msg,
         _ => unreachable!()
       };
-      match msg {
+      let result = match msg {
         ToechoMsg::Astring (string) => {
           let echo = string.as_str().to_uppercase();
-          result = self.send (ChannelId::Fromecho, FromechoMsg::Echo (echo))
-            .into();
+          self.send (ChannelId::Fromecho, FromechoMsg::Echo (echo)).into()
         }
-        ToechoMsg::Quit => {
-          result = apis::process::ControlFlow::Break;
-        }
-      }
-
+        ToechoMsg::Quit => apis::process::ControlFlow::Break
+      };
       log::trace!("...echoup handle message");
       result
     }
@@ -343,7 +337,7 @@ pub mod readline_echorev {
             let command = {
               let mut words = s.as_str().split_whitespace();
               let mut first = words.next().unwrap().to_string();
-              if first.chars().next().unwrap() == ':' {
+              if first.starts_with (':') {
                 use std::str::pattern::Pattern;
                 debug_assert!(0 < first.len());
                 let _ = first.remove (0);
@@ -379,23 +373,18 @@ pub mod readline_echorev {
       -> apis::process::ControlFlow
     {
       use apis::Process;
-
       log::trace!("echorev handle message...");
-      let result : apis::process::ControlFlow;
       let msg = match message {
         GlobalMessage::ToechoMsg (msg) => msg,
         _ => unreachable!()
       };
-      match msg {
+      let result = match msg {
         ToechoMsg::Astring (string) => {
           let echo = string.chars().rev().collect();
-          result = self.send (ChannelId::Fromecho, FromechoMsg::Echo (echo))
-            .into();
+          self.send (ChannelId::Fromecho, FromechoMsg::Echo (echo)).into()
         }
-        ToechoMsg::Quit => {
-          result = apis::process::ControlFlow::Break;
-        }
-      }
+        ToechoMsg::Quit => apis::process::ControlFlow::Break
+      };
       log::trace!("...echorev handle message");
       result
     }

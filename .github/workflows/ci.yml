@@ -22,12 +22,12 @@ jobs:
         with:
           cache-all-crates: "true"
       - name: install
-        uses: dtolnay/rust-toolchain@nightly
+        uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: nightly
+          toolchain: nightly-2025-08-16
           components: clippy
       - name: clippy
-        run: cargo clippy --all-features
+        run: cargo clippy --all-targets --all-features
 
   test:
     runs-on: ubuntu-latest

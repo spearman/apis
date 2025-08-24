@@ -35,4 +35,9 @@ env_logger = { version = "0.11.*", features = ["kv"] }
 test = []
 
 [lints.clippy]
+disallowed-names = "allow"
 empty-line-after-doc-comments = "allow"
+len-zero = "allow"
+manual-is-multiple-of = "allow"
+single-component-path-imports = "allow"
+single-match = "allow"
