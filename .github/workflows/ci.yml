@@ -9,7 +9,7 @@ on:
 
 env:
   RUSTFLAGS: "-D warnings"
-  RUST_TOOLCHAIN: "nightly-2025-08-16"
+  RUSTUP_TOOLCHAIN: "nightly-2025-08-16"
 
 jobs:
   check:
