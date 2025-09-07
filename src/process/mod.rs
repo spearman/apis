@@ -1007,7 +1007,7 @@ impl <M> From <Result <(), channel::SendError <M>>> for ControlFlow {
 //
 pub fn report_sizes <CTX : session::Context + 'static> () {
   println!("process report sizes...");
-  println!("  size of process::Def: {}", std::mem::size_of::<Def <CTX>>());
+  println!("  size of process::Def: {}", size_of::<Def <CTX>>());
   Inner::<CTX>::report_sizes();
   println!("...process report sizes");
 }

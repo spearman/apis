@@ -18,12 +18,11 @@
 //! make -f MakefileDot graphical
 //! ```
 
-extern crate env_logger;
-extern crate glium;
-extern crate log;
+use env_logger;
+use glium;
+use log;
 
-extern crate macro_machines;
-extern crate apis;
+use apis;
 
 use glium::glutin;
 

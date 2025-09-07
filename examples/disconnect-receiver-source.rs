@@ -15,10 +15,10 @@
 
 #![allow(dead_code)]
 
-extern crate env_logger;
-extern crate log;
+use env_logger;
+use log;
 
-extern crate apis;
+use apis;
 
 ////////////////////////////////////////////////////////////////////////////////
 //  constants                                                                 //

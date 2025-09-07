@@ -35,7 +35,22 @@ env_logger = { version = "0.11.*", features = ["kv"] }
 test = []
 
 [lints.rust]
-unknown-lints = "deny"
+ambiguous-negative-literals = "warn"
+closure-returning-async-block = "warn"
+explicit-outlives-requirements = "warn"
+linker-messages = "warn"
+meta-variable-misuse = "warn"
+redundant-lifetimes = "warn"
+trivial-numeric-casts = "warn"
+unit-bindings = "warn"
+unknown-lints = "warn"
+unnameable-types = "warn"
+unreachable-pub = "warn"
+unused-extern-crates = "warn"
+unused-import-braces = "warn"
+unused-lifetimes = "warn"
+unused-macro-rules = "warn"
+unused-qualifications = "warn"
 
 [lints.clippy]
 disallowed-names = "allow"
@@ -124,7 +139,6 @@ range-plus-one = "warn"
 read-zero-byte-vec = "warn"
 redundant-clone = "warn"
 redundant-closure-for-method-calls = "warn"
-redundant-pub-crate = "warn"
 redundant-test-prefix = "warn"
 ref-as-ptr = "warn"
 ref-binding-to-reference = "warn"

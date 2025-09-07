@@ -18,11 +18,11 @@
 
 #![allow(dead_code)]
 
-extern crate env_logger;
-extern crate log;
-extern crate rand;
+use env_logger;
+use log;
+use rand;
 
-extern crate apis;
+use apis;
 
 ////////////////////////////////////////////////////////////////////////////////
 //  constants                                                                 //

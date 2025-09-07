@@ -712,8 +712,8 @@ impl <CTX : Context> From <Def <CTX>> for Session <CTX> {
 
 pub fn report_sizes <CTX : Context> () {
   println!("session report sizes...");
-  println!("  size of Session: {}", std::mem::size_of::<Session <CTX>>());
-  println!("  size of session::Def: {}", std::mem::size_of::<Def <CTX>>());
+  println!("  size of Session: {}", size_of::<Session <CTX>>());
+  println!("  size of session::Def: {}", size_of::<Def <CTX>>());
   println!("...session report sizes");
 }
 

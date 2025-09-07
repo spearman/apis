@@ -401,7 +401,7 @@ impl <T> std::error::Error for SendError <T> {
 
 pub fn report_sizes <CTX : session::Context> () {
   println!("channel report sizes...");
-  println!("  size of channel::Def: {}", std::mem::size_of::<Def <CTX>>());
-  println!("  size of Channel: {}", std::mem::size_of::<Channel <CTX>>());
+  println!("  size of channel::Def: {}", size_of::<Def <CTX>>());
+  println!("  size of Channel: {}", size_of::<Channel <CTX>>());
   println!("...channel report sizes");
 }

@@ -8,26 +8,21 @@
 //! behavior.
 //!
 //! Sessions are collections of Processes and Channels in a fixed communication
-//! topology. The `def_session!` macro is used to define a Session together
-//! with its Channels and Processes.
+//! topology. The `def_session!` macro is used to define a Session together with its
+//! Channels and Processes.
 //!
-//! A 'Program' defines a transition system with Sessions as nodes. The
-//! `def_program!` macro is used to define modes (Sessions) and transitions
-//! between them.
+//! A 'Program' defines a transition system with Sessions as nodes. The `def_program!`
+//! macro is used to define modes (Sessions) and transitions between them.
 
 #![feature(associated_type_defaults)]
 
 // NOTE: many of these public re-exports are required for use in macros
-pub extern crate colored;
-pub extern crate either;
-pub extern crate log;
-pub extern crate macro_machines;
-pub extern crate strum;
-pub extern crate vec_map;
-
-extern crate marksman_escape;
-extern crate smallvec;
-extern crate unbounded_spsc;
+pub use colored;
+pub use either;
+pub use log;
+pub use macro_machines;
+pub use strum;
+pub use vec_map;
 
 pub mod channel;
 pub mod message;

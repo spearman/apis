@@ -49,7 +49,7 @@ pub struct Source <CTX, M> where
 
 pub trait Backend <CTX : session::Context> where
   Self : Into <channel::Channel <CTX>>
-    + std::convert::TryFrom <channel::Def <CTX>>
+    + TryFrom <channel::Def <CTX>>
 {}
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -193,7 +193,7 @@ impl <CTX, M> Backend <CTX> for Simplex <CTX, M> where
 {}
 
 impl <CTX, M>
-  std::convert::TryFrom <channel::Def <CTX>> for Simplex <CTX, M>
+  TryFrom <channel::Def <CTX>> for Simplex <CTX, M>
 where
   CTX : session::Context,
   M   : Message <CTX> + 'static
@@ -249,7 +249,7 @@ impl <CTX, M> From <Simplex <CTX, M>> for channel::Channel <CTX> where
 //
 
 impl <CTX, M>
-  std::convert::TryFrom <channel::Def <CTX>> for Sink <CTX, M>
+  TryFrom <channel::Def <CTX>> for Sink <CTX, M>
 where
   CTX : session::Context,
   M   : Message <CTX> + 'static
@@ -308,7 +308,7 @@ impl <CTX, M> From <Sink <CTX, M>> for channel::Channel <CTX> where
 //
 
 impl <CTX, M>
-  std::convert::TryFrom <channel::Def <CTX>> for Source <CTX, M>
+  TryFrom <channel::Def <CTX>> for Source <CTX, M>
 where
   CTX : session::Context,
   M   : Message <CTX> + 'static

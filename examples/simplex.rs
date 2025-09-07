@@ -19,11 +19,11 @@
 
 #![allow(dead_code)]
 
-extern crate env_logger;
-extern crate log;
-extern crate macro_machines;
+use env_logger;
+use log;
+use macro_machines;
 
-extern crate apis;
+use apis;
 
 ///////////////////////////////////////////////////////////////////////////////
 //  constants                                                                //

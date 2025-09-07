@@ -19,8 +19,8 @@ use crate::session;
 
 pub type IdReprType = u16;
 /// Unique ID for each global message type used in a given session context.
-pub trait Id : Clone + Ord + Into <usize> + TryFrom <IdReprType> +
-  std::fmt::Debug + strum::IntoEnumIterator
+pub trait Id : Clone + Ord + Into <usize> + TryFrom <IdReprType> + std::fmt::Debug
+  + strum::IntoEnumIterator
 {}
 
 /// The global message type.
@@ -40,7 +40,7 @@ pub trait Global <CTX> where
 /// A local message type with partial mapping from global message type and
 /// total mapping into global message type.
 pub trait Message <CTX : session::Context> : Send + std::fmt::Debug
-  + std::convert::TryFrom <CTX::GMSG> + Into <CTX::GMSG>
+  + TryFrom <CTX::GMSG> + Into <CTX::GMSG>
 {
   /// Get the message name
   // TODO: due to difficulty in creating a match statement from the session

@@ -14,11 +14,10 @@
 //! make -f MakefileDot myprogram charsink intsource
 //! ```
 
-extern crate env_logger;
-extern crate log;
-extern crate macro_machines;
+use env_logger;
+use log;
 
-extern crate apis;
+use apis;
 
 ////////////////////////////////////////////////////////////////////////////////
 //  modes                                                                     //
