@@ -17,7 +17,6 @@
 #![feature(associated_type_defaults)]
 
 // NOTE: many of these public re-exports are required for use in macros
-pub use colored;
 pub use either;
 pub use log;
 pub use macro_machines;

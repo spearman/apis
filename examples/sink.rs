@@ -20,6 +20,7 @@
 
 #![allow(dead_code)]
 
+use colored;
 use env_logger;
 use log;
 
@@ -225,7 +226,7 @@ impl Upcase {
 
 fn main() {
   use std::io::Write;
-  use apis::colored::Colorize;
+  use colored::Colorize;
   use apis::session::Context;
 
   let example_name = std::path::PathBuf::from (std::env::args().next().unwrap())

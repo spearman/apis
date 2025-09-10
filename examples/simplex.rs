@@ -19,6 +19,7 @@
 
 #![allow(dead_code)]
 
+use colored;
 use env_logger;
 use log;
 use macro_machines;
@@ -166,7 +167,7 @@ impl Upcase {
 ///////////////////////////////////////////////////////////////////////////////
 
 fn main() {
-  use apis::colored::Colorize;
+  use colored::Colorize;
 
   let example_name = std::path::PathBuf::from (std::env::args().next().unwrap())
     .file_name().unwrap().to_str().unwrap().to_string();

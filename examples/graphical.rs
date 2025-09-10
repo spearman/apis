@@ -18,6 +18,7 @@
 //! make -f MakefileDot graphical
 //! ```
 
+use colored;
 use env_logger;
 use glium;
 use log;
@@ -446,7 +447,7 @@ pub mod wsk {
 ////////////////////////////////////////////////////////////////////////////////
 
 fn main() {
-  use apis::colored::Colorize;
+  use colored::Colorize;
 
   let example_name = std::path::PathBuf::from (std::env::args().next().unwrap())
     .file_name().unwrap().to_str().unwrap().to_string();

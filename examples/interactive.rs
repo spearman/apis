@@ -26,6 +26,7 @@
 
 #![feature(pattern)]
 
+use colored;
 use env_logger;
 use log;
 
@@ -399,7 +400,7 @@ pub mod readline_echorev {
 ////////////////////////////////////////////////////////////////////////////////
 
 fn main() {
-  use apis::colored::Colorize;
+  use colored::Colorize;
   let example_name = std::path::PathBuf::from (std::env::args().next().unwrap())
     .file_name().unwrap().to_str().unwrap().to_string();
 
