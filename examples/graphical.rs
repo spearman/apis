@@ -192,8 +192,8 @@ pub mod bgr {
           //println!("frame[{}] event: {:?}", frame, event);
           *control_flow = glutin::event_loop::ControlFlow::Poll;
           match event {
-            Event::DeviceEvent { event: event::DeviceEvent::Key (keyboard_input), .. } =>
-              if keyboard_input.state == event::ElementState::Pressed {
+            Event::DeviceEvent { event: event::DeviceEvent::Key (keyboard_input), .. }
+              if keyboard_input.state == event::ElementState::Pressed =>
                 match keyboard_input.virtual_keycode {
                   Some (event::VirtualKeyCode::Tab) => {
                     result  = apis::process::ControlFlow::Break;
@@ -214,7 +214,6 @@ pub mod bgr {
                   }
                   _ => {}
                 }
-              }
             Event::MainEventsCleared =>
               *control_flow = glutin::event_loop::ControlFlow::Exit,
             _ => {}
@@ -294,8 +293,8 @@ pub mod cym {
           //println!("frame[{}] event: {:?}", frame, event);
           *control_flow = glutin::event_loop::ControlFlow::Poll;
           match event {
-            Event::DeviceEvent { event: event::DeviceEvent::Key (keyboard_input), .. } =>
-              if keyboard_input.state == event::ElementState::Pressed {
+            Event::DeviceEvent { event: event::DeviceEvent::Key (keyboard_input), .. }
+              if keyboard_input.state == event::ElementState::Pressed =>
                 match keyboard_input.virtual_keycode {
                   Some (event::VirtualKeyCode::Tab) => {
                     result  = apis::process::ControlFlow::Break;
@@ -316,7 +315,6 @@ pub mod cym {
                   }
                   _ => {}
                 }
-              }
             Event::MainEventsCleared =>
               *control_flow = glutin::event_loop::ControlFlow::Exit,
             _ => {}
@@ -396,8 +394,8 @@ pub mod wsk {
           //println!("frame[{}] event: {:?}", frame, event);
           *control_flow = glutin::event_loop::ControlFlow::Poll;
           match event {
-            Event::DeviceEvent { event: event::DeviceEvent::Key (keyboard_input), .. } =>
-              if keyboard_input.state == event::ElementState::Pressed {
+            Event::DeviceEvent { event: event::DeviceEvent::Key (keyboard_input), .. }
+              if keyboard_input.state == event::ElementState::Pressed =>
                 match keyboard_input.virtual_keycode {
                   Some (event::VirtualKeyCode::Tab) => {
                     result  = apis::process::ControlFlow::Break;
@@ -418,7 +416,6 @@ pub mod wsk {
                   }
                   _ => {}
                 }
-              }
             Event::MainEventsCleared =>
               *control_flow = glutin::event_loop::ControlFlow::Exit,
             _ => {}

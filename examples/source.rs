@@ -50,7 +50,7 @@ apis::def_session! {
         endpoints      []
         handle_message { unreachable!() }
         update {
-          use rand::Rng;
+          use rand::RngExt;
           let mut rng = rand::rng();
           let rand_id = ProcessId::try_from (rng.random_range (1..5))
             .unwrap();

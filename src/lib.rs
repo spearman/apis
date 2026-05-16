@@ -14,8 +14,6 @@
 //! A 'Program' defines a transition system with Sessions as nodes. The `def_program!`
 //! macro is used to define modes (Sessions) and transitions between them.
 
-#![feature(associated_type_defaults)]
-
 // NOTE: many of these public re-exports are required for use in macros
 pub use either;
 pub use log;
