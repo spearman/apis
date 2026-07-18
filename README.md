@@ -1,5 +1,18 @@
 # Apis
 
+[![Latest Version]][crates.io] [![Rust Version]][nightly] [![License]][license-file] [![Documentation]][docs] [![Build Status]][actions]
+
+[Latest Version]: https://img.shields.io/crates/v/apis.svg
+[crates.io]: https://crates.io/crates/apis
+[Rust Version]: https://img.shields.io/badge/rust-nightly-orange.svg
+[nightly]: https://rust-lang.github.io/rustup/concepts/channels.html
+[License]: https://img.shields.io/crates/l/apis.svg
+[license-file]: https://github.com/spearman/apis/blob/master/LICENSE
+[Documentation]: https://docs.rs/apis/badge.svg
+[docs]: https://docs.rs/apis
+[Build Status]: https://img.shields.io/github/actions/workflow/status/spearman/apis/ci.yml
+[actions]: https://github.com/spearman/apis/actions
+
 > Reactive, session-oriented, asynchronous process-calculus framework
 
 [Documentation](https://docs.rs/apis/)

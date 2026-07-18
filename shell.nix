@@ -10,9 +10,9 @@ mkShell {
   # required for opengl interactive example
   LD_LIBRARY_PATH = lib.makeLibraryPath [
     libglvnd
-    xorg.libX11
-    xorg.libXcursor
-    xorg.libXi
-    xorg.libXrandr
+    libX11
+    libXcursor
+    libXi
+    libXrandr
   ];
 }
