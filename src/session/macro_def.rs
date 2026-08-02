@@ -138,8 +138,17 @@ macro_rules! def_session {
     //  messages
     //
     $(
-    #[derive(Debug, $crate::strum::Display)]
+    #[derive(Debug, $crate::strum::Display, $crate::strum::EnumDiscriminants)]
     pub enum $message_type $message_variants
+    impl $message_type {
+      #[inline]
+      #[expect(clippy::same_name_method)]
+      pub fn discriminant (&self)
+        -> <Self as $crate::strum::IntoDiscriminant>::Discriminant
+      {
+        $crate::strum::IntoDiscriminant::discriminant (self)
+      }
+    }
     )*
 
     ////////////////////////////////////////////////////////////////////////////
